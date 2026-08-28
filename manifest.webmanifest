@@ -1,0 +1,13 @@
+{
+  "name": "Ionic Formula | KoiChem",
+  "short_name": "Ionic Formula",
+  "description": "イオン式とイオン結合性化合物の組成式を学ぶWebアプリ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2faf7",
+  "theme_color": "#087c6d",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
