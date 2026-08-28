@@ -43,7 +43,7 @@ node --test tests/core.test.mjs
 
 ## GitHub Pages
 
-すべてのURLはリポジトリ配下でも動く相対パスです。GitHub Pagesの公開元を既定ブランチのルートに設定して利用できます。
+すべてのURLはリポジトリ配下でも動く相対パスです。`main`へのpush時にGitHub ActionsがGitHub Pagesへデプロイします。
 
 ## ライセンス
 
