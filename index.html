@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4fbf8">
+  <meta name="description" content="イオン式とイオン結合性化合物の組成式を、電荷のつり合いから学ぶWebアプリ">
+  <title>Ionic Formula | KoiChem</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="./" aria-label="Ionic Formula ホーム">
+      <span class="brand-mark" aria-hidden="true">＋−</span>
+      <span><strong>Ionic Formula</strong><small>KoiChem</small></span>
+    </a>
+    <button class="icon-button" id="settings-button" type="button" aria-label="設定を開く">⚙</button>
+  </header>
+
+  <main class="app-shell">
+    <div id="session-announcement" class="session-announcement" role="status" hidden></div>
+    <section id="setup-screen" class="screen" aria-labelledby="setup-title">
+      <div class="hero">
+        <p class="eyebrow">電荷をそろえて、式がわかる。</p>
+        <h1 id="setup-title">今日は何を練習する？</h1>
+        <p>イオンの対応と、電荷が0になる組成式をテンポよく身につけよう。</p>
+      </div>
+
+      <form id="setup-form" class="setup-form">
+        <fieldset class="choice-section">
+          <legend>問題モード</legend>
+          <div class="mode-grid">
+            <label class="mode-card">
+              <input type="radio" name="game-mode" value="ion" checked>
+              <span class="mode-icon" aria-hidden="true">Na<sup>＋</sup></span>
+              <span><strong>イオン</strong><small>イオン名 ↔ イオン式</small></span>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="game-mode" value="compound">
+              <span class="mode-icon" aria-hidden="true">CaCl<sub>2</sub></span>
+              <span><strong>化合物</strong><small>名称・組成式・イオン</small></span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="choice-section">
+          <legend>難易度</legend>
+          <div class="segment-control">
+            <label><input type="radio" name="difficulty" value="easy"><span>やさしい</span></label>
+            <label><input type="radio" name="difficulty" value="standard" checked><span>標準</span></label>
+            <label><input type="radio" name="difficulty" value="hard"><span>難しい</span></label>
+          </div>
+          <p id="difficulty-note" class="choice-note"></p>
+        </fieldset>
+
+        <fieldset class="choice-section">
+          <legend>問題数</legend>
+          <div class="segment-control two">
+            <label><input type="radio" name="question-count" value="10" checked><span>10問</span></label>
+            <label><input type="radio" name="question-count" value="endless"><span>エンドレス</span></label>
+          </div>
+        </fieldset>
+
+        <button id="start-button" class="primary-button start-button" type="submit" disabled>スタート</button>
+      </form>
+      <p class="admin-link"><a href="admin.html">教材データ管理</a></p>
+    </section>
+
+    <section id="quiz-screen" class="screen" hidden aria-labelledby="variant-label">
+      <div class="quiz-status">
+        <div>
+          <span id="domain-label" class="domain-pill">イオン</span>
+          <span id="variant-label" class="variant-label">イオン名 → イオン式</span>
+        </div>
+        <div class="progress-text"><span id="question-number">1</span><span id="question-total"> / 10</span></div>
+      </div>
+      <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+
+      <article id="question-card" class="question-card">
+        <p id="instruction" class="instruction"></p>
+        <div id="question-prompt" class="question-prompt"></div>
+        <p id="streak" class="streak" aria-live="polite"></p>
+      </article>
+
+      <form id="answer-form" class="answer-area" autocomplete="off">
+        <label id="answer-label" for="answer-input">答え</label>
+        <input id="answer-input" type="text" enterkeyhint="done" autocapitalize="off" autocomplete="off" spellcheck="false">
+        <div id="formula-preview" class="formula-preview" aria-hidden="true"></div>
+        <p id="input-message" class="input-message"></p>
+        <button id="submit-answer" class="primary-button" type="submit">決定</button>
+      </form>
+
+      <div id="formula-keyboard" class="formula-keyboard" hidden aria-label="化学式入力キーボード">
+        <div class="keyboard-toolbar">
+          <button type="button" data-key-action="case" aria-label="大文字と小文字を切り替える">Aa</button>
+          <button type="button" data-key-action="left" aria-label="カーソルを左へ">←</button>
+          <button type="button" data-key-action="right" aria-label="カーソルを右へ">→</button>
+          <button type="button" data-key-action="backspace" aria-label="1文字削除">⌫</button>
+          <button type="button" data-key-action="clear">クリア</button>
+        </div>
+        <div id="number-keys" class="key-row number-keys"></div>
+        <div id="letter-keys" class="letter-keys"></div>
+        <div id="charge-keys" class="charge-keys" hidden></div>
+      </div>
+
+      <div id="feedback" class="feedback" aria-live="polite" hidden>
+        <div id="feedback-title" class="feedback-title"></div>
+        <div id="feedback-answer" class="feedback-answer"></div>
+        <p id="feedback-detail" class="feedback-detail"></p>
+        <button id="next-button" class="primary-button" type="button" hidden>次へ</button>
+      </div>
+
+      <div id="retry-actions" class="retry-actions" hidden>
+        <button id="hint-button" class="secondary-button" type="button">ヒント</button>
+        <button id="pass-button" class="text-button" type="button">パス</button>
+      </div>
+      <button id="quit-button" class="quit-button" type="button">終了して戻る</button>
+    </section>
+
+    <section id="result-screen" class="screen" hidden aria-labelledby="result-title">
+      <div class="result-hero">
+        <span class="result-mark" aria-hidden="true">✓</span>
+        <p class="eyebrow">10問おつかれさま</p>
+        <h1 id="result-title">今回の結果</h1>
+      </div>
+      <dl class="result-grid">
+        <div><dt>初回正解</dt><dd id="result-first">0</dd></div>
+        <div><dt>再回答正解</dt><dd id="result-retry">0</dd></div>
+        <div><dt>ヒント使用</dt><dd id="result-hint">0</dd></div>
+        <div><dt>パス</dt><dd id="result-pass">0</dd></div>
+      </dl>
+      <div id="result-categories" class="result-categories"></div>
+      <div class="result-actions">
+        <button id="retry-session" class="primary-button" type="button">同じ設定でもう一度</button>
+        <button id="back-to-setup" class="secondary-button" type="button">モード選択へ戻る</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="settings-dialog" class="settings-dialog">
+    <form method="dialog">
+      <div class="dialog-heading"><h2>設定</h2><button class="icon-button" value="close" aria-label="閉じる">×</button></div>
+      <label class="toggle-row"><span>効果音</span><input id="sound-toggle" type="checkbox" role="switch" checked></label>
+      <label class="toggle-row"><span>画面演出</span><input id="vfx-toggle" type="checkbox" role="switch" checked></label>
+      <p>端末の「視差効果を減らす」が有効な場合、動きのある演出を自動で抑えます。</p>
+    </form>
+  </dialog>
+
+  <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
