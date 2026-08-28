@@ -1,0 +1,1502 @@
+[
+  {
+    "id": "sodium_chloride",
+    "cation": "sodium",
+    "anion": "chloride",
+    "formula": "NaCl",
+    "name": "塩化ナトリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_chloride",
+    "cation": "potassium",
+    "anion": "chloride",
+    "formula": "KCl",
+    "name": "塩化カリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "silver_chloride",
+    "cation": "silver",
+    "anion": "chloride",
+    "formula": "AgCl",
+    "name": "塩化銀",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "silver_bromide",
+    "cation": "silver",
+    "anion": "bromide",
+    "formula": "AgBr",
+    "name": "臭化銀",
+    "solidColor": "淡黄色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "silver_iodide",
+    "cation": "silver",
+    "anion": "iodide",
+    "formula": "AgI",
+    "name": "ヨウ化銀",
+    "solidColor": "黄色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_fluoride",
+    "cation": "sodium",
+    "anion": "fluoride",
+    "formula": "NaF",
+    "name": "フッ化ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_bromide",
+    "cation": "sodium",
+    "anion": "bromide",
+    "formula": "NaBr",
+    "name": "臭化ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_iodide",
+    "cation": "sodium",
+    "anion": "iodide",
+    "formula": "NaI",
+    "name": "ヨウ化ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_bromide",
+    "cation": "potassium",
+    "anion": "bromide",
+    "formula": "KBr",
+    "name": "臭化カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_iodide",
+    "cation": "potassium",
+    "anion": "iodide",
+    "formula": "KI",
+    "name": "ヨウ化カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "magnesium_oxide",
+    "cation": "magnesium",
+    "anion": "oxide",
+    "formula": "MgO",
+    "name": "酸化マグネシウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_oxide",
+    "cation": "calcium",
+    "anion": "oxide",
+    "formula": "CaO",
+    "name": "酸化カルシウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "barium_oxide",
+    "cation": "barium",
+    "anion": "oxide",
+    "formula": "BaO",
+    "name": "酸化バリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "zinc_oxide",
+    "cation": "zinc",
+    "anion": "oxide",
+    "formula": "ZnO",
+    "name": "酸化亜鉛",
+    "solidColor": "白色",
+    "solidColorNote": "加熱時は黄色",
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "magnesium_sulfide",
+    "cation": "magnesium",
+    "anion": "sulfide",
+    "formula": "MgS",
+    "name": "硫化マグネシウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_sulfide",
+    "cation": "calcium",
+    "anion": "sulfide",
+    "formula": "CaS",
+    "name": "硫化カルシウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "zinc_sulfide",
+    "cation": "zinc",
+    "anion": "sulfide",
+    "formula": "ZnS",
+    "name": "硫化亜鉛",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_oxide",
+    "cation": "sodium",
+    "anion": "oxide",
+    "formula": "Na2O",
+    "name": "酸化ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_oxide",
+    "cation": "potassium",
+    "anion": "oxide",
+    "formula": "K2O",
+    "name": "酸化カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_sulfide",
+    "cation": "sodium",
+    "anion": "sulfide",
+    "formula": "Na2S",
+    "name": "硫化ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_sulfide",
+    "cation": "potassium",
+    "anion": "sulfide",
+    "formula": "K2S",
+    "name": "硫化カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "magnesium_chloride",
+    "cation": "magnesium",
+    "anion": "chloride",
+    "formula": "MgCl2",
+    "name": "塩化マグネシウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_chloride",
+    "cation": "calcium",
+    "anion": "chloride",
+    "formula": "CaCl2",
+    "name": "塩化カルシウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "barium_chloride",
+    "cation": "barium",
+    "anion": "chloride",
+    "formula": "BaCl2",
+    "name": "塩化バリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "zinc_chloride",
+    "cation": "zinc",
+    "anion": "chloride",
+    "formula": "ZnCl2",
+    "name": "塩化亜鉛",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "aluminum_chloride",
+    "cation": "aluminum",
+    "anion": "chloride",
+    "formula": "AlCl3",
+    "name": "塩化アルミニウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "aluminum_oxide",
+    "cation": "aluminum",
+    "anion": "oxide",
+    "formula": "Al2O3",
+    "name": "酸化アルミニウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "aluminum_sulfide",
+    "cation": "aluminum",
+    "anion": "sulfide",
+    "formula": "Al2S3",
+    "name": "硫化アルミニウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "silver_oxide",
+    "cation": "silver",
+    "anion": "oxide",
+    "formula": "Ag2O",
+    "name": "酸化銀",
+    "solidColor": "褐色〜黒褐色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_hydroxide",
+    "cation": "sodium",
+    "anion": "hydroxide",
+    "formula": "NaOH",
+    "name": "水酸化ナトリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_hydroxide",
+    "cation": "potassium",
+    "anion": "hydroxide",
+    "formula": "KOH",
+    "name": "水酸化カリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "magnesium_hydroxide",
+    "cation": "magnesium",
+    "anion": "hydroxide",
+    "formula": "Mg(OH)2",
+    "name": "水酸化マグネシウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_hydroxide",
+    "cation": "calcium",
+    "anion": "hydroxide",
+    "formula": "Ca(OH)2",
+    "name": "水酸化カルシウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "barium_hydroxide",
+    "cation": "barium",
+    "anion": "hydroxide",
+    "formula": "Ba(OH)2",
+    "name": "水酸化バリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "aluminum_hydroxide",
+    "cation": "aluminum",
+    "anion": "hydroxide",
+    "formula": "Al(OH)3",
+    "name": "水酸化アルミニウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "zinc_hydroxide",
+    "cation": "zinc",
+    "anion": "hydroxide",
+    "formula": "Zn(OH)2",
+    "name": "水酸化亜鉛",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_nitrate",
+    "cation": "sodium",
+    "anion": "nitrate",
+    "formula": "NaNO3",
+    "name": "硝酸ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_nitrate",
+    "cation": "potassium",
+    "anion": "nitrate",
+    "formula": "KNO3",
+    "name": "硝酸カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "silver_nitrate",
+    "cation": "silver",
+    "anion": "nitrate",
+    "formula": "AgNO3",
+    "name": "硝酸銀",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "magnesium_nitrate",
+    "cation": "magnesium",
+    "anion": "nitrate",
+    "formula": "Mg(NO3)2",
+    "name": "硝酸マグネシウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_nitrate",
+    "cation": "calcium",
+    "anion": "nitrate",
+    "formula": "Ca(NO3)2",
+    "name": "硝酸カルシウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "barium_nitrate",
+    "cation": "barium",
+    "anion": "nitrate",
+    "formula": "Ba(NO3)2",
+    "name": "硝酸バリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "zinc_nitrate",
+    "cation": "zinc",
+    "anion": "nitrate",
+    "formula": "Zn(NO3)2",
+    "name": "硝酸亜鉛",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "aluminum_nitrate",
+    "cation": "aluminum",
+    "anion": "nitrate",
+    "formula": "Al(NO3)3",
+    "name": "硝酸アルミニウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "ammonium_nitrate",
+    "cation": "ammonium",
+    "anion": "nitrate",
+    "formula": "NH4NO3",
+    "name": "硝酸アンモニウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_sulfate",
+    "cation": "sodium",
+    "anion": "sulfate",
+    "formula": "Na2SO4",
+    "name": "硫酸ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_sulfate",
+    "cation": "potassium",
+    "anion": "sulfate",
+    "formula": "K2SO4",
+    "name": "硫酸カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "magnesium_sulfate",
+    "cation": "magnesium",
+    "anion": "sulfate",
+    "formula": "MgSO4",
+    "name": "硫酸マグネシウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_sulfate",
+    "cation": "calcium",
+    "anion": "sulfate",
+    "formula": "CaSO4",
+    "name": "硫酸カルシウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "barium_sulfate",
+    "cation": "barium",
+    "anion": "sulfate",
+    "formula": "BaSO4",
+    "name": "硫酸バリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "zinc_sulfate",
+    "cation": "zinc",
+    "anion": "sulfate",
+    "formula": "ZnSO4",
+    "name": "硫酸亜鉛",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "aluminum_sulfate",
+    "cation": "aluminum",
+    "anion": "sulfate",
+    "formula": "Al2(SO4)3",
+    "name": "硫酸アルミニウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "ammonium_sulfate",
+    "cation": "ammonium",
+    "anion": "sulfate",
+    "formula": "(NH4)2SO4",
+    "name": "硫酸アンモニウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_carbonate",
+    "cation": "sodium",
+    "anion": "carbonate",
+    "formula": "Na2CO3",
+    "name": "炭酸ナトリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_carbonate",
+    "cation": "potassium",
+    "anion": "carbonate",
+    "formula": "K2CO3",
+    "name": "炭酸カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "magnesium_carbonate",
+    "cation": "magnesium",
+    "anion": "carbonate",
+    "formula": "MgCO3",
+    "name": "炭酸マグネシウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_carbonate",
+    "cation": "calcium",
+    "anion": "carbonate",
+    "formula": "CaCO3",
+    "name": "炭酸カルシウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "barium_carbonate",
+    "cation": "barium",
+    "anion": "carbonate",
+    "formula": "BaCO3",
+    "name": "炭酸バリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "zinc_carbonate",
+    "cation": "zinc",
+    "anion": "carbonate",
+    "formula": "ZnCO3",
+    "name": "炭酸亜鉛",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_bicarbonate",
+    "cation": "sodium",
+    "anion": "bicarbonate",
+    "formula": "NaHCO3",
+    "name": "炭酸水素ナトリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_bicarbonate",
+    "cation": "potassium",
+    "anion": "bicarbonate",
+    "formula": "KHCO3",
+    "name": "炭酸水素カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "ammonium_chloride",
+    "cation": "ammonium",
+    "anion": "chloride",
+    "formula": "NH4Cl",
+    "name": "塩化アンモニウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "ammonium_bromide",
+    "cation": "ammonium",
+    "anion": "bromide",
+    "formula": "NH4Br",
+    "name": "臭化アンモニウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "ammonium_iodide",
+    "cation": "ammonium",
+    "anion": "iodide",
+    "formula": "NH4I",
+    "name": "ヨウ化アンモニウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_phosphate",
+    "cation": "sodium",
+    "anion": "phosphate",
+    "formula": "Na3PO4",
+    "name": "リン酸ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_phosphate",
+    "cation": "potassium",
+    "anion": "phosphate",
+    "formula": "K3PO4",
+    "name": "リン酸カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_phosphate",
+    "cation": "calcium",
+    "anion": "phosphate",
+    "formula": "Ca3(PO4)2",
+    "name": "リン酸カルシウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "aluminum_phosphate",
+    "cation": "aluminum",
+    "anion": "phosphate",
+    "formula": "AlPO4",
+    "name": "リン酸アルミニウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "sodium_acetate",
+    "cation": "sodium",
+    "anion": "acetate",
+    "formula": "CH3COONa",
+    "name": "酢酸ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    },
+    "acceptedFormulaVariants": [
+      {
+        "formula": "NaCH3COO",
+        "note": "このアプリでは CH₃COONa を推奨表記とします。"
+      }
+    ]
+  },
+  {
+    "id": "potassium_acetate",
+    "cation": "potassium",
+    "anion": "acetate",
+    "formula": "CH3COOK",
+    "name": "酢酸カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    },
+    "acceptedFormulaVariants": [
+      {
+        "formula": "KCH3COO",
+        "note": "このアプリでは CH₃COOK を推奨表記とします。"
+      }
+    ]
+  },
+  {
+    "id": "potassium_permanganate",
+    "cation": "potassium",
+    "anion": "permanganate",
+    "formula": "KMnO4",
+    "name": "過マンガン酸カリウム",
+    "solidColor": "暗紫色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_chromate",
+    "cation": "potassium",
+    "anion": "chromate",
+    "formula": "K2CrO4",
+    "name": "クロム酸カリウム",
+    "solidColor": "黄色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "potassium_dichromate",
+    "cation": "potassium",
+    "anion": "dichromate",
+    "formula": "K2Cr2O7",
+    "name": "二クロム酸カリウム",
+    "solidColor": "橙色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron2_chloride",
+    "cation": "iron2",
+    "anion": "chloride",
+    "formula": "FeCl2",
+    "name": "塩化鉄(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron3_chloride",
+    "cation": "iron3",
+    "anion": "chloride",
+    "formula": "FeCl3",
+    "name": "塩化鉄(Ⅲ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron2_oxide",
+    "cation": "iron2",
+    "anion": "oxide",
+    "formula": "FeO",
+    "name": "酸化鉄(Ⅱ)",
+    "solidColor": "黒色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron3_oxide",
+    "cation": "iron3",
+    "anion": "oxide",
+    "formula": "Fe2O3",
+    "name": "酸化鉄(Ⅲ)",
+    "solidColor": "赤褐色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron2_sulfide",
+    "cation": "iron2",
+    "anion": "sulfide",
+    "formula": "FeS",
+    "name": "硫化鉄(Ⅱ)",
+    "solidColor": "黒色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron2_sulfate",
+    "cation": "iron2",
+    "anion": "sulfate",
+    "formula": "FeSO4",
+    "name": "硫酸鉄(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": "水和状態により異なる",
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron3_sulfate",
+    "cation": "iron3",
+    "anion": "sulfate",
+    "formula": "Fe2(SO4)3",
+    "name": "硫酸鉄(Ⅲ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron2_nitrate",
+    "cation": "iron2",
+    "anion": "nitrate",
+    "formula": "Fe(NO3)2",
+    "name": "硝酸鉄(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron3_nitrate",
+    "cation": "iron3",
+    "anion": "nitrate",
+    "formula": "Fe(NO3)3",
+    "name": "硝酸鉄(Ⅲ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron2_hydroxide",
+    "cation": "iron2",
+    "anion": "hydroxide",
+    "formula": "Fe(OH)2",
+    "name": "水酸化鉄(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "iron3_hydroxide",
+    "cation": "iron3",
+    "anion": "hydroxide",
+    "formula": null,
+    "name": "水酸化鉄(Ⅲ)",
+    "solidColor": "赤褐色",
+    "solidColorNote": "沈殿",
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": false,
+      "formulaToName": false,
+      "ionsToFormula": false,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper1_chloride",
+    "cation": "copper1",
+    "anion": "chloride",
+    "formula": "CuCl",
+    "name": "塩化銅(Ⅰ)",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper2_chloride",
+    "cation": "copper2",
+    "anion": "chloride",
+    "formula": "CuCl2",
+    "name": "塩化銅(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": "水和状態により異なる",
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper1_oxide",
+    "cation": "copper1",
+    "anion": "oxide",
+    "formula": "Cu2O",
+    "name": "酸化銅(Ⅰ)",
+    "solidColor": "赤色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper2_oxide",
+    "cation": "copper2",
+    "anion": "oxide",
+    "formula": "CuO",
+    "name": "酸化銅(Ⅱ)",
+    "solidColor": "黒色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper1_sulfide",
+    "cation": "copper1",
+    "anion": "sulfide",
+    "formula": "Cu2S",
+    "name": "硫化銅(Ⅰ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper2_sulfide",
+    "cation": "copper2",
+    "anion": "sulfide",
+    "formula": "CuS",
+    "name": "硫化銅(Ⅱ)",
+    "solidColor": "黒色",
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper2_sulfate",
+    "cation": "copper2",
+    "anion": "sulfate",
+    "formula": "CuSO4",
+    "name": "硫酸銅(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": "無水塩と水和物で色が異なる",
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper2_nitrate",
+    "cation": "copper2",
+    "anion": "nitrate",
+    "formula": "Cu(NO3)2",
+    "name": "硝酸銅(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "copper2_hydroxide",
+    "cation": "copper2",
+    "anion": "hydroxide",
+    "formula": "Cu(OH)2",
+    "name": "水酸化銅(Ⅱ)",
+    "solidColor": "青色",
+    "solidColorNote": "沈殿",
+    "enabled": true,
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  }
+]
