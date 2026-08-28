@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4fbf8">
+  <title>教材データ管理 | Ionic Formula</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <header class="admin-header">
+    <div>
+      <a href="./">← 学習画面へ</a>
+      <h1>教材データ管理</h1>
+      <p>編集内容はこの端末内に保存されます。公開データの更新にはJSONを書き出して、リポジトリのdataファイルを差し替えてください。</p>
+    </div>
+    <span class="local-badge">LOCAL EDITOR</span>
+  </header>
+
+  <main class="admin-shell">
+    <section class="admin-toolbar" aria-label="データ操作">
+      <div class="toolbar-group">
+        <label class="file-button">JSON Import<input id="import-file" type="file" accept="application/json,.json"></label>
+        <button id="export-bundle" type="button">Bundle Export</button>
+        <button id="export-current" type="button">表示中JSON Export</button>
+      </div>
+      <div class="toolbar-group">
+        <button id="validate-button" type="button">データ検証</button>
+        <button id="save-local" class="primary-small" type="button">端末内に保存</button>
+        <button id="reset-local" class="danger-small" type="button">公開データに戻す</button>
+      </div>
+    </section>
+
+    <div id="save-status" class="save-status" aria-live="polite"></div>
+    <section id="validation-panel" class="validation-panel" aria-live="polite">
+      <strong>読み込み後に自動検証します。</strong>
+    </section>
+
+    <nav class="admin-tabs" aria-label="編集対象">
+      <button type="button" data-tab="ions" class="active">イオン</button>
+      <button type="button" data-tab="compounds">化合物</button>
+      <button type="button" data-tab="difficulty">難易度・比率</button>
+    </nav>
+
+    <section id="list-controls" class="list-controls">
+      <label>検索<input id="search-input" type="search" placeholder="ID・式・名称"></label>
+      <label>表示<select id="enabled-filter"><option value="all">すべて</option><option value="enabled">有効のみ</option><option value="disabled">無効のみ</option></select></label>
+      <button id="add-row" type="button">＋ 追加</button>
+      <span id="row-count"></span>
+    </section>
+
+    <section id="ions-panel" class="tab-panel">
+      <div class="table-wrap"><table id="ions-table"><thead></thead><tbody></tbody></table></div>
+    </section>
+    <section id="compounds-panel" class="tab-panel" hidden>
+      <div class="table-wrap"><table id="compounds-table"><thead></thead><tbody></tbody></table></div>
+    </section>
+    <section id="difficulty-panel" class="tab-panel" hidden>
+      <div id="difficulty-editor" class="difficulty-editor"></div>
+    </section>
+  </main>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
