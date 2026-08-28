@@ -45,6 +45,8 @@ node --test tests/core.test.mjs
 
 すべてのURLはリポジトリ配下でも動く相対パスです。`main`へのpush時にGitHub ActionsがGitHub Pagesへデプロイします。
 
+公開URL：<https://koichem.github.io/IonicFormula/>
+
 ## ライセンス
 
 MIT License。詳細は[LICENSE](LICENSE)を参照してください。
