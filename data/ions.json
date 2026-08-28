@@ -1,0 +1,292 @@
+[
+  {
+    "id": "sodium",
+    "formula": "Na",
+    "charge": 1,
+    "name": "ナトリウムイオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "potassium",
+    "formula": "K",
+    "charge": 1,
+    "name": "カリウムイオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "silver",
+    "formula": "Ag",
+    "charge": 1,
+    "name": "銀イオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "magnesium",
+    "formula": "Mg",
+    "charge": 2,
+    "name": "マグネシウムイオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "calcium",
+    "formula": "Ca",
+    "charge": 2,
+    "name": "カルシウムイオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "barium",
+    "formula": "Ba",
+    "charge": 2,
+    "name": "バリウムイオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "zinc",
+    "formula": "Zn",
+    "charge": 2,
+    "name": "亜鉛イオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "aluminum",
+    "formula": "Al",
+    "charge": 3,
+    "name": "アルミニウムイオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "ammonium",
+    "formula": "NH4",
+    "charge": 1,
+    "name": "アンモニウムイオン",
+    "type": "cation",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "iron2",
+    "formula": "Fe",
+    "charge": 2,
+    "name": "鉄(Ⅱ)イオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": true,
+    "enabled": true
+  },
+  {
+    "id": "iron3",
+    "formula": "Fe",
+    "charge": 3,
+    "name": "鉄(Ⅲ)イオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": true,
+    "enabled": true
+  },
+  {
+    "id": "copper1",
+    "formula": "Cu",
+    "charge": 1,
+    "name": "銅(Ⅰ)イオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": true,
+    "enabled": true
+  },
+  {
+    "id": "copper2",
+    "formula": "Cu",
+    "charge": 2,
+    "name": "銅(Ⅱ)イオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": true,
+    "enabled": true
+  },
+  {
+    "id": "fluoride",
+    "formula": "F",
+    "charge": -1,
+    "name": "フッ化物イオン",
+    "type": "anion",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "chloride",
+    "formula": "Cl",
+    "charge": -1,
+    "name": "塩化物イオン",
+    "type": "anion",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "bromide",
+    "formula": "Br",
+    "charge": -1,
+    "name": "臭化物イオン",
+    "type": "anion",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "iodide",
+    "formula": "I",
+    "charge": -1,
+    "name": "ヨウ化物イオン",
+    "type": "anion",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "oxide",
+    "formula": "O",
+    "charge": -2,
+    "name": "酸化物イオン",
+    "type": "anion",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "sulfide",
+    "formula": "S",
+    "charge": -2,
+    "name": "硫化物イオン",
+    "type": "anion",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "hydroxide",
+    "formula": "OH",
+    "charge": -1,
+    "name": "水酸化物イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "nitrate",
+    "formula": "NO3",
+    "charge": -1,
+    "name": "硝酸イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "sulfate",
+    "formula": "SO4",
+    "charge": -2,
+    "name": "硫酸イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "carbonate",
+    "formula": "CO3",
+    "charge": -2,
+    "name": "炭酸イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "bicarbonate",
+    "formula": "HCO3",
+    "charge": -1,
+    "name": "炭酸水素イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "phosphate",
+    "formula": "PO4",
+    "charge": -3,
+    "name": "リン酸イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "acetate",
+    "formula": "CH3COO",
+    "charge": -1,
+    "name": "酢酸イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "permanganate",
+    "formula": "MnO4",
+    "charge": -1,
+    "name": "過マンガン酸イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "chromate",
+    "formula": "CrO4",
+    "charge": -2,
+    "name": "クロム酸イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
+    "id": "dichromate",
+    "formula": "Cr2O7",
+    "charge": -2,
+    "name": "二クロム酸イオン",
+    "type": "anion",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  }
+]
