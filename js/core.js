@@ -492,12 +492,30 @@ function makeQuestion(practiceType, pair, random) {
     : pair.variant.startsWith("ionNames") ? "nameName"
       : pair.variant.startsWith("ions") ? "formulaFormula"
         : random() < .5 ? "formulaName" : "nameFormula";
+  // Keep the pre-existing random stream for candidate and style selection
+  // stable; the actual ion order is balanced after the whole set is built.
+  if (domain === "compound") random();
   return {
     practiceType, domain, itemId: pair.candidate.item.id, category: pair.candidate.category,
     variant: pair.variant, skill: pair.variant,
     promptStyle,
-    promptOrder: domain === "compound" ? (random() < .5 ? "cationFirst" : "anionFirst") : null,
+    promptOrder: null,
   };
+}
+
+// Ion order should not merely approach 50:50 by chance.  Each generated
+// session/round is balanced exactly when even, or differs by one when odd.
+// The odd extra side is chosen randomly before the orders are shuffled.
+function balanceCompoundPromptOrders(questions, random) {
+  if (!questions.some((question) => question.domain === "compound")) return questions;
+  const cationFirstCount = Math.floor(questions.length / 2) + (questions.length % 2 && random() < .5 ? 1 : 0);
+  const orders = shuffled([
+    ...Array(cationFirstCount).fill("cationFirst"),
+    ...Array(questions.length - cationFirstCount).fill("anionFirst"),
+  ], random);
+  return questions.map((question, index) => question.domain === "compound"
+    ? { ...question, promptOrder: orders[index] }
+    : question);
 }
 
 function recordPairIons(pair, usedIonCounts) {
@@ -553,7 +571,7 @@ export function buildTenQuestionSet(rawOptions) {
     if (remainingVariants[pair.variant] > 0) remainingVariants[pair.variant] -= 1;
     questions.push(makeQuestion(practiceType, pair, random));
   }
-  return { questions, categoryCounts, variantCounts, availableCount: eligible.length };
+  return { questions: balanceCompoundPromptOrders(questions, random), categoryCounts, variantCounts, availableCount: eligible.length };
 }
 
 export function buildWeakQuestionSet(rawOptions) {
@@ -578,7 +596,7 @@ export function buildWeakQuestionSet(rawOptions) {
     if (remainingVariants[pair.variant] > 0) remainingVariants[pair.variant] -= 1;
     questions.push(makeQuestion(practiceType, pair, random));
   }
-  return { questions, categoryCounts, variantCounts, availableCount: eligible.length };
+  return { questions: balanceCompoundPromptOrders(questions, random), categoryCounts, variantCounts, availableCount: eligible.length };
 }
 
 export function buildEndlessRound(rawOptions) {
@@ -615,7 +633,12 @@ export function buildEndlessRound(rawOptions) {
     if (variantRemaining[pair.variant] > 0) variantRemaining[pair.variant] -= 1;
     remaining.splice(remaining.findIndex((candidate) => candidate.item.id === pair.candidate.item.id), 1);
   }
-  return { questions, categoryCounts: drawnByCategory, variantCounts: variantTargets, availableCount: questions.length };
+  return {
+    questions: balanceCompoundPromptOrders(questions, random),
+    categoryCounts: drawnByCategory,
+    variantCounts: variantTargets,
+    availableCount: questions.length,
+  };
 }
 
 export function answerFor(question, item) {

@@ -86,6 +86,8 @@ const advancedCompoundFormulas = {
   calcium_hypochlorite: "Ca(ClO)2",
   silver_cyanide: "AgCN",
   silver_thiocyanate: "AgSCN",
+  lead4_oxide: "PbO2",
+  tin4_oxide: "SnO2",
 };
 
 function randomFrom(seed = 1) {
@@ -98,9 +100,9 @@ function randomFrom(seed = 1) {
 
 test("published data includes the lithium, nitride, and lead expansions", () => {
   assert.equal(ions.length, 46);
-  assert.equal(compounds.length, 154);
+  assert.equal(compounds.length, 156);
   assert.equal(new Set(ions.map((item) => item.id)).size, 46);
-  assert.equal(new Set(compounds.map((item) => item.id)).size, 154);
+  assert.equal(new Set(compounds.map((item) => item.id)).size, 156);
   assert.deepEqual(ions.find((item) => item.id === "lithium"), {
     id: "lithium", formula: "Li", charge: 1, name: "リチウムイオン", type: "cation",
     atomicity: "monatomic", requiresOxidationNumeral: false, enabled: true,
@@ -111,8 +113,8 @@ test("published data includes the lithium, nitride, and lead expansions", () => 
   for (const [id, formula] of [["lithium_nitride", "Li3N"], ["magnesium_nitride", "Mg3N2"], ["calcium_nitride", "Ca3N2"], ["barium_nitride", "Ba3N2"], ["zinc_nitride", "Zn3N2"], ["aluminum_nitride", "AlN"]]) {
     assert.equal(compounds.find((item) => item.id === id).formula, formula);
   }
-  assert.equal(compounds.some((item) => item.formula === "PbO2"), false);
-  assert.equal(compounds.some((item) => item.formula === "SnO2"), false);
+  assert.equal(compounds.find((item) => item.id === "lead4_oxide").name, "酸化鉛(Ⅳ)");
+  assert.equal(compounds.find((item) => item.id === "tin4_oxide").name, "酸化スズ(Ⅳ)");
 });
 
 test("advanced ions and verified compounds are enabled only for hard questions", () => {
@@ -300,18 +302,23 @@ test("ion charge is separate from formula subscripts and must come from charge k
   assert.equal(evaluateIonEntry(nitrideEntry, nitride).correct, false);
 });
 
-test("compound prompts randomize ion order and mixed prompts use exactly one name", () => {
-  const orders = new Set();
+test("compound prompts use balanced ion order and mixed prompts use exactly one name", () => {
   const mixedStyles = new Set();
   for (let seed = 1; seed <= 30; seed += 1) {
     const result = buildTenQuestionSet({ practiceType: "random", difficulty: "normal", ions, compounds, settings, random: randomFrom(seed) });
+    const orders = result.questions.reduce((counts, question) => ({ ...counts, [question.promptOrder]: (counts[question.promptOrder] ?? 0) + 1 }), {});
+    assert.deepEqual(orders, { cationFirst: 5, anionFirst: 5 });
     for (const question of result.questions) {
-      orders.add(question.promptOrder);
       if (question.variant.startsWith("mixed")) mixedStyles.add(question.promptStyle);
     }
   }
-  assert.deepEqual([...orders].sort(), ["anionFirst", "cationFirst"]);
   assert.deepEqual([...mixedStyles].sort(), ["formulaName", "nameFormula"]);
+
+  for (const difficulty of ["normal", "hard"]) {
+    const round = buildEndlessRound({ practiceType: "compound", difficulty, ions, compounds, settings, random: randomFrom(difficulty === "normal" ? 71 : 72) });
+    const counts = round.questions.reduce((result, question) => ({ ...result, [question.promptOrder]: (result[question.promptOrder] ?? 0) + 1 }), {});
+    assert.ok(Math.abs((counts.cationFirst ?? 0) - (counts.anionFirst ?? 0)) <= 1, difficulty);
+  }
 });
 
 test("ten-question compound sets minimize ion reuse across display variants", () => {

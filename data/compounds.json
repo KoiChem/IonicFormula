@@ -2172,5 +2172,31 @@
     "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Silver-thiocyanate",
     "enabled": true,
     "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "lead4_oxide",
+    "cation": "lead4",
+    "anion": "oxide",
+    "formula": "PbO2",
+    "name": "酸化鉛(Ⅳ)",
+    "solidColor": "褐色",
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-dioxide",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "tin4_oxide",
+    "cation": "tin4",
+    "anion": "oxide",
+    "formula": "SnO2",
+    "name": "酸化スズ(Ⅳ)",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/tin%28IV%29%20oxide",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
   }
 ]
