@@ -1,7 +1,10 @@
-export const PRACTICE_TYPES = ["ion", "ionFormula", "ionName", "random"];
+// The UI exposes the two learning domains below. The three legacy compound
+// types remain in VARIANTS for imported history/settings compatibility.
+export const PRACTICE_TYPES = ["ion", "compound"];
 
 export const PRACTICE_TYPE_LABELS = {
   ion: "イオン",
+  compound: "化合物",
   ionFormula: "イオン式 → 化合物",
   ionName: "イオン名 → 化合物",
   random: "ランダム",
@@ -9,6 +12,11 @@ export const PRACTICE_TYPE_LABELS = {
 
 export const VARIANTS = {
   ion: ["ionNameToFormula", "ionFormulaToName"],
+  compound: [
+    "ionsToFormula", "ionsToName", "ionsToBoth",
+    "ionNamesToFormula", "ionNamesToName", "ionNamesToBoth",
+    "mixedIonsToFormula", "mixedIonsToName", "mixedIonsToBoth",
+  ],
   ionFormula: ["ionsToFormula", "ionsToName"],
   ionName: ["ionNamesToFormula", "ionNamesToName"],
   random: ["ionsToFormula", "ionsToName", "ionNamesToFormula", "ionNamesToName", "mixedIonsToFormula", "mixedIonsToName"],
@@ -23,7 +31,18 @@ export const VARIANT_LABELS = {
   ionNamesToName: "イオン名 → 化合物名",
   mixedIonsToFormula: "イオン名・式 → 組成式",
   mixedIonsToName: "イオン名・式 → 化合物名",
+  ionsToBoth: "イオン式 → 式＆名称",
+  ionNamesToBoth: "イオン名 → 式＆名称",
+  mixedIonsToBoth: "イオン名・式 → 式＆名称",
 };
+
+export const DEFAULT_COMPOUND_OPTIONS = Object.freeze({
+  promptFormula: true,
+  promptName: true,
+  answerFormula: true,
+  answerName: true,
+  answerBoth: false,
+});
 
 const SUBSCRIPT_DIGITS = {
   "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4",
@@ -64,6 +83,36 @@ export function normalizeName(value) {
 export function ionAnswer(ion) {
   const magnitude = Math.abs(ion.charge);
   return `${ion.formula}${magnitude === 1 ? "" : magnitude}${ion.charge > 0 ? "+" : "-"}`;
+}
+
+export function createFormulaEntry() {
+  return { tokens: [], cursor: 0, charge: null };
+}
+
+export function formulaEntryCore(entry) {
+  return normalizeFormula((entry?.tokens ?? []).join(""));
+}
+
+export function formulaEntryValue(entry) {
+  const core = formulaEntryCore(entry);
+  const charge = entry?.charge;
+  if (!charge) return core;
+  return `${core}${charge.magnitude === 1 ? "" : charge.magnitude}${charge.sign}`;
+}
+
+// Ion charges are deliberately accepted only from the dedicated charge keys.
+// A trailing sign in the formula body must never be reinterpreted as charge.
+export function evaluateIonEntry(entry, ion) {
+  const actualFormula = formulaEntryCore(entry);
+  const charge = entry?.charge;
+  if (!actualFormula || !charge) return { correct: false, empty: !actualFormula && !charge, matchedAnswerKind: null, note: null };
+  const expectedMagnitude = Math.abs(Number(ion.charge));
+  const expectedSign = Number(ion.charge) > 0 ? "+" : "-";
+  const correct = charge.source === "chargeButton"
+    && actualFormula === normalizeFormula(ion.formula)
+    && Number(charge.magnitude) === expectedMagnitude
+    && charge.sign === expectedSign;
+  return { correct, empty: false, matchedAnswerKind: correct ? "canonical" : null, note: null };
 }
 
 export function ionFormulaHtml(ion) {
@@ -144,6 +193,9 @@ export function domainForPracticeType(practiceType) {
 
 function compoundModeEnabled(item, variant) {
   const modes = item.questionModes ?? {};
+  if (variant === "ionsToBoth") return Boolean(modes.ionsToFormula && modes.ionsToName);
+  if (variant === "ionNamesToBoth") return Boolean((modes.ionNamesToFormula ?? modes.ionsToFormula) && (modes.ionNamesToName ?? modes.ionsToName));
+  if (variant === "mixedIonsToBoth") return Boolean(modes.ionsToFormula && modes.ionsToName && (modes.ionNamesToFormula ?? modes.ionsToFormula) && (modes.ionNamesToName ?? modes.ionsToName));
   if (variant === "ionNamesToFormula") return modes.ionNamesToFormula ?? modes.ionsToFormula ?? false;
   if (variant === "ionNamesToName") return modes.ionNamesToName ?? modes.ionsToName ?? false;
   if (variant === "mixedIonsToFormula") return Boolean(modes.ionsToFormula && (modes.ionNamesToFormula ?? modes.ionsToFormula));
@@ -151,9 +203,31 @@ function compoundModeEnabled(item, variant) {
   return modes[variant] ?? false;
 }
 
-export function itemVariants(practiceType, item) {
+export function compoundVariantsForOptions(rawOptions = DEFAULT_COMPOUND_OPTIONS) {
+  const options = { ...DEFAULT_COMPOUND_OPTIONS, ...rawOptions };
+  const answerKinds = options.answerBoth
+    ? ["Both"]
+    : [options.answerFormula && "Formula", options.answerName && "Name"].filter(Boolean);
+  const variants = [];
+  if (options.promptFormula) variants.push(...answerKinds.map((kind) => `ionsTo${kind}`));
+  if (options.promptName) variants.push(...answerKinds.map((kind) => `ionNamesTo${kind}`));
+  // Formula-only, name-only and mixed prompts carry the same weight.
+  if (options.promptFormula && options.promptName) variants.push(...answerKinds.map((kind) => `mixedIonsTo${kind}`));
+  return variants;
+}
+
+export function itemVariants(practiceType, item, compoundOptions = DEFAULT_COMPOUND_OPTIONS) {
   if (practiceType === "ion") return VARIANTS.ion;
+  if (practiceType === "compound") return compoundVariantsForOptions(compoundOptions).filter((variant) => compoundModeEnabled(item, variant));
   return VARIANTS[practiceType].filter((variant) => compoundModeEnabled(item, variant));
+}
+
+export function questionSkills(question) {
+  if (!question.variant.endsWith("ToBoth")) return [question.skill ?? question.variant];
+  return [
+    question.variant.replace("ToBoth", "ToFormula"),
+    question.variant.replace("ToBoth", "ToName"),
+  ];
 }
 
 export function historyKey(questionOrDomain, itemId, variant) {
@@ -229,12 +303,12 @@ export function allocateCounts(weights, total, capacities = {}, random = Math.ra
   return result;
 }
 
-function eligibleItems(practiceType, ions, compounds, categoryWeights) {
+function eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions) {
   const domain = domainForPracticeType(practiceType);
   const ionById = new Map(ions.map((ion) => [ion.id, ion]));
   const source = domain === "ion" ? ions : compounds;
   return source
-    .filter((item) => item.enabled && itemVariants(practiceType, item).length)
+    .filter((item) => item.enabled && itemVariants(practiceType, item, compoundOptions).length)
     .map((item) => ({ item, category: domain === "ion" ? ionCategory(item) : compoundCategory(item, ionById) }))
     .filter(({ category }) => category && Number(categoryWeights[category]) > 0);
 }
@@ -300,12 +374,21 @@ function ionReusePenalty(ionIds, usedIonCounts) {
   return ionIds.reduce((total, ionId) => total + (usedIonCounts.get(ionId) ?? 0), 0);
 }
 
-function choosePair({ candidates, practiceType, variantRemaining, history, wantWeak, usedIonCounts = new Map(), random }) {
+function weaknessForVariant(history, domain, itemId, variant) {
+  const skills = variant.endsWith("ToBoth")
+    ? [variant.replace("ToBoth", "ToFormula"), variant.replace("ToBoth", "ToName")]
+    : [variant];
+  return skills
+    .map((skill) => weaknessFor(history, historyKey(domain, itemId, skill)))
+    .sort(compareWeakness)[0];
+}
+
+function choosePair({ candidates, practiceType, compoundOptions, variantRemaining, history, wantWeak, usedIonCounts = new Map(), random }) {
   const domain = domainForPracticeType(practiceType);
   const pairs = [];
   for (const candidate of candidates) {
-    for (const variant of itemVariants(practiceType, candidate.item)) {
-      const weakness = weaknessFor(history, historyKey(domain, candidate.item.id, variant));
+    for (const variant of itemVariants(practiceType, candidate.item, compoundOptions)) {
+      const weakness = weaknessForVariant(history, domain, candidate.item.id, variant);
       const ionIds = candidateIonIds(candidate, domain);
       pairs.push({
         candidate, variant, weakness, ionIds,
@@ -347,14 +430,26 @@ function recordPairIons(pair, usedIonCounts) {
 
 function normalizedOptions(options) {
   const practiceType = options.practiceType ?? options.domain ?? "ion";
-  return { ...options, practiceType, domain: domainForPracticeType(practiceType) };
+  return {
+    ...options,
+    practiceType,
+    domain: domainForPracticeType(practiceType),
+    compoundOptions: { ...DEFAULT_COMPOUND_OPTIONS, ...(options.compoundOptions ?? {}) },
+  };
+}
+
+function variantWeightsFor(practiceType, settings, compoundOptions) {
+  if (practiceType === "compound") {
+    return Object.fromEntries(compoundVariantsForOptions(compoundOptions).map((variant) => [variant, 1]));
+  }
+  return settings.variantWeights[practiceType] ?? {};
 }
 
 export function buildTenQuestionSet(rawOptions) {
-  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random } = normalizedOptions(rawOptions);
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions } = normalizedOptions(rawOptions);
   const categoryWeights = settings.categoryWeights[domain][difficulty];
-  const variantWeights = settings.variantWeights[practiceType];
-  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights);
+  const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
+  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions);
   const capacity = {};
   for (const candidate of eligible) capacity[candidate.category] = (capacity[candidate.category] ?? 0) + 1;
   const total = Math.min(10, eligible.length);
@@ -370,9 +465,9 @@ export function buildTenQuestionSet(rawOptions) {
     const category = categorySlots[index];
     const candidates = eligible.filter((candidate) => candidate.category === category && !used.has(candidate.item.id));
     const shouldSeekWeak = weakRemaining > 0 && (index % 3 === 0 || categorySlots.length - index <= weakRemaining);
-    let pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: shouldSeekWeak, usedIonCounts, random });
+    let pair = choosePair({ candidates, practiceType, compoundOptions, variantRemaining: remainingVariants, history, wantWeak: shouldSeekWeak, usedIonCounts, random });
     if (!pair) continue;
-    if (shouldSeekWeak && pair.weakness.tier === 2) pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: false, usedIonCounts, random });
+    if (shouldSeekWeak && pair.weakness.tier === 2) pair = choosePair({ candidates, practiceType, compoundOptions, variantRemaining: remainingVariants, history, wantWeak: false, usedIonCounts, random });
     else if (pair.weakness.tier < 2) weakRemaining -= 1;
     used.add(pair.candidate.item.id);
     recordPairIons(pair, usedIonCounts);
@@ -383,10 +478,10 @@ export function buildTenQuestionSet(rawOptions) {
 }
 
 export function buildWeakQuestionSet(rawOptions) {
-  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random } = normalizedOptions(rawOptions);
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions } = normalizedOptions(rawOptions);
   const categoryWeights = settings.categoryWeights[domain][difficulty];
-  const variantWeights = settings.variantWeights[practiceType];
-  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights);
+  const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
+  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions);
   const total = Math.min(10, eligible.length);
   const variantCounts = allocateCounts(variantWeights, total, {}, random);
   const remainingVariants = { ...variantCounts };
@@ -396,7 +491,7 @@ export function buildWeakQuestionSet(rawOptions) {
   const questions = [];
   while (questions.length < total) {
     const candidates = eligible.filter((candidate) => !used.has(candidate.item.id));
-    const pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: true, usedIonCounts, random });
+    const pair = choosePair({ candidates, practiceType, compoundOptions, variantRemaining: remainingVariants, history, wantWeak: true, usedIonCounts, random });
     if (!pair) break;
     used.add(pair.candidate.item.id);
     recordPairIons(pair, usedIonCounts);
@@ -408,10 +503,10 @@ export function buildWeakQuestionSet(rawOptions) {
 }
 
 export function buildEndlessRound(rawOptions) {
-  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random } = normalizedOptions(rawOptions);
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions } = normalizedOptions(rawOptions);
   const categoryWeights = settings.categoryWeights[domain][difficulty];
-  const variantWeights = settings.variantWeights[practiceType];
-  const remaining = eligibleItems(practiceType, ions, compounds, categoryWeights);
+  const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
+  const remaining = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions);
   const variantTargets = allocateCounts(variantWeights, remaining.length, {}, random);
   const variantRemaining = { ...variantTargets };
   const drawnByCategory = Object.fromEntries(Object.keys(categoryWeights).map((key) => [key, 0]));
@@ -429,8 +524,8 @@ export function buildEndlessRound(rawOptions) {
       .sort((a, b) => b.deficit - a.deficit || a.tie - b.tie)[0].key;
     const candidates = remaining.filter((candidate) => candidate.category === category);
     const shouldSeekWeak = weakRemaining > 0 && (questions.length % 3 === 0 || remaining.length <= weakRemaining);
-    let pair = choosePair({ candidates, practiceType, variantRemaining, history, wantWeak: shouldSeekWeak, usedIonCounts, random });
-    if (shouldSeekWeak && pair?.weakness.tier === 2) pair = choosePair({ candidates, practiceType, variantRemaining, history, wantWeak: false, usedIonCounts, random });
+    let pair = choosePair({ candidates, practiceType, compoundOptions, variantRemaining, history, wantWeak: shouldSeekWeak, usedIonCounts, random });
+    if (shouldSeekWeak && pair?.weakness.tier === 2) pair = choosePair({ candidates, practiceType, compoundOptions, variantRemaining, history, wantWeak: false, usedIonCounts, random });
     else if (pair?.weakness.tier < 2) weakRemaining -= 1;
     if (!pair) break;
     questions.push(makeQuestion(practiceType, pair, random));
@@ -447,6 +542,13 @@ export function answerFor(question, item) {
     return question.variant === "ionNameToFormula"
       ? { type: "formula", canonical: ionAnswer(item), accepted: [] }
       : { type: "name", canonical: item.name, accepted: [] };
+  }
+  if (question.variant.endsWith("ToBoth")) {
+    return {
+      type: "both",
+      formula: { type: "formula", canonical: item.formula, accepted: item.acceptedFormulaVariants ?? [] },
+      name: { type: "name", canonical: item.name, accepted: [] },
+    };
   }
   if (!question.variant.endsWith("ToFormula")) return { type: "name", canonical: item.name, accepted: [] };
   return { type: "formula", canonical: item.formula, accepted: item.acceptedFormulaVariants ?? [] };
@@ -551,7 +653,9 @@ export function validateData(ions, compounds, settings) {
       if (!weights || Object.values(weights).some((value) => !Number.isFinite(Number(value)) || Number(value) < 0) || !Object.values(weights).some((value) => Number(value) > 0)) errors.push(`difficulty: ${domain}.${difficulty}は0以上で、少なくとも1項目を正数にしてください。`);
     }
   }
-  for (const practiceType of PRACTICE_TYPES) {
+  // Compound variant weights are assembled from the user's prompt/answer
+  // toggles, so only the fixed ion-game weights are stored in difficulty.json.
+  for (const practiceType of PRACTICE_TYPES.filter((type) => type !== "compound")) {
     const weights = settings?.variantWeights?.[practiceType];
     if (!weights || Object.values(weights).some((value) => !Number.isFinite(Number(value)) || Number(value) < 0) || !Object.values(weights).some((value) => Number(value) > 0)) errors.push(`difficulty: ${practiceType}の出題タイプ比率が不正です。`);
   }

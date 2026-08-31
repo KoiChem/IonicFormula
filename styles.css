@@ -88,6 +88,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .setup-form { display: grid; gap: 12px; margin-top: 4px; }
 .choice-section { margin: 0; padding: 0; border: 0; }
 .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.mode-grid-two .mode-card { min-height: 105px; }
+.compound-options { padding: 11px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.72); }
+.compound-options legend { padding: 0 4px; color: var(--primary-dark); font-size: .82rem; font-weight: 850; }
+.compound-option-row { display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 7px; }
+.compound-option-row + .compound-option-row { margin-top: 7px; }
+.compound-option-title { color: var(--muted); font-size: .76rem; font-weight: 800; }
+.option-toggles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.answer-toggles { grid-template-columns: repeat(3, 1fr); }
+.option-toggle { min-width: 0; min-height: 34px; padding: 0 4px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--muted); font-size: .77rem; font-weight: 800; }
+.option-toggle.is-on { border-color: #a7d6c5; background: #dff5ea; color: var(--primary-dark); }
+.compound-option-message { min-height: 1em; margin: 7px 0 0 45px; color: var(--wrong); font-size: .7rem; font-weight: 700; }
 .mode-card {
   position: relative; min-height: 96px; padding: 11px 10px;
   display: flex; flex-direction: column; justify-content: space-between;
@@ -124,7 +135,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.9); color: var(--primary-dark);
   box-shadow: 0 6px 14px rgba(57,141,117,.09); cursor: pointer;
 }
-.weak-review-button svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.weak-review-button svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
 .weak-review-button:active { transform: translateY(1px); }
 .weak-review-button:focus-visible, .modal-close:focus-visible { outline: 3px solid rgba(57,141,117,.25); outline-offset: 2px; }
 .weak-review-count {
@@ -150,6 +161,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .streak { position: absolute; right: 13px; bottom: 8px; min-height: 1em; margin: 0; color: #bd741a; font-size: .69rem; font-weight: 800; }
 
 .answer-area { position: relative; margin-top: 11px; }
+.both-answer-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin: 0 3px 6px; }
+.both-answer-tabs button { min-height: 32px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--muted); font-size: .77rem; font-weight: 800; }
+.both-answer-tabs button.is-active { border-color: #9ad2bd; background: #e7f8ef; color: var(--primary-dark); }
+.both-answer-tabs button.is-complete { background: #f1fbf5; color: var(--primary); }
+.both-answer-tabs button:disabled { opacity: 1; }
 .answer-composer { position: relative; }
 #answer-input {
   width: 100%; height: 57px; padding: 0 68px; border: 2px solid var(--line); border-radius: 15px;
@@ -160,6 +176,12 @@ button, a { -webkit-tap-highlight-color: transparent; }
 #answer-input::placeholder { color: #a5b2af; font-weight: 650; }
 #answer-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(57,141,117,.1); }
 #answer-input[aria-invalid="true"] { border-color: var(--wrong); }
+.answer-composer.formula-mode #answer-input { color: transparent; caret-color: transparent; }
+.formula-render { position: absolute; inset: 0 68px 0 0; display: flex; align-items: center; justify-content: center; gap: 0; overflow: hidden; color: var(--ink); font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: 1.23rem; font-weight: 750; pointer-events: none; white-space: nowrap; }
+.formula-render sub, .formula-render sup { font-size: .66em; line-height: 0; }
+.formula-render .formula-charge, .answer-submit .formula-charge { display: inline-flex; align-items: flex-start; margin-left: 2px; padding: 1px 3px 2px; border-radius: 5px; background: #d8f2ed; color: #197b6d; font-family: inherit; font-size: .68em; font-weight: 900; line-height: 1; vertical-align: super; }
+.formula-render .formula-caret { width: 1.5px; height: 1.1em; margin: 0 1px; border-radius: 1px; background: var(--primary-dark); animation: formula-caret .9s steps(1) infinite; }
+@keyframes formula-caret { 50% { opacity: 0; } }
 .answer-submit {
   position: absolute; top: 6px; right: 6px; min-width: 49px; max-width: 55%; height: 45px; padding: 0 9px;
   overflow: hidden; border: 1px solid #b6d9cf; border-radius: 10px; background: #eaf7f2; color: var(--primary-dark);
@@ -171,7 +193,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .name-shortcuts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(48px, 1.3fr); gap: 4px; margin-top: 7px; }
 .name-shortcuts.compound-name-entry { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(52px, 1.35fr); }
+.name-shortcuts.ion-name-entry { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(58px, 1.45fr) minmax(52px, 1.28fr); }
 .name-shortcuts button { min-width: 0; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.88); color: var(--primary-dark); font-size: .85rem; font-weight: 800; box-shadow: 0 2px 0 #c8ddd5; }
+.name-shortcuts button[data-key="イオン"], .name-shortcuts .name-clear { white-space: nowrap; }
 .name-shortcuts button:active { transform: translateY(2px); box-shadow: none; }
 .name-shortcuts .name-clear { color: var(--muted); font-size: .72rem; }
 
@@ -189,7 +213,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .keyboard-controls { display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 3px; margin-top: 5px; }
 .formula-keyboard.ion-entry .keyboard-controls { grid-template-columns: repeat(8, 1fr) 1.35fr; }
 .charge-keys { display: contents; }
-.charge-keys button { color: var(--primary-dark); }
+.charge-keys button { border-color: #a8d8cb; background: #e2f7f1; color: #197b6d; }
 .formula-keyboard.ion-entry .keyboard-controls > button { font-size: .72rem; }
 
 .feedback { margin-top: 9px; padding: 13px; border-radius: 16px; border: 1px solid var(--line); background: white; text-align: center; }
@@ -264,6 +288,7 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
   .letter-keys .key-row:last-child { grid-template-columns: 36px repeat(7, 1fr) 36px; }
   .name-shortcuts { grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(44px, 1.2fr); gap: 3px; }
   .name-shortcuts.compound-name-entry { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(48px, 1.3fr); }
+  .name-shortcuts.ion-name-entry { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(53px, 1.4fr) minmax(47px, 1.22fr); }
 }
 @media (max-width: 680px) {
   .formula-keyboard { width: calc(100% + 22px); margin-left: -11px; margin-right: -11px; padding-inline: 3px; }

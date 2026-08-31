@@ -8,8 +8,11 @@ import {
   buildEndlessRound,
   buildTenQuestionSet,
   buildWeakQuestionSet,
+  compoundVariantsForOptions,
+  createFormulaEntry,
   compoundCategory,
   evaluateAnswer,
+  evaluateIonEntry,
   historyKey,
   hintFor,
   ionCategory,
@@ -163,6 +166,45 @@ test("direct modes preserve their prompt type and random uses formula, name, and
   const random = buildTenQuestionSet({ practiceType: "random", difficulty: "normal", ions, compounds, settings, random: randomFrom(10) });
   assert.deepEqual([...new Set(random.questions.map((question) => question.variant))].sort(), ["ionNamesToFormula", "ionNamesToName", "ionsToFormula", "ionsToName", "mixedIonsToFormula", "mixedIonsToName"]);
   assert.equal(answerFor(random.questions.find((question) => question.variant === "ionsToFormula"), compounds.find((item) => item.id === random.questions.find((question) => question.variant === "ionsToFormula").itemId)).type, "formula");
+});
+
+test("compound toggles make formula, name and mixed prompts equally eligible", () => {
+  const options = { promptFormula: true, promptName: true, answerFormula: true, answerName: false, answerBoth: false };
+  assert.deepEqual(compoundVariantsForOptions(options), ["ionsToFormula", "ionNamesToFormula", "mixedIonsToFormula"]);
+  const result = buildTenQuestionSet({ practiceType: "compound", difficulty: "normal", ions, compounds, settings, compoundOptions: options, random: randomFrom(75) });
+  assert.equal(result.questions.length, 10);
+  assert.deepEqual([...new Set(result.questions.map((question) => question.variant))].sort(), ["ionNamesToFormula", "ionsToFormula", "mixedIonsToFormula"]);
+  assert.deepEqual([...new Set(result.questions.filter((question) => question.variant.startsWith("mixed")).map((question) => question.promptStyle))].sort(), ["formulaName", "nameFormula"]);
+});
+
+test("formula-and-name answer is a two-part specification and does not offer Fe(OH)3", () => {
+  const result = buildTenQuestionSet({
+    practiceType: "compound", difficulty: "normal", ions, compounds, settings,
+    compoundOptions: { promptFormula: true, promptName: false, answerFormula: false, answerName: false, answerBoth: true },
+    random: randomFrom(76),
+  });
+  assert.ok(result.questions.every((question) => question.variant === "ionsToBoth"));
+  assert.ok(!result.questions.some((question) => question.itemId === "iron3_hydroxide"));
+  const item = compounds.find((compound) => compound.id === result.questions[0].itemId);
+  assert.equal(answerFor(result.questions[0], item).type, "both");
+});
+
+test("ion charge is separate from formula subscripts and must come from charge keys", () => {
+  const nitrate = ions.find((ion) => ion.id === "nitrate");
+  const nitride = ions.find((ion) => ion.id === "nitride");
+  const nitrateEntry = createFormulaEntry();
+  nitrateEntry.tokens = ["N", "O", "3"];
+  nitrateEntry.cursor = 3;
+  nitrateEntry.charge = { magnitude: 1, sign: "-", source: "chargeButton" };
+  assert.equal(evaluateIonEntry(nitrateEntry, nitrate).correct, true);
+  assert.equal(evaluateIonEntry(nitrateEntry, nitride).correct, false);
+  const nitrideEntry = createFormulaEntry();
+  nitrideEntry.tokens = ["N"];
+  nitrideEntry.cursor = 1;
+  nitrideEntry.charge = { magnitude: 3, sign: "-", source: "chargeButton" };
+  assert.equal(evaluateIonEntry(nitrideEntry, nitride).correct, true);
+  nitrideEntry.charge.source = "typed";
+  assert.equal(evaluateIonEntry(nitrideEntry, nitride).correct, false);
 });
 
 test("compound prompts randomize ion order and mixed prompts use exactly one name", () => {

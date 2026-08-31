@@ -35,28 +35,38 @@
       <form id="setup-form" class="setup-form">
         <fieldset class="choice-section">
           <legend class="sr-only">問題の種類</legend>
-          <div class="mode-grid">
+          <div class="mode-grid mode-grid-two">
             <label class="mode-card">
               <input type="radio" name="practice-type" value="ion" checked>
               <span class="mode-icon" aria-hidden="true">Na<sup>＋</sup></span>
               <strong>イオンの学習</strong>
             </label>
             <label class="mode-card">
-              <input type="radio" name="practice-type" value="ionFormula">
-              <span class="mode-icon" aria-hidden="true">Ca<sup>2＋</sup>＋Cl<sup>－</sup></span>
-              <strong>イオン式から解答</strong>
-            </label>
-            <label class="mode-card">
-              <input type="radio" name="practice-type" value="ionName">
-              <span class="mode-icon name-icon" aria-hidden="true">陽＋陰</span>
-              <strong>イオン名から解答</strong>
-            </label>
-            <label class="mode-card">
-              <input type="radio" name="practice-type" value="random">
-              <span class="mode-icon" aria-hidden="true">?</span>
-              <strong>ランダム出題</strong>
+              <input type="radio" name="practice-type" value="compound">
+              <span class="mode-icon" aria-hidden="true">Ca<sup>2＋</sup>＆Cl<sup>－</sup></span>
+              <strong>化合物の学習</strong>
             </label>
           </div>
+        </fieldset>
+
+        <fieldset id="compound-options" class="choice-section compound-options" hidden>
+          <legend>化合物の出題設定</legend>
+          <div class="compound-option-row">
+            <span class="compound-option-title">出題</span>
+            <div class="option-toggles" role="group" aria-label="化合物の出題形式">
+              <button type="button" class="option-toggle is-on" data-compound-toggle="promptFormula" aria-pressed="true">イオン式</button>
+              <button type="button" class="option-toggle is-on" data-compound-toggle="promptName" aria-pressed="true">イオン名</button>
+            </div>
+          </div>
+          <div class="compound-option-row">
+            <span class="compound-option-title">解答</span>
+            <div class="option-toggles answer-toggles" role="group" aria-label="化合物の解答形式">
+              <button type="button" class="option-toggle is-on" data-compound-toggle="answerFormula" aria-pressed="true">組成式</button>
+              <button type="button" class="option-toggle is-on" data-compound-toggle="answerName" aria-pressed="true">化合物名</button>
+              <button type="button" class="option-toggle" data-compound-toggle="answerBoth" aria-pressed="false">式＆名</button>
+            </div>
+          </div>
+          <p id="compound-option-message" class="compound-option-message" role="status"></p>
         </fieldset>
 
         <fieldset class="choice-section compact-choice">
@@ -99,8 +109,13 @@
 
       <form id="answer-form" class="answer-area" autocomplete="off">
         <label id="answer-label" class="sr-only" for="answer-input">答え</label>
-        <div class="answer-composer">
+        <div id="both-answer-tabs" class="both-answer-tabs" hidden aria-label="式と名称の解答手順">
+          <button type="button" data-both-field="formula">① 組成式</button>
+          <button type="button" data-both-field="name">② 化合物名</button>
+        </div>
+        <div id="answer-composer" class="answer-composer">
           <input id="answer-input" type="text" enterkeyhint="done" autocapitalize="off" autocomplete="off" spellcheck="false">
+          <div id="formula-render" class="formula-render" aria-hidden="true" hidden></div>
           <button id="submit-answer" class="answer-submit" type="submit" aria-label="回答を判定"><span id="submit-answer-text">✓</span></button>
         </div>
         <p id="input-message" class="input-message"></p>

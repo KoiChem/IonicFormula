@@ -5,16 +5,19 @@ import {
   buildEndlessRound,
   buildWeakQuestionSet,
   buildTenQuestionSet,
+  createFormulaEntry,
   evaluateAnswer,
+  evaluateIonEntry,
   escapeHtml,
   explanationForCompound,
   formulaHtml,
   formulaText,
   hintFor,
   ionFormulaHtml,
-  ionInputHtml,
   normalizeFormula,
   recordHistory,
+  formulaEntryValue,
+  questionSkills,
   validateData,
   weakHistoryItems,
 } from "./core.js";
@@ -28,13 +31,13 @@ const STORAGE = {
 const elements = Object.fromEntries([
   "app-header", "brand", "quiz-actions", "setup-screen", "quiz-screen", "result-screen",
   "setup-form", "variant-label", "question-number", "question-total", "question-card",
-  "question-prompt", "streak", "answer-form", "answer-label", "answer-input",
+  "question-prompt", "streak", "answer-form", "answer-label", "answer-input", "answer-composer", "formula-render", "both-answer-tabs",
   "input-message", "submit-answer", "submit-answer-text", "formula-keyboard", "number-keys",
   "letter-keys", "charge-keys", "name-shortcuts", "feedback", "feedback-title", "feedback-answer",
   "feedback-detail", "feedback-actions", "next-button", "hint-button", "pass-button", "quit-button",
   "result-first", "result-retry", "result-hint", "result-pass", "result-review", "result-review-list",
   "retry-session", "back-to-setup", "sound-toggle", "vfx-toggle", "spark-layer",
-  "session-announcement", "start-button",
+  "session-announcement", "start-button", "compound-options", "compound-option-message",
   "weak-review-button", "weak-review-count", "weak-review-dialog", "close-weak-review", "weak-review-list",
   "weak-review-empty", "start-weak-from-review",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
@@ -72,7 +75,13 @@ function writeLocal(key, value) {
   }
 }
 
-const preferences = { sound: true, vfx: true, ...readLocal(STORAGE.preferences, {}) };
+const preferences = {
+  sound: true,
+  vfx: true,
+  compoundOptions: { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false },
+  ...readLocal(STORAGE.preferences, {}),
+};
+preferences.compoundOptions = { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false, ...(preferences.compoundOptions ?? {}) };
 
 async function fetchJson(path) {
   const response = await fetch(path);
@@ -202,6 +211,14 @@ function setKeyboardCase(uppercase) {
 }
 
 function replaceSelection(text) {
+  if (isFormulaEntryMode()) {
+    const field = activeFieldState();
+    const entry = field.entry;
+    entry.tokens.splice(entry.cursor, 0, ...text.split(""));
+    entry.cursor += text.length;
+    syncFormulaEntry();
+    return;
+  }
   const input = elements.answer_input;
   const start = input.selectionStart ?? input.value.length;
   const end = input.selectionEnd ?? start;
@@ -211,11 +228,70 @@ function replaceSelection(text) {
 }
 
 function moveCaret(direction) {
+  if (isFormulaEntryMode()) {
+    const entry = activeFieldState().entry;
+    entry.cursor = Math.max(0, Math.min(entry.tokens.length, entry.cursor + direction));
+    syncFormulaEntry();
+    return;
+  }
   const input = elements.answer_input;
   const current = input.selectionStart ?? input.value.length;
   const next = Math.max(0, Math.min(input.value.length, current + direction));
   input.setSelectionRange(next, next);
   input.focus({ preventScroll: true });
+}
+
+function activeFieldState() {
+  if (!questionState) return null;
+  return questionState.answer.type === "both"
+    ? questionState.fields[questionState.activeField]
+    : questionState.fields.single;
+}
+
+function activeAnswer() {
+  return activeFieldState()?.specification ?? null;
+}
+
+function isFormulaEntryMode() {
+  return activeAnswer()?.type === "formula";
+}
+
+function formulaEntryHtml(entry, includeCaret = true) {
+  if (!entry) return "";
+  const pieces = [];
+  for (let index = 0; index <= entry.tokens.length; index += 1) {
+    if (includeCaret && index === entry.cursor) pieces.push('<i class="formula-caret"></i>');
+    if (index < entry.tokens.length) {
+      const token = entry.tokens[index];
+      pieces.push(/[0-9]/.test(token) ? `<sub>${escapeHtml(token)}</sub>` : escapeHtml(token));
+    }
+  }
+  if (entry.charge) {
+    const magnitude = entry.charge.magnitude === 1 ? "" : entry.charge.magnitude;
+    pieces.push(`<sup class="formula-charge">${magnitude}${entry.charge.sign === "+" ? "＋" : "－"}</sup>`);
+  }
+  return pieces.join("");
+}
+
+function syncFormulaEntry() {
+  const field = activeFieldState();
+  if (!field?.entry) return;
+  elements.answer_input.value = formulaEntryValue(field.entry);
+  elements.formula_render.innerHTML = formulaEntryHtml(field.entry);
+  renderAnswerSubmit();
+  elements.answer_input.setAttribute("aria-invalid", "false");
+  elements.input_message.textContent = "";
+}
+
+function formulaBackspace() {
+  const entry = activeFieldState()?.entry;
+  if (!entry) return;
+  if (entry.cursor === entry.tokens.length && entry.charge) entry.charge = null;
+  else if (entry.cursor > 0) {
+    entry.tokens.splice(entry.cursor - 1, 1);
+    entry.cursor -= 1;
+  }
+  syncFormulaEntry();
 }
 
 function keyboardClick(event) {
@@ -226,6 +302,11 @@ function keyboardClick(event) {
   else if (action === "left") moveCaret(-1);
   else if (action === "right") moveCaret(1);
   else if (action === "backspace") {
+    if (isFormulaEntryMode()) {
+      formulaBackspace();
+      elements.answer_input.focus({ preventScroll: true });
+      return;
+    }
     const input = elements.answer_input;
     const start = input.selectionStart ?? input.value.length;
     const end = input.selectionEnd ?? start;
@@ -233,13 +314,19 @@ function keyboardClick(event) {
     else if (start > 0) input.setRangeText("", start - 1, start, "end");
     input.dispatchEvent(new Event("input", { bubbles: true }));
   } else if (action === "clear") {
-    elements.answer_input.value = "";
-    elements.answer_input.dispatchEvent(new Event("input", { bubbles: true }));
+    if (isFormulaEntryMode()) {
+      activeFieldState().entry = createFormulaEntry();
+      syncFormulaEntry();
+    } else {
+      elements.answer_input.value = "";
+      elements.answer_input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
   } else if (button.classList.contains("charge-key")) {
-    const normalized = normalizeFormula(elements.answer_input.value).replace(/[1-8]?[+-]$/, "");
-    elements.answer_input.value = `${normalized}${button.dataset.key}`;
-    elements.answer_input.setSelectionRange(elements.answer_input.value.length, elements.answer_input.value.length);
-    elements.answer_input.dispatchEvent(new Event("input", { bubbles: true }));
+    const match = button.dataset.key.match(/^([1-3]?)([+-])$/);
+    if (isFormulaEntryMode() && match) {
+      activeFieldState().entry.charge = { magnitude: Number(match[1] || 1), sign: match[2], source: "chargeButton" };
+      syncFormulaEntry();
+    }
   } else if (button.dataset.key) {
     replaceSelection(button.dataset.key);
   }
@@ -247,14 +334,14 @@ function keyboardClick(event) {
 }
 
 function previewFormulaHtml() {
+  const entry = activeFieldState()?.entry;
+  if (entry) return formulaEntryHtml(entry, false);
   const normalized = normalizeFormula(elements.answer_input.value);
-  if (!normalized) return "";
-  if (questionState?.question.domain !== "ion") return formulaHtml(normalized);
-  return ionInputHtml(normalized, data.ions);
+  return normalized ? formulaHtml(normalized) : "";
 }
 
 function renderAnswerSubmit() {
-  const formulaMode = questionState?.answer.type === "formula";
+  const formulaMode = activeAnswer()?.type === "formula";
   const preview = formulaMode ? previewFormulaHtml() : "";
   elements.submit_answer_text.innerHTML = preview || "✓";
   elements.submit_answer.classList.toggle("has-formula", Boolean(preview));
@@ -311,33 +398,38 @@ function setQuizActionState(enabled) {
 
 function showSupportActions() {
   elements.feedback_actions.hidden = false;
-  const hintUsed = questionState?.usedHint ?? false;
+  const hintUsed = activeFieldState()?.usedHint ?? questionState?.usedHint ?? false;
   elements.hint_button.classList.toggle("is-used", hintUsed);
   elements.hint_button.setAttribute("aria-hidden", String(hintUsed));
   setQuizActionState(true);
 }
 
-function configureInput(answer, question) {
+function configureInput(answer, question, field) {
   const formulaMode = answer.type === "formula";
   const answerLabel = formulaMode ? (question.domain === "ion" ? "イオン式" : "組成式") : (question.domain === "ion" ? "イオン名" : "化合物名");
   elements.answer_label.textContent = answerLabel;
-  elements.answer_input.value = "";
+  elements.answer_input.value = formulaMode ? formulaEntryValue(field.entry) : field.value;
   elements.answer_input.disabled = false;
   elements.answer_input.setAttribute("aria-invalid", "false");
   elements.answer_input.inputMode = formulaMode ? "none" : "text";
   elements.answer_input.placeholder = answerLabel;
   elements.answer_input.autocapitalize = formulaMode ? "off" : "sentences";
+  elements.answer_composer.classList.toggle("formula-mode", formulaMode);
+  elements.formula_render.hidden = !formulaMode;
+  if (formulaMode) elements.formula_render.innerHTML = formulaEntryHtml(field.entry);
   elements.formula_keyboard.hidden = !formulaMode;
   elements.formula_keyboard.classList.toggle("ion-entry", formulaMode && question.domain === "ion");
   elements.charge_keys.hidden = !(formulaMode && question.domain === "ion");
   elements.name_shortcuts.hidden = formulaMode;
   elements.name_shortcuts.querySelector('[data-key="イオン"]').hidden = question.domain !== "ion";
   elements.name_shortcuts.classList.toggle("compound-name-entry", !formulaMode && question.domain !== "ion");
+  elements.name_shortcuts.classList.toggle("ion-name-entry", !formulaMode && question.domain === "ion");
   elements.input_message.textContent = "";
   elements.submit_answer.disabled = false;
   elements.feedback_actions.hidden = true;
-  elements.hint_button.classList.remove("is-used");
-  elements.hint_button.setAttribute("aria-hidden", "false");
+  const hintUsed = field.usedHint;
+  elements.hint_button.classList.toggle("is-used", hintUsed);
+  elements.hint_button.setAttribute("aria-hidden", String(hintUsed));
   setKeyboardCase(true);
   renderAnswerSubmit();
   setQuizActionState(true);
@@ -360,12 +452,57 @@ function currentQuestion() {
   return session.questions[session.index];
 }
 
+function makeAnswerField(specification) {
+  return {
+    specification,
+    value: "",
+    entry: specification.type === "formula" ? createFormulaEntry() : null,
+    hadWrong: false,
+    usedHint: false,
+    lastWrongAnswer: "",
+    correct: false,
+  };
+}
+
+function renderBothTabs() {
+  const isBoth = questionState?.answer.type === "both";
+  elements.both_answer_tabs.hidden = !isBoth;
+  if (!isBoth) return;
+  for (const button of elements.both_answer_tabs.querySelectorAll("button")) {
+    const field = questionState.fields[button.dataset.bothField];
+    button.classList.toggle("is-active", questionState.activeField === button.dataset.bothField);
+    button.classList.toggle("is-complete", field.correct);
+    button.disabled = field.correct;
+  }
+}
+
+function configureActiveInput() {
+  const field = activeFieldState();
+  configureInput(field.specification, questionState.question, field);
+  renderBothTabs();
+}
+
+function switchBothField(fieldName) {
+  if (questionState?.answer.type !== "both") return;
+  const field = questionState.fields[fieldName];
+  if (!field || field.correct) return;
+  questionState.activeField = fieldName;
+  configureActiveInput();
+}
+
 function renderQuestion() {
   clearTimeout(advanceTimer);
   const question = currentQuestion();
   const item = itemFor(question);
   const answer = answerFor(question, item);
-  questionState = { question, item, answer, hadWrong: false, usedHint: false, lastWrongAnswer: "", resolved: false };
+  const fields = answer.type === "both"
+    ? { formula: makeAnswerField(answer.formula), name: makeAnswerField(answer.name) }
+    : { single: makeAnswerField(answer) };
+  questionState = {
+    question, item, answer, fields,
+    activeField: answer.type === "both" ? "formula" : "single",
+    hadWrong: false, usedHint: false, lastWrongAnswer: "", resolved: false,
+  };
   const prompt = promptFor(question, item);
   elements.variant_label.textContent = VARIANT_LABELS[question.variant];
   elements.question_number.textContent = String(session.absoluteIndex + 1);
@@ -377,10 +514,10 @@ function renderQuestion() {
   elements.feedback.hidden = true;
   elements.feedback.className = "feedback";
   elements.next_button.hidden = true;
-  configureInput(answer, question);
+  configureActiveInput();
 }
 
-function looksComplete(value, question) {
+function looksComplete(value, question, entry = null) {
   const normalized = normalizeFormula(value);
   if (!normalized || !/^[A-Za-z1-8()+-]+$/.test(normalized) || /^[1-8)+-]/.test(normalized)) return false;
   let depth = 0;
@@ -390,12 +527,13 @@ function looksComplete(value, question) {
     if (depth < 0) return false;
   }
   if (depth !== 0 || /\(\)|\($|[+-].+/.test(normalized)) return false;
-  if (question.domain === "ion" && !/[1-8]?[+-]$/.test(normalized)) return false;
+  if (question.domain === "ion" && !entry?.charge) return false;
   if (question.domain === "compound" && /[+-]/.test(normalized)) return false;
   return true;
 }
 
 function answerDisplayFor(question, item, answer) {
+  if (answer.type === "both") return `${formulaHtml(answer.formula.canonical)}<span class="answer-join">　/　</span>${escapeHtml(answer.name.canonical)}`;
   if (answer.type === "name") return escapeHtml(answer.canonical);
   if (question.domain === "ion") return ionFormulaHtml(item);
   return formulaHtml(answer.canonical);
@@ -519,11 +657,15 @@ function animate(kind, streak = 0) {
 
 function resolveResult(result) {
   const history = readLocal(STORAGE.history, {});
-  recordHistory(history, questionState.question, {
-    passed: result === "pass",
-    usedHint: questionState.usedHint,
-    hadWrong: questionState.hadWrong,
-  });
+  for (const skill of questionSkills(questionState.question)) {
+    const fieldName = skill.endsWith("ToFormula") ? "formula" : skill.endsWith("ToName") ? "name" : "single";
+    const field = questionState.fields[fieldName] ?? questionState.fields.single;
+    recordHistory(history, { ...questionState.question, skill }, {
+      passed: result === "pass",
+      usedHint: field?.usedHint ?? questionState.usedHint,
+      hadWrong: field?.hadWrong ?? questionState.hadWrong,
+    });
+  }
   writeLocal(STORAGE.history, history);
   updateWeakReviewBadge();
   if (questionState.usedHint) session.stats.hint += 1;
@@ -539,13 +681,17 @@ function resolveResult(result) {
 function submitAnswer(event) {
   event.preventDefault();
   if (isComposing || Date.now() - compositionEndedAt < 80 || questionState?.resolved) return;
-  const value = elements.answer_input.value;
-  if (questionState.answer.type === "formula" && !looksComplete(value, questionState.question)) {
+  const field = activeFieldState();
+  const answer = field.specification;
+  const value = answer.type === "formula" ? formulaEntryValue(field.entry) : elements.answer_input.value;
+  if (answer.type === "formula" && !looksComplete(value, questionState.question, field.entry)) {
     elements.input_message.textContent = questionState.question.domain === "ion" ? "式と右上の電荷まで入力してください。" : "式を完成させてください。";
     elements.answer_input.setAttribute("aria-invalid", "true");
     return;
   }
-  const result = evaluateAnswer(value, questionState.answer);
+  const result = questionState.question.domain === "ion" && answer.type === "formula"
+    ? evaluateIonEntry(field.entry, questionState.item)
+    : evaluateAnswer(value, answer);
   if (result.empty) {
     elements.input_message.textContent = "答えを入力してください。";
     return;
@@ -553,7 +699,9 @@ function submitAnswer(event) {
   elements.input_message.textContent = "";
   if (!result.correct) {
     questionState.hadWrong = true;
+    field.hadWrong = true;
     questionState.lastWrongAnswer = value;
+    field.lastWrongAnswer = value;
     session.streak = 0;
     elements.answer_input.setAttribute("aria-invalid", "true");
     elements.feedback.hidden = false;
@@ -566,6 +714,22 @@ function submitAnswer(event) {
     animate("wrong");
     elements.answer_input.focus({ preventScroll: true });
     return;
+  }
+
+  if (questionState.answer.type === "both") {
+    field.correct = true;
+    field.value = value;
+    const remaining = questionState.fields.formula.correct ? "name" : "formula";
+    if (!questionState.fields[remaining].correct) {
+      playTone("correct");
+      elements.feedback.hidden = false;
+      elements.feedback.className = "feedback correct";
+      elements.feedback_title.textContent = `${answer.type === "formula" ? "組成式" : "化合物名"}は正解！`;
+      elements.feedback_answer.innerHTML = answer.type === "formula" ? formulaHtml(answer.canonical) : escapeHtml(answer.canonical);
+      elements.feedback_detail.textContent = `次は${remaining === "formula" ? "組成式" : "化合物名"}を答えよう。`;
+      switchBothField(remaining);
+      return;
+    }
   }
 
   playTone("correct");
@@ -592,11 +756,16 @@ function submitAnswer(event) {
 function showHint() {
   if (questionState?.resolved) return;
   questionState.usedHint = true;
+  const field = activeFieldState();
+  field.usedHint = true;
   elements.feedback.hidden = false;
   elements.feedback.className = "feedback";
   elements.feedback_title.textContent = "ヒント";
   elements.feedback_answer.innerHTML = "";
-  elements.feedback_detail.textContent = hintFor(questionState.question, questionState.item, ionById, questionState.lastWrongAnswer);
+  const hintQuestion = questionState.answer.type === "both"
+    ? { ...questionState.question, variant: questionState.question.variant.replace("ToBoth", field.specification.type === "formula" ? "ToFormula" : "ToName") }
+    : questionState.question;
+  elements.feedback_detail.textContent = hintFor(hintQuestion, questionState.item, ionById, field.lastWrongAnswer || questionState.lastWrongAnswer);
   elements.hint_button.classList.add("is-used");
   elements.hint_button.setAttribute("aria-hidden", "true");
   elements.hint_button.disabled = true;
@@ -652,7 +821,47 @@ function makeRound(endless) {
     compounds: data.compounds,
     settings: data.difficulty,
     history: readLocal(STORAGE.history, {}),
+    compoundOptions: session.compoundOptions,
   });
+}
+
+function selectedPracticeType() {
+  return new FormData(elements.setup_form).get("practice-type");
+}
+
+function compoundOptionsValid(options = preferences.compoundOptions) {
+  return Boolean(options.promptFormula || options.promptName)
+    && Boolean(options.answerBoth || options.answerFormula || options.answerName);
+}
+
+function refreshCompoundOptions() {
+  const compoundMode = selectedPracticeType() === "compound";
+  elements.compound_options.hidden = !compoundMode;
+  for (const button of elements.compound_options.querySelectorAll("[data-compound-toggle]")) {
+    const enabled = Boolean(preferences.compoundOptions[button.dataset.compoundToggle]);
+    button.classList.toggle("is-on", enabled);
+    button.setAttribute("aria-pressed", String(enabled));
+  }
+  elements.compound_option_message.textContent = compoundMode && !compoundOptionsValid()
+    ? "出題と解答をそれぞれ1つ以上選んでください。"
+    : "";
+  elements.start_button.disabled = !data || (compoundMode && !compoundOptionsValid());
+}
+
+function toggleCompoundOption(key) {
+  const options = preferences.compoundOptions;
+  if (key === "answerBoth") {
+    options.answerBoth = !options.answerBoth;
+    if (options.answerBoth) {
+      options.answerFormula = false;
+      options.answerName = false;
+    }
+  } else {
+    options[key] = !options[key];
+    if (key === "answerFormula" || key === "answerName") options.answerBoth = false;
+  }
+  writeLocal(STORAGE.preferences, preferences);
+  refreshCompoundOptions();
 }
 
 function startSession(settings = null) {
@@ -663,6 +872,7 @@ function startSession(settings = null) {
     difficulty: formData.get("difficulty"),
     endless: questionCount === "endless",
     weakMode: questionCount === "weak",
+    compoundOptions: { ...preferences.compoundOptions },
   };
   primeAudio();
   session = {
@@ -755,8 +965,37 @@ function bindEvents() {
   });
   elements.answer_input.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && (isComposing || event.isComposing || event.keyCode === 229)) event.preventDefault();
+    if (!isFormulaEntryMode()) return;
+    if (event.key === "Enter") return;
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      formulaBackspace();
+      return;
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      moveCaret(event.key === "ArrowLeft" ? -1 : 1);
+      return;
+    }
+    if (/^[A-Za-z1-8()]$/.test(event.key)) {
+      event.preventDefault();
+      replaceSelection(event.key);
+      return;
+    }
+    if (event.key === "+" || event.key === "-") {
+      event.preventDefault();
+      elements.input_message.textContent = "電荷は下の電荷ボタンで入力してください。";
+      return;
+    }
+    if (event.key.length === 1) event.preventDefault();
   });
   elements.answer_input.addEventListener("input", () => {
+    const field = activeFieldState();
+    if (isFormulaEntryMode()) {
+      elements.answer_input.value = formulaEntryValue(field.entry);
+      return;
+    }
+    if (field) field.value = elements.answer_input.value;
     elements.answer_input.setAttribute("aria-invalid", "false");
     elements.input_message.textContent = "";
     renderAnswerSubmit();
@@ -782,6 +1021,7 @@ function bindEvents() {
     difficulty: session.difficulty,
     endless: session.endless,
     weakMode: session.weakMode,
+    compoundOptions: { ...session.compoundOptions },
   }));
   elements.back_to_setup.addEventListener("click", () => showScreen("setup"));
   elements.weak_review_button.addEventListener("click", openWeakReview);
@@ -793,6 +1033,17 @@ function bindEvents() {
     closeWeakReview();
     elements.setup_form.querySelector('[name="question-count"][value="weak"]').checked = true;
     startSession();
+  });
+  elements.setup_form.addEventListener("change", (event) => {
+    if (event.target.name === "practice-type") refreshCompoundOptions();
+  });
+  elements.compound_options.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-compound-toggle]");
+    if (button) toggleCompoundOption(button.dataset.compoundToggle);
+  });
+  elements.both_answer_tabs.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-both-field]");
+    if (button) switchBothField(button.dataset.bothField);
   });
   setMediaButton(elements.sound_toggle, preferences.sound);
   setMediaButton(elements.vfx_toggle, preferences.vfx);
@@ -820,7 +1071,7 @@ async function initialize() {
     data = await loadData();
     ionById = new Map(data.ions.map((ion) => [ion.id, ion]));
     compoundById = new Map(data.compounds.map((compound) => [compound.id, compound]));
-    elements.start_button.disabled = false;
+    refreshCompoundOptions();
     updateWeakReviewBadge();
     const resizeObserver = new ResizeObserver(scheduleNamePromptFit);
     resizeObserver.observe(elements.question_card);
