@@ -50,6 +50,10 @@ node --test tests/core.test.mjs
 
 公開URL：<https://koichem.github.io/IonicFormula/>
 
+スマホ向けパズル体験を調整したベータ版は、通常版を変更せず次のURLで公開します。
+
+<https://koichem.github.io/IonicFormula/beta0901.html>
+
 ## ライセンス
 
 MIT License。詳細は[LICENSE](LICENSE)を参照してください。

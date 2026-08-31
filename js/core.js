@@ -44,6 +44,27 @@ export const DEFAULT_COMPOUND_OPTIONS = Object.freeze({
   answerBoth: false,
 });
 
+export const COMPOUND_ANSWER_PRESETS = Object.freeze({
+  random: Object.freeze({ answerFormula: true, answerName: true, answerBoth: false }),
+  formula: Object.freeze({ answerFormula: true, answerName: false, answerBoth: false }),
+  name: Object.freeze({ answerFormula: false, answerName: true, answerBoth: false }),
+  both: Object.freeze({ answerFormula: false, answerName: false, answerBoth: true }),
+});
+
+export function compoundAnswerPresetForOptions(rawOptions = DEFAULT_COMPOUND_OPTIONS) {
+  const options = { ...DEFAULT_COMPOUND_OPTIONS, ...rawOptions };
+  if (options.answerBoth) return "both";
+  if (options.answerFormula && options.answerName) return "random";
+  if (options.answerFormula) return "formula";
+  if (options.answerName) return "name";
+  return "random";
+}
+
+export function compoundOptionsForAnswerPreset(preset, rawOptions = DEFAULT_COMPOUND_OPTIONS) {
+  const answerOptions = COMPOUND_ANSWER_PRESETS[preset] ?? COMPOUND_ANSWER_PRESETS.random;
+  return { ...DEFAULT_COMPOUND_OPTIONS, ...rawOptions, ...answerOptions };
+}
+
 const SUBSCRIPT_DIGITS = {
   "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4",
   "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9",
@@ -656,6 +677,14 @@ export function answerFor(question, item) {
   }
   if (!question.variant.endsWith("ToFormula")) return { type: "name", canonical: item.name, accepted: [] };
   return { type: "formula", canonical: item.formula, accepted: item.acceptedFormulaVariants ?? [] };
+}
+
+export function companionAnswerFor(question, item) {
+  if (question?.domain !== "compound" || question.variant?.endsWith("ToBoth")) return null;
+  if (question.variant?.endsWith("ToFormula")) {
+    return item?.name ? { type: "name", label: "化合物名", canonical: item.name } : null;
+  }
+  return item?.formula ? { type: "formula", label: "組成式", canonical: item.formula } : null;
 }
 
 export function evaluateAnswer(answer, specification) {

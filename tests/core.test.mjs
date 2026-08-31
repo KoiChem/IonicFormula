@@ -8,6 +8,9 @@ import {
   buildEndlessRound,
   buildTenQuestionSet,
   buildWeakQuestionSet,
+  companionAnswerFor,
+  compoundAnswerPresetForOptions,
+  compoundOptionsForAnswerPreset,
   compoundVariantsForOptions,
   createFormulaEntry,
   compoundCategory,
@@ -272,6 +275,30 @@ test("compound toggles make formula, name and mixed prompts equally eligible", (
   assert.deepEqual([...new Set(result.questions.filter((question) => question.variant.startsWith("mixed")).map((question) => question.promptStyle))].sort(), ["formulaName", "nameFormula"]);
 });
 
+test("compound answer presets preserve prompt settings and map to valid answer modes", () => {
+  const base = { promptFormula: false, promptName: true, answerFormula: true, answerName: true, answerBoth: false };
+  assert.equal(compoundAnswerPresetForOptions(base), "random");
+  assert.deepEqual(compoundOptionsForAnswerPreset("formula", base), {
+    promptFormula: false, promptName: true, answerFormula: true, answerName: false, answerBoth: false,
+  });
+  assert.equal(compoundAnswerPresetForOptions(compoundOptionsForAnswerPreset("name", base)), "name");
+  assert.equal(compoundAnswerPresetForOptions(compoundOptionsForAnswerPreset("both", base)), "both");
+});
+
+test("compound companion answers use curated data and preserve formula exclusions", () => {
+  const calciumChloride = compounds.find((item) => item.id === "calcium_chloride");
+  assert.deepEqual(companionAnswerFor({ domain: "compound", variant: "ionsToFormula" }, calciumChloride), {
+    type: "name", label: "化合物名", canonical: "塩化カルシウム",
+  });
+  assert.deepEqual(companionAnswerFor({ domain: "compound", variant: "ionsToName" }, calciumChloride), {
+    type: "formula", label: "組成式", canonical: "CaCl2",
+  });
+  const ironHydroxide = compounds.find((item) => item.id === "iron3_hydroxide");
+  assert.equal(companionAnswerFor({ domain: "compound", variant: "ionsToName" }, ironHydroxide), null);
+  assert.equal(companionAnswerFor({ domain: "compound", variant: "ionsToBoth" }, calciumChloride), null);
+  assert.equal(companionAnswerFor({ domain: "ion", variant: "ionNameToFormula" }, ions[0]), null);
+});
+
 test("formula-and-name answer is a two-part specification and does not offer Fe(OH)3", () => {
   const result = buildTenQuestionSet({
     practiceType: "compound", difficulty: "normal", ions, compounds, settings,
@@ -433,7 +460,7 @@ test("weak review groups positive-score skills by one learning item", () => {
 });
 
 test("all app-shell assets use repository-relative paths and exist", async () => {
-  const htmlFiles = ["../index.html", "../admin.html"];
+  const htmlFiles = ["../index.html", "../beta0901.html", "../admin.html"];
   for (const htmlFile of htmlFiles) {
     const html = await readFile(new URL(htmlFile, import.meta.url), "utf8");
     const paths = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((match) => match[1]).filter((path) => !path.startsWith("#"));

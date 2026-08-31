@@ -4,6 +4,9 @@ import {
   buildEndlessRound,
   buildWeakQuestionSet,
   buildTenQuestionSet,
+  companionAnswerFor,
+  compoundAnswerPresetForOptions,
+  compoundOptionsForAnswerPreset,
   createFormulaEntry,
   evaluateAnswer,
   evaluateIonEntry,
@@ -22,10 +25,13 @@ import {
   weakHistoryItems,
 } from "./core.js";
 
+const IS_BETA = document.body.dataset.build === "beta0901";
+
 const STORAGE = {
   history: "ionicFormula.history.v2",
   recentPresentations: "ionicFormula.recentPresentations.v1",
-  preferences: "ionicFormula.preferences.v1",
+  preferences: IS_BETA ? "ionicFormula.beta0901.preferences.v1" : "ionicFormula.preferences.v1",
+  sessionSummaries: IS_BETA ? "ionicFormula.beta0901.sessionSummaries.v1" : "ionicFormula.sessionSummaries.v1",
   adminData: "ionicFormula.adminData.v2",
 };
 
@@ -41,6 +47,9 @@ const elements = Object.fromEntries([
   "start-button", "compound-options", "compound-option-message",
   "weak-review-button", "weak-review-count", "weak-review-dialog", "close-weak-review", "weak-review-list",
   "weak-review-empty", "start-weak-from-review",
+  "compound-answer-presets", "compound-preset-description", "question-progress", "question-progress-bar", "question-progress-label",
+  "feedback-companion", "feedback-companion-label", "feedback-companion-value", "feedback-companion-toggle",
+  "result-first-rate", "result-comparison", "result-count-note", "result-review-companion-toggle",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
 
 let data;
@@ -86,12 +95,14 @@ function rememberPresentation(question) {
 
 const preferences = {
   sound: true,
+  showCompanionAnswer: true,
   compoundOptions: { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false },
   ...readLocal(STORAGE.preferences, {}),
   // FX is part of the learning feedback, not a user-configurable setting.
   vfx: true,
 };
 preferences.compoundOptions = { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false, ...(preferences.compoundOptions ?? {}) };
+preferences.showCompanionAnswer = preferences.showCompanionAnswer !== false;
 
 async function fetchJson(path) {
   const response = await fetch(path);
@@ -151,6 +162,91 @@ function setMediaButton(button, enabled) {
   button.setAttribute("aria-label", `${button.id === "sound-toggle" ? "効果音" : "画面演出"}を${enabled ? "オフ" : "オン"}にする`);
   button.classList.toggle("is-off", !enabled);
   button.querySelector(".toggle-state")?.replaceChildren(enabled ? "ON" : "OFF");
+}
+
+function savePreferences() {
+  writeLocal(STORAGE.preferences, preferences);
+}
+
+function betaPresetDescription(preset) {
+  return {
+    random: "組成式または化合物名を1つ答えます。",
+    formula: "組成式だけを答えます。",
+    name: "化合物名だけを答えます。",
+    both: "組成式と化合物名の両方を答えます。",
+  }[preset] ?? "組成式または化合物名を1つ答えます。";
+}
+
+function refreshBetaCompoundPresets() {
+  if (!IS_BETA || !elements.compound_answer_presets) return;
+  const preset = compoundAnswerPresetForOptions(preferences.compoundOptions);
+  for (const button of elements.compound_answer_presets.querySelectorAll("[data-compound-preset]")) {
+    const active = button.dataset.compoundPreset === preset;
+    button.classList.toggle("is-on", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+  elements.compound_preset_description.textContent = betaPresetDescription(preset);
+}
+
+function setBetaCompoundPreset(preset) {
+  preferences.compoundOptions = compoundOptionsForAnswerPreset(preset, preferences.compoundOptions);
+  savePreferences();
+  refreshCompoundOptions();
+}
+
+function betaCompanion(question = questionState?.question, item = questionState?.item) {
+  if (!IS_BETA || !questionState?.resolved) return null;
+  return companionAnswerFor(question, item);
+}
+
+function companionValueHtml(companion) {
+  return companion.type === "formula" ? formulaHtml(companion.canonical) : escapeHtml(companion.canonical);
+}
+
+function syncCompanionToggle(button, available) {
+  if (!button) return;
+  button.hidden = !available;
+  if (!available) return;
+  button.textContent = `関連解答も表示　${preferences.showCompanionAnswer ? "ON" : "OFF"}`;
+  button.setAttribute("aria-pressed", String(preferences.showCompanionAnswer));
+}
+
+function renderBetaFeedbackCompanion() {
+  if (!IS_BETA || !elements.feedback_companion) return;
+  const companion = betaCompanion();
+  const available = Boolean(companion);
+  syncCompanionToggle(elements.feedback_companion_toggle, available);
+  elements.feedback_companion.hidden = !available || !preferences.showCompanionAnswer;
+  if (!available) {
+    elements.feedback_companion_label.textContent = "";
+    elements.feedback_companion_value.innerHTML = "";
+    return;
+  }
+  elements.feedback_companion_label.textContent = companion.label;
+  elements.feedback_companion_value.innerHTML = companionValueHtml(companion);
+}
+
+function resetBetaFeedbackCompanion() {
+  if (!IS_BETA || !elements.feedback_companion) return;
+  elements.feedback_companion.hidden = true;
+  elements.feedback_companion_toggle.hidden = true;
+  elements.feedback_companion_label.textContent = "";
+  elements.feedback_companion_value.innerHTML = "";
+}
+
+function renderBetaQuestionProgress() {
+  if (!IS_BETA || !elements.question_progress) return;
+  const visible = Boolean(session && !session.endless);
+  elements.question_progress.hidden = !visible;
+  if (!visible) return;
+  const total = session.questions.length;
+  const current = session.index + 1;
+  const percent = total ? Math.round(current / total * 100) : 0;
+  elements.question_progress.setAttribute("aria-valuemax", String(total));
+  elements.question_progress.setAttribute("aria-valuenow", String(current));
+  elements.question_progress.setAttribute("aria-valuetext", `${current} / ${total}`);
+  elements.question_progress_bar.style.width = `${percent}%`;
+  elements.question_progress_label.textContent = `${current} / ${total}`;
 }
 
 function showScreen(name) {
@@ -524,6 +620,7 @@ function renderQuestion() {
   elements.variant_label.textContent = VARIANT_LABELS[question.variant];
   elements.question_number.textContent = String(session.absoluteIndex + 1);
   elements.question_total.textContent = session.endless ? " / ∞" : ` / ${session.questions.length}`;
+  renderBetaQuestionProgress();
   elements.question_prompt.innerHTML = prompt.html;
   elements.question_prompt.classList.toggle("formula", prompt.formula);
   scheduleNamePromptFit();
@@ -531,6 +628,7 @@ function renderQuestion() {
   elements.feedback.hidden = true;
   elements.feedback.className = "feedback";
   elements.next_button.hidden = true;
+  resetBetaFeedbackCompanion();
   configureActiveInput();
 }
 
@@ -578,7 +676,59 @@ function reviewHtml(review) {
   const item = itemFor(review.question);
   const answer = answerFor(review.question, item);
   const prompt = promptFor(review.question, item);
-  return `<article class="review-item"><div class="review-prompt">${prompt.html}</div><div class="review-answer">正解：${answerDisplayFor(review.question, item, answer)}</div><span class="review-status">${escapeHtml(review.status)}</span></article>`;
+  const companion = IS_BETA && preferences.showCompanionAnswer ? companionAnswerFor(review.question, item) : null;
+  const companionHtml = companion
+    ? `<div class="review-companion"><span>${escapeHtml(companion.label)}：</span><strong>${companionValueHtml(companion)}</strong></div>`
+    : "";
+  return `<article class="review-item"><div class="review-prompt">${prompt.html}</div><div class="review-answer">正解：${answerDisplayFor(review.question, item, answer)}</div>${companionHtml}<span class="review-status">${escapeHtml(review.status)}</span></article>`;
+}
+
+function betaSessionSummaryKey() {
+  if (!session) return "";
+  const options = session.compoundOptions ?? preferences.compoundOptions;
+  return JSON.stringify({
+    practiceType: session.practiceType,
+    difficulty: session.difficulty,
+    questionCount: session.weakMode ? "weak" : (session.endless ? "endless" : "10"),
+    answerPreset: session.practiceType === "compound" ? compoundAnswerPresetForOptions(options) : null,
+    promptFormula: session.practiceType === "compound" ? Boolean(options.promptFormula) : null,
+    promptName: session.practiceType === "compound" ? Boolean(options.promptName) : null,
+  });
+}
+
+function betaReviewHasCompanion() {
+  return Boolean(session?.reviewItems.some((review) => companionAnswerFor(review.question, itemFor(review.question))));
+}
+
+function renderBetaResultReview() {
+  if (!IS_BETA || !elements.result_review_list) return;
+  elements.result_review_list.innerHTML = session.reviewItems.map(reviewHtml).join("");
+  syncCompanionToggle(elements.result_review_companion_toggle, betaReviewHasCompanion());
+}
+
+function renderBetaResultSummary() {
+  if (!IS_BETA || !elements.result_first_rate) return;
+  const total = session.questions.length;
+  const firstTryRate = total ? Math.round(session.stats.first / total * 100) : 0;
+  const summaries = readLocal(STORAGE.sessionSummaries, {});
+  const key = betaSessionSummaryKey();
+  const previous = summaries[key];
+  elements.result_first_rate.textContent = `初回正解率 ${firstTryRate}%`;
+  if (!previous || !Number.isFinite(previous.firstTryRate)) {
+    elements.result_comparison.textContent = "この設定ではじめての記録です。";
+  } else {
+    const difference = firstTryRate - previous.firstTryRate;
+    if (difference === 0) {
+      elements.result_comparison.textContent = `前回も ${previous.firstTryRate}% でした。`;
+    } else if (difference > 0) {
+      elements.result_comparison.textContent = `前回より＋${difference}ポイント`;
+    } else {
+      elements.result_comparison.textContent = `前回 ${previous.firstTryRate}% → 今回 ${firstTryRate}%`;
+    }
+  }
+  summaries[key] = { firstTryRate, completedAt: Date.now() };
+  writeLocal(STORAGE.sessionSummaries, summaries);
+  elements.result_count_note.hidden = false;
 }
 
 function ensureAudioOutput() {
@@ -761,8 +911,12 @@ function submitAnswer(event) {
   elements.feedback_title.textContent = "✓ 正解！";
   elements.feedback_answer.innerHTML = answerDisplay(questionState.answer);
   elements.feedback_detail.textContent = result.note ?? "";
+  renderBetaFeedbackCompanion();
   animate("correct", session.streak);
-  if (result.note) {
+  const betaNeedsManualAdvance = IS_BETA
+    && questionState.question.domain === "compound"
+    && questionState.answer.type !== "both";
+  if (result.note || betaNeedsManualAdvance) {
     elements.next_button.hidden = false;
     elements.next_button.focus({ preventScroll: true });
   } else {
@@ -805,6 +959,7 @@ function passQuestion() {
   elements.feedback_detail.textContent = questionState.question.domain === "compound"
     ? explanationForCompound(questionState.item, ionById)
     : `${questionState.item.name}は ${formulaText(questionState.item.formula)}、電荷は${questionState.item.charge > 0 ? "＋" : "－"}${Math.abs(questionState.item.charge)}です。`;
+  renderBetaFeedbackCompanion();
   elements.next_button.hidden = false;
   elements.next_button.focus({ preventScroll: true });
 }
@@ -860,6 +1015,7 @@ function refreshCompoundOptions() {
     button.classList.toggle("is-on", enabled);
     button.setAttribute("aria-pressed", String(enabled));
   }
+  refreshBetaCompoundPresets();
   elements.compound_option_message.textContent = compoundMode && !compoundOptionsValid()
     ? "出題と解答をそれぞれ1つ以上選んでください。"
     : "";
@@ -868,6 +1024,10 @@ function refreshCompoundOptions() {
 
 function toggleCompoundOption(key) {
   const options = preferences.compoundOptions;
+  if (IS_BETA && (key === "promptFormula" || key === "promptName") && options[key] && !options[key === "promptFormula" ? "promptName" : "promptFormula"]) {
+    elements.compound_option_message.textContent = "イオン式またはイオン名を1つ以上選んでください。";
+    return;
+  }
   if (key === "answerBoth") {
     options.answerBoth = !options.answerBoth;
     if (options.answerBoth) {
@@ -878,7 +1038,7 @@ function toggleCompoundOption(key) {
     options[key] = !options[key];
     if (key === "answerFormula" || key === "answerName") options.answerBoth = false;
   }
-  writeLocal(STORAGE.preferences, preferences);
+  savePreferences();
   refreshCompoundOptions();
 }
 
@@ -922,6 +1082,8 @@ function showResults() {
   elements.result_pass.textContent = session.stats.pass;
   elements.result_review.hidden = session.reviewItems.length === 0;
   elements.result_review_list.innerHTML = session.reviewItems.map(reviewHtml).join("");
+  renderBetaResultSummary();
+  renderBetaResultReview();
   showScreen("result");
 }
 
@@ -1056,6 +1218,18 @@ function bindEvents() {
     const button = event.target.closest("[data-compound-toggle]");
     if (button) toggleCompoundOption(button.dataset.compoundToggle);
   });
+  elements.compound_answer_presets?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-compound-preset]");
+    if (button) setBetaCompoundPreset(button.dataset.compoundPreset);
+  });
+  const toggleCompanionAnswer = () => {
+    preferences.showCompanionAnswer = !preferences.showCompanionAnswer;
+    savePreferences();
+    renderBetaFeedbackCompanion();
+    renderBetaResultReview();
+  };
+  elements.feedback_companion_toggle?.addEventListener("click", toggleCompanionAnswer);
+  elements.result_review_companion_toggle?.addEventListener("click", toggleCompanionAnswer);
   elements.both_answer_tabs.addEventListener("click", (event) => {
     const button = event.target.closest("[data-both-field]");
     if (button) switchBothField(button.dataset.bothField);
@@ -1065,7 +1239,7 @@ function bindEvents() {
     preferences.sound = !preferences.sound;
     setMediaButton(elements.sound_toggle, preferences.sound);
     if (preferences.sound) primeAudio();
-    writeLocal(STORAGE.preferences, preferences);
+    savePreferences();
   });
 }
 
