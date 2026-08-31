@@ -144,6 +144,14 @@ function makeKey(label, value, className = "", action = "") {
   return button;
 }
 
+function makeShiftKey() {
+  const button = makeKey("", "", "case-key", "case");
+  button.setAttribute("aria-label", "小文字に切り替える");
+  button.setAttribute("aria-pressed", "true");
+  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3-6.5 6.5h4V21h5V9.5h4z"/></svg>';
+  return button;
+}
+
 function initializeKeyboard() {
   for (const value of ["1", "2", "3", "4", "5", "6", "7", "8", "(", ")"]) {
     elements.number_keys.append(makeKey(value, value));
@@ -156,7 +164,7 @@ function initializeKeyboard() {
   }
   const lastRow = document.createElement("div");
   lastRow.className = "key-row";
-  lastRow.append(makeKey("Aa", "", "", "case"));
+  lastRow.append(makeShiftKey());
   for (const letter of "ZXCVBNM") lastRow.append(makeKey(letter, letter));
   lastRow.append(makeKey("⌫", "", "", "backspace"));
   elements.letter_keys.append(lastRow);
@@ -172,7 +180,8 @@ function initializeKeyboard() {
 function setKeyboardCase(uppercase) {
   keyboardUppercase = uppercase;
   const caseButton = elements.formula_keyboard.querySelector('[data-key-action="case"]');
-  caseButton?.setAttribute("aria-pressed", String(!uppercase));
+  caseButton?.setAttribute("aria-pressed", String(uppercase));
+  caseButton?.setAttribute("aria-label", uppercase ? "小文字に切り替える" : "大文字に切り替える");
   for (const button of elements.letter_keys.querySelectorAll("[data-key]")) {
     const letter = button.dataset.key.toUpperCase();
     button.dataset.key = uppercase ? letter : letter.toLowerCase();
@@ -610,6 +619,7 @@ function bindEvents() {
 
 async function initialize() {
   initializeKeyboard();
+  setKeyboardCase(true);
   elements.name_shortcuts.addEventListener("pointerdown", (event) => event.preventDefault());
   elements.name_shortcuts.addEventListener("click", nameShortcutClick);
   bindEvents();

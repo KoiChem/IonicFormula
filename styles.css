@@ -109,9 +109,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .secondary-button { border: 1px solid var(--primary); background: white; color: var(--primary); }
 .text-button { border: 0; background: transparent; color: var(--muted); text-decoration: underline; text-underline-offset: 4px; }
 .start-button { width: 100%; font-size: 1rem; }
-.admin-link { margin: 14px 0 0; text-align: center; font-size: .75rem; }
-.admin-link a { color: var(--muted); text-underline-offset: 4px; }
-
 .question-card {
   position: relative; min-height: 168px; padding: 31px 18px 20px;
   display: flex; flex-direction: column; justify-content: center;
@@ -153,6 +150,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .formula-keyboard { margin-top: 8px; padding: 6px; border: 0; border-radius: 16px; background: rgba(231,245,238,.94); box-shadow: 0 8px 22px rgba(61,122,103,.08); user-select: none; }
 .formula-keyboard button { min-width: 0; min-height: 35px; padding: 0; border: 1px solid #d1e0db; border-radius: 8px; background: white; color: var(--ink); font-weight: 760; box-shadow: 0 2px 0 #bfd1cb; cursor: pointer; }
 .formula-keyboard button:active { transform: translateY(2px); box-shadow: none; }
+.formula-keyboard .case-key { display: grid; place-items: center; }
+.formula-keyboard .case-key svg { width: 17px; height: 17px; fill: currentColor; }
+.formula-keyboard .case-key[aria-pressed="true"] { border-color: #a7d6c5; background: #ccefe0; color: var(--primary-dark); }
 .key-row { display: grid; gap: 3px; margin: 3px auto; }
 .number-keys { grid-template-columns: repeat(10, 1fr); }
 .letter-keys .key-row:nth-child(1) { grid-template-columns: repeat(10, 1fr); }
