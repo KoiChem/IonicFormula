@@ -7,7 +7,7 @@
     },
     "compound": {
       "normal": { "simple11": 3, "simpleRatio": 4, "polyatomic": 2, "variableOx": 1 },
-      "hard": { "simple11": 0, "simpleRatio": 3, "polyatomic": 5, "variableOx": 2 }
+      "hard": { "simple11": 0, "simpleRatio": 1, "polyatomic": 5, "variableOx": 4 }
     }
   },
   "variantWeights": {

@@ -116,7 +116,7 @@ function matchesFilters(item) {
 }
 
 function renderIons() {
-  const headers = ["id", "式", "電荷", "名称", "種類", "原子数", "酸化数", "有効", "操作"];
+  const headers = ["id", "式", "電荷", "名称", "種類", "原子数", "酸化数", "対象難易度", "イオン問題", "化合物で式＋名", "有効", "操作"];
   elements.ionsTable.tHead.innerHTML = `<tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr>`;
   const visible = state.ions.map((item, index) => ({ item, index })).filter(({ item }) => matchesFilters(item));
   elements.ionsTable.tBodies[0].innerHTML = visible.map(({ item: ion, index }) => `<tr>
@@ -127,6 +127,9 @@ function renderIons() {
     <td>${select({ value: ion.type, field: "type", index, options: [{ value: "cation", label: "陽イオン" }, { value: "anion", label: "陰イオン" }] })}</td>
     <td>${select({ value: ion.atomicity, field: "atomicity", index, options: [{ value: "monatomic", label: "単原子" }, { value: "polyatomic", label: "多原子" }] })}</td>
     <td class="check-cell">${input({ type: "checkbox", field: "requiresOxidationNumeral", index, checked: ion.requiresOxidationNumeral })}</td>
+    <td>${select({ value: ion.difficulty ?? "", field: "difficulty", index, options: [{ value: "", label: "両方" }, { value: "normal", label: "やさしめ" }, { value: "hard", label: "ややむず" }] })}</td>
+    <td class="check-cell">${input({ type: "checkbox", field: "ionQuestionEnabled", index, checked: ion.ionQuestionEnabled !== false })}</td>
+    <td>${select({ value: ion.compoundPromptDisplay ?? "", field: "compoundPromptDisplay", index, options: [{ value: "", label: "通常" }, { value: "formulaAndName", label: "式＋名" }] })}</td>
     <td class="check-cell">${input({ type: "checkbox", field: "enabled", index, checked: ion.enabled })}</td>
     <td class="action-cell"><button type="button" data-action="duplicate" data-index="${index}">複製</button><button class="delete-row" type="button" data-action="delete" data-index="${index}">削除</button></td>
   </tr>`).join("");
@@ -138,7 +141,7 @@ function aliasesText(compound) {
 }
 
 function renderCompounds() {
-  const headers = ["id", "陽イオン", "陰イオン", "組成式", "名称", "自動カテゴリ", "別表記 formula|注記", "固体色", "色注記", "イオン式→式", "イオン式→名", "イオン名→式", "イオン名→名", "有効", "操作"];
+  const headers = ["id", "陽イオン", "陰イオン", "組成式", "名称", "自動カテゴリ", "対象難易度", "実在確認URL", "別表記 formula|注記", "固体色", "色注記", "イオン式→式", "イオン式→名", "イオン名→式", "イオン名→名", "有効", "操作"];
   elements.compoundsTable.tHead.innerHTML = `<tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr>`;
   const ionById = new Map(state.ions.map((ion) => [ion.id, ion]));
   const cations = state.ions.filter((ion) => ion.type === "cation").map((ion) => ({ value: ion.id, label: `${ion.id} (${ion.name})` }));
@@ -151,6 +154,8 @@ function renderCompounds() {
     <td>${input({ value: compound.formula ?? "", field: "formula", index })}</td>
     <td>${input({ value: compound.name, field: "name", index })}</td>
     <td class="category-cell">${CATEGORY_LABELS[compoundCategory(compound, ionById)] ?? "—"}</td>
+    <td>${select({ value: compound.difficulty ?? "", field: "difficulty", index, options: [{ value: "", label: "両方" }, { value: "normal", label: "やさしめ" }, { value: "hard", label: "ややむず" }] })}</td>
+    <td>${input({ value: compound.referenceUrl ?? "", field: "referenceUrl", index, type: "url" })}</td>
     <td>${input({ value: aliasesText(compound), field: "acceptedFormulaVariants", index })}</td>
     <td>${input({ value: compound.solidColor ?? "", field: "solidColor", index })}</td>
     <td>${input({ value: compound.solidColorNote ?? "", field: "solidColorNote", index })}</td>
@@ -171,7 +176,7 @@ function weightBlock(domain, title) {
   const labels = domain === "ion"
     ? { ionSimple: "単原子", ionPolyatomic: "多原子", ionVariableOx: "酸化数区別" }
     : { simple11: "simple11", simpleRatio: "simpleRatio", polyatomic: "polyatomic", variableOx: "variableOx" };
-  const difficulties = { normal: "ノーマル", hard: "ハード" };
+  const difficulties = { normal: "やさしめ", hard: "ややむず" };
   return `<section class="difficulty-block"><h2>${title}</h2><p>0は完全除外です。合計値ではなく相対的な重みとして扱います。</p>
     <div class="weight-grid" style="grid-template-columns:140px repeat(${Object.keys(labels).length}, minmax(100px, 1fr))">
       <span class="heading">難易度</span>${Object.values(labels).map((label) => `<span class="heading">${label}</span>`).join("")}
@@ -241,6 +246,12 @@ function tableChange(event) {
   let value = control.type === "checkbox" ? control.checked : control.value;
   if (control.type === "number") value = Number(value);
   if (["formula", "solidColor", "solidColorNote"].includes(field) && value === "") value = null;
+  if (["difficulty", "compoundPromptDisplay", "referenceUrl"].includes(field) && value === "") {
+    delete item[field];
+    showStatus("未保存の変更があります。");
+    scheduleValidation();
+    return;
+  }
   if (field === "acceptedFormulaVariants") {
     const aliases = parseAliases(value ?? "");
     if (aliases.length) item.acceptedFormulaVariants = aliases;

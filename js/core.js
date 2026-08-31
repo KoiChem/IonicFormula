@@ -350,12 +350,19 @@ export function allocateCounts(weights, total, capacities = {}, random = Math.ra
   return result;
 }
 
-function eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions) {
+export function itemAvailableAtDifficulty(item, difficulty) {
+  return !item.difficulty || item.difficulty === difficulty;
+}
+
+function eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty) {
   const domain = domainForPracticeType(practiceType);
   const ionById = new Map(ions.map((ion) => [ion.id, ion]));
   const source = domain === "ion" ? ions : compounds;
   return source
-    .filter((item) => item.enabled && itemVariants(practiceType, item, compoundOptions).length)
+    .filter((item) => item.enabled
+      && (domain !== "ion" || item.ionQuestionEnabled !== false)
+      && itemAvailableAtDifficulty(item, difficulty)
+      && itemVariants(practiceType, item, compoundOptions).length)
     .map((item) => ({ item, category: domain === "ion" ? ionCategory(item) : compoundCategory(item, ionById) }))
     .filter(({ category }) => category && Number(categoryWeights[category]) > 0);
 }
@@ -519,7 +526,7 @@ export function buildTenQuestionSet(rawOptions) {
   const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations } = normalizedOptions(rawOptions);
   const categoryWeights = settings.categoryWeights[domain][difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
-  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions);
+  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty);
   const capacity = {};
   for (const candidate of eligible) capacity[candidate.category] = (capacity[candidate.category] ?? 0) + 1;
   const total = Math.min(10, eligible.length);
@@ -553,7 +560,7 @@ export function buildWeakQuestionSet(rawOptions) {
   const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations } = normalizedOptions(rawOptions);
   const categoryWeights = settings.categoryWeights[domain][difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
-  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions);
+  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty);
   const total = Math.min(10, eligible.length);
   const variantCounts = allocateCounts(variantWeights, total, {}, random);
   const remainingVariants = { ...variantCounts };
@@ -578,7 +585,7 @@ export function buildEndlessRound(rawOptions) {
   const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations } = normalizedOptions(rawOptions);
   const categoryWeights = settings.categoryWeights[domain][difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
-  const remaining = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions);
+  const remaining = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty);
   const variantTargets = allocateCounts(variantWeights, remaining.length, {}, random);
   const variantRemaining = { ...variantTargets };
   const drawnByCategory = Object.fromEntries(Object.keys(categoryWeights).map((key) => [key, 0]));
@@ -693,6 +700,9 @@ export function validateData(ions, compounds, settings) {
     if (!Number.isFinite(Number(ion.charge)) || Number(ion.charge) === 0) errors.push(`${path}: chargeは0以外の数値にしてください。`);
     if (ion.type === "cation" && Number(ion.charge) <= 0) errors.push(`${path}: 陽イオンのchargeは正数です。`);
     if (ion.type === "anion" && Number(ion.charge) >= 0) errors.push(`${path}: 陰イオンのchargeは負数です。`);
+    if (ion.difficulty && !["normal", "hard"].includes(ion.difficulty)) errors.push(`${path}: difficultyはnormalまたはhardにしてください。`);
+    if (ion.compoundPromptDisplay && ion.compoundPromptDisplay !== "formulaAndName") errors.push(`${path}: compoundPromptDisplayが不正です。`);
+    if (ion.ionQuestionEnabled != null && typeof ion.ionQuestionEnabled !== "boolean") errors.push(`${path}: ionQuestionEnabledは真偽値にしてください。`);
   }
   const ionById = new Map(ions.map((ion) => [ion.id, ion]));
   const compoundIds = new Set();
@@ -709,6 +719,10 @@ export function validateData(ions, compounds, settings) {
     if (anion && anion.type !== "anion") errors.push(`${path}: anion参照先が陰イオンではありません。`);
     if (compound.enabled && cation && !cation.enabled) errors.push(`${path}: 有効な化合物が無効な陽イオンを参照しています。`);
     if (compound.enabled && anion && !anion.enabled) errors.push(`${path}: 有効な化合物が無効な陰イオンを参照しています。`);
+    if (compound.difficulty && !["normal", "hard"].includes(compound.difficulty)) errors.push(`${path}: difficultyはnormalまたはhardにしてください。`);
+    if (compound.enabled && compound.difficulty !== "hard" && cation?.difficulty === "hard") errors.push(`${path}: ややむず限定の陽イオンを使う化合物もdifficultyをhardにしてください。`);
+    if (compound.enabled && compound.difficulty !== "hard" && anion?.difficulty === "hard") errors.push(`${path}: ややむず限定の陰イオンを使う化合物もdifficultyをhardにしてください。`);
+    if (compound.referenceUrl && !/^https:\/\//.test(compound.referenceUrl)) errors.push(`${path}: referenceUrlはhttps URLにしてください。`);
     if (compound.enabled && !Object.values(compound.questionModes ?? {}).some(Boolean)) errors.push(`${path}: enabledですが全questionModesがfalseです。`);
     const formulaModes = ["nameToFormula", "ionsToFormula", "ionNamesToFormula"];
     if (compound.formula == null && formulaModes.some((mode) => compound.questionModes?.[mode])) errors.push(`${path}: formula=nullで組成式を使う問題が有効です。`);

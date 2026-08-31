@@ -375,10 +375,15 @@ function promptFor(question, item) {
     : question.promptStyle === "formulaName" ? ["formula", "name"]
       : question.promptStyle === "nameFormula" ? ["name", "formula"]
         : ["formula", "formula"];
-  const renderSide = (ion, style) => style === "name"
-    ? `<span class="ion-name">${escapeHtml(ion.name)}</span>`
-    : `<span class="formula-token">${ionFormulaHtml(ion)}</span>`;
-  const hasName = styles.includes("name");
+  const renderSide = (ion, style) => {
+    if (ion.compoundPromptDisplay === "formulaAndName") {
+      return `<span class="ion-formula-name"><span class="formula-token">${ionFormulaHtml(ion)}</span><span class="ion-name">${escapeHtml(ion.name)}</span></span>`;
+    }
+    return style === "name"
+      ? `<span class="ion-name">${escapeHtml(ion.name)}</span>`
+      : `<span class="formula-token">${ionFormulaHtml(ion)}</span>`;
+  };
+  const hasName = styles.includes("name") || sides.some((ion) => ion.compoundPromptDisplay === "formulaAndName");
   const ionsHtml = hasName
     ? `<span class="ion-pair names"><span class="ion-pair-first">${renderSide(sides[0], styles[0])}<span class="ion-separator" aria-hidden="true">＆</span></span><span class="ion-pair-second">${renderSide(sides[1], styles[1])}</span></span>`
     : `<span class="ion-pair"><span>${renderSide(sides[0], styles[0])}</span><span class="ion-separator" aria-hidden="true">＆</span><span>${renderSide(sides[1], styles[1])}</span></span>`;

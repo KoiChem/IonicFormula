@@ -17,6 +17,7 @@ import {
   hintFor,
   ionCategory,
   ionInputHtml,
+  itemAvailableAtDifficulty,
   itemVariants,
   neutralFormula,
   normalizeFormula,
@@ -32,6 +33,29 @@ const ions = await load("../data/ions.json");
 const compounds = await load("../data/compounds.json");
 const settings = await load("../data/difficulty.json");
 const ionById = new Map(ions.map((ion) => [ion.id, ion]));
+const advancedIonIds = [
+  "chromium3", "manganese2", "tin2", "tin4", "gold3",
+  "sulfite", "nitrite", "hypochlorite", "chlorate", "thiosulfate", "thiocyanate", "cyanide", "iodate",
+  "permanganate", "chromate", "dichromate",
+];
+const advancedCompoundFormulas = {
+  chromium3_chloride: "CrCl3",
+  manganese2_chloride: "MnCl2",
+  tin2_chloride: "SnCl2",
+  tin4_chloride: "SnCl4",
+  gold3_chloride: "AuCl3",
+  sodium_sulfite: "Na2SO3",
+  sodium_nitrite: "NaNO2",
+  sodium_hypochlorite: "NaClO",
+  potassium_chlorate: "KClO3",
+  sodium_thiosulfate: "Na2S2O3",
+  potassium_thiocyanate: "KSCN",
+  potassium_cyanide: "KCN",
+  potassium_iodate: "KIO3",
+  potassium_permanganate: "KMnO4",
+  potassium_chromate: "K2CrO4",
+  potassium_dichromate: "K2Cr2O7",
+};
 
 function randomFrom(seed = 1) {
   let value = seed >>> 0;
@@ -42,10 +66,10 @@ function randomFrom(seed = 1) {
 }
 
 test("published data includes the lithium and nitride expansion", () => {
-  assert.equal(ions.length, 31);
-  assert.equal(compounds.length, 111);
-  assert.equal(new Set(ions.map((item) => item.id)).size, 31);
-  assert.equal(new Set(compounds.map((item) => item.id)).size, 111);
+  assert.equal(ions.length, 44);
+  assert.equal(compounds.length, 124);
+  assert.equal(new Set(ions.map((item) => item.id)).size, 44);
+  assert.equal(new Set(compounds.map((item) => item.id)).size, 124);
   assert.deepEqual(ions.find((item) => item.id === "lithium"), {
     id: "lithium", formula: "Li", charge: 1, name: "リチウムイオン", type: "cation",
     atomicity: "monatomic", requiresOxidationNumeral: false, enabled: true,
@@ -56,9 +80,23 @@ test("published data includes the lithium and nitride expansion", () => {
   }
 });
 
-test("complex chromium and manganese content is disabled by default", () => {
-  for (const id of ["permanganate", "chromate", "dichromate"]) assert.equal(ions.find((item) => item.id === id).enabled, false);
-  for (const id of ["potassium_permanganate", "potassium_chromate", "potassium_dichromate"]) assert.equal(compounds.find((item) => item.id === id).enabled, false);
+test("advanced ions and verified compounds are enabled only for hard questions", () => {
+  for (const id of advancedIonIds) {
+    const ion = ions.find((item) => item.id === id);
+    assert.equal(ion.enabled, true, id);
+    assert.equal(ion.difficulty, "hard", id);
+    assert.equal(ion.compoundPromptDisplay, "formulaAndName", id);
+    assert.equal(ion.ionQuestionEnabled, false, id);
+    assert.equal(itemAvailableAtDifficulty(ion, "normal"), false, id);
+    assert.equal(itemAvailableAtDifficulty(ion, "hard"), true, id);
+  }
+  for (const [id, formula] of Object.entries(advancedCompoundFormulas)) {
+    const compound = compounds.find((item) => item.id === id);
+    assert.equal(compound.formula, formula, id);
+    assert.equal(compound.enabled, true, id);
+    assert.equal(compound.difficulty, "hard", id);
+    assert.match(compound.referenceUrl, /^https:\/\/pubchem\.ncbi\.nlm\.nih\.gov\/compound\//, id);
+  }
 });
 
 test("formula normalization accepts width and subscript variants without ignoring case", () => {
@@ -138,7 +176,26 @@ test("normal and hard category ratios allocate their stated ten-question targets
   assert.deepEqual(allocateCounts(settings.categoryWeights.ion.normal, 10, {}, randomFrom(1)), { ionSimple: 6, ionPolyatomic: 3, ionVariableOx: 1 });
   assert.deepEqual(allocateCounts(settings.categoryWeights.ion.hard, 10, {}, randomFrom(2)), { ionSimple: 2, ionPolyatomic: 6, ionVariableOx: 2 });
   assert.deepEqual(allocateCounts(settings.categoryWeights.compound.normal, 10, {}, randomFrom(3)), { simple11: 3, simpleRatio: 4, polyatomic: 2, variableOx: 1 });
-  assert.deepEqual(allocateCounts(settings.categoryWeights.compound.hard, 10, {}, randomFrom(4)), { simple11: 0, simpleRatio: 3, polyatomic: 5, variableOx: 2 });
+  assert.deepEqual(allocateCounts(settings.categoryWeights.compound.hard, 10, {}, randomFrom(4)), { simple11: 0, simpleRatio: 1, polyatomic: 5, variableOx: 4 });
+  const hardSet = buildTenQuestionSet({ practiceType: "compound", difficulty: "hard", ions, compounds, settings, random: randomFrom(41) });
+  const actual = hardSet.questions.reduce((counts, question) => ({ ...counts, [question.category]: (counts[question.category] ?? 0) + 1 }), {});
+  assert.deepEqual({ simple11: 0, simpleRatio: 0, polyatomic: 0, variableOx: 0, ...actual }, { simple11: 0, simpleRatio: 1, polyatomic: 5, variableOx: 4 });
+});
+
+test("advanced ions stay out of the ion game and their compounds are hard-only", () => {
+  const normalIons = buildEndlessRound({ practiceType: "ion", difficulty: "normal", ions, compounds, settings, random: randomFrom(31) });
+  const hardIons = buildEndlessRound({ practiceType: "ion", difficulty: "hard", ions, compounds, settings, random: randomFrom(32) });
+  const normalCompounds = buildEndlessRound({ practiceType: "compound", difficulty: "normal", ions, compounds, settings, random: randomFrom(33) });
+  const hardCompounds = buildEndlessRound({ practiceType: "compound", difficulty: "hard", ions, compounds, settings, random: randomFrom(34) });
+  const ids = (round) => new Set(round.questions.map((question) => question.itemId));
+  for (const id of advancedIonIds) {
+    assert.equal(ids(normalIons).has(id), false, id);
+    assert.equal(ids(hardIons).has(id), false, id);
+  }
+  for (const id of Object.keys(advancedCompoundFormulas)) {
+    assert.equal(ids(normalCompounds).has(id), false, id);
+    assert.equal(ids(hardCompounds).has(id), true, id);
+  }
 });
 
 test("zero-weight categories are completely excluded", () => {
@@ -281,11 +338,17 @@ test("recently shown materials are cooled down across abandoned sessions", () =>
 });
 
 test("endless rounds visit all eligible items exactly once and omit disabled material", () => {
-  for (const [practiceType, difficulty] of [["ion", "hard"], ["random", "hard"]]) {
-    const result = buildEndlessRound({ practiceType, difficulty, ions, compounds, settings, random: randomFrom(20) });
-    assert.equal(new Set(result.questions.map((question) => question.itemId)).size, result.questions.length);
-    assert.ok(!result.questions.some((question) => ["permanganate", "chromate", "dichromate", "potassium_permanganate", "potassium_chromate", "potassium_dichromate"].includes(question.itemId)));
-  }
+  const disabledIons = structuredClone(ions);
+  disabledIons.find((ion) => ion.id === "lithium").enabled = false;
+  const ionResult = buildEndlessRound({ practiceType: "ion", difficulty: "hard", ions: disabledIons, compounds, settings, random: randomFrom(20) });
+  assert.equal(new Set(ionResult.questions.map((question) => question.itemId)).size, ionResult.questions.length);
+  assert.ok(!ionResult.questions.some((question) => question.itemId === "lithium"));
+
+  const disabledCompounds = structuredClone(compounds);
+  disabledCompounds.find((compound) => compound.id === "calcium_chloride").enabled = false;
+  const compoundResult = buildEndlessRound({ practiceType: "random", difficulty: "hard", ions, compounds: disabledCompounds, settings, random: randomFrom(21) });
+  assert.equal(new Set(compoundResult.questions.map((question) => question.itemId)).size, compoundResult.questions.length);
+  assert.ok(!compoundResult.questions.some((question) => question.itemId === "calcium_chloride"));
 });
 
 test("weak history is shared by actual skill, not by the random menu choice", () => {

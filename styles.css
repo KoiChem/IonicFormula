@@ -147,6 +147,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .ion-pair-first, .ion-pair-second { display: block; }
 .ion-separator { margin-left: .32em; color: var(--muted); font-family: inherit; font-size: .72em; font-weight: 700; }
 .formula-token { font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; letter-spacing: .02em; }
+.ion-formula-name { display: inline-flex; align-items: baseline; gap: .28em; white-space: nowrap; }
+.ion-formula-name .ion-name { color: var(--primary-dark); font-size: .76em; }
 .streak { position: absolute; right: 13px; bottom: 8px; min-height: 1em; margin: 0; color: #bd741a; font-size: .69rem; font-weight: 800; }
 
 .answer-area { position: relative; margin-top: 11px; }

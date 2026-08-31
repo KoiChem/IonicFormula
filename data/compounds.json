@@ -1241,6 +1241,175 @@
     "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
   },
   {
+    "id": "chromium3_chloride",
+    "cation": "chromium3",
+    "anion": "chloride",
+    "formula": "CrCl3",
+    "name": "塩化クロム(Ⅲ)",
+    "solidColor": null,
+    "solidColorNote": "無水物と水和物で色が異なる",
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24808",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "manganese2_chloride",
+    "cation": "manganese2",
+    "anion": "chloride",
+    "formula": "MnCl2",
+    "name": "塩化マンガン(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24480",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "tin2_chloride",
+    "cation": "tin2",
+    "anion": "chloride",
+    "formula": "SnCl2",
+    "name": "塩化スズ(Ⅱ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24479",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "tin4_chloride",
+    "cation": "tin4",
+    "anion": "chloride",
+    "formula": "SnCl4",
+    "name": "塩化スズ(Ⅳ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24287",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "gold3_chloride",
+    "cation": "gold3",
+    "anion": "chloride",
+    "formula": "AuCl3",
+    "name": "塩化金(Ⅲ)",
+    "solidColor": null,
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/26030",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "sodium_sulfite",
+    "cation": "sodium",
+    "anion": "sulfite",
+    "formula": "Na2SO3",
+    "name": "亜硫酸ナトリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24437",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "sodium_nitrite",
+    "cation": "sodium",
+    "anion": "nitrite",
+    "formula": "NaNO2",
+    "name": "亜硝酸ナトリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/23668193",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "sodium_hypochlorite",
+    "cation": "sodium",
+    "anion": "hypochlorite",
+    "formula": "NaClO",
+    "name": "次亜塩素酸ナトリウム",
+    "solidColor": null,
+    "solidColorNote": "通常は水溶液として扱われる",
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/23665760",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "potassium_chlorate",
+    "cation": "potassium",
+    "anion": "chlorate",
+    "formula": "KClO3",
+    "name": "塩素酸カリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/6426889",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "sodium_thiosulfate",
+    "cation": "sodium",
+    "anion": "thiosulfate",
+    "formula": "Na2S2O3",
+    "name": "チオ硫酸ナトリウム",
+    "solidColor": "白色",
+    "solidColorNote": "無水塩。一般的な結晶は五水和物",
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24477",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "potassium_thiocyanate",
+    "cation": "potassium",
+    "anion": "thiocyanate",
+    "formula": "KSCN",
+    "name": "チオシアン酸カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/516872",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "potassium_cyanide",
+    "cation": "potassium",
+    "anion": "cyanide",
+    "formula": "KCN",
+    "name": "シアン化カリウム",
+    "solidColor": "白色",
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/9032",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
+    "id": "potassium_iodate",
+    "cation": "potassium",
+    "anion": "iodate",
+    "formula": "KIO3",
+    "name": "ヨウ素酸カリウム",
+    "solidColor": null,
+    "solidColorNote": null,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/23665710",
+    "enabled": true,
+    "questionModes": { "ionsToFormula": true, "ionsToName": true, "ionNamesToFormula": true, "ionNamesToName": true }
+  },
+  {
     "id": "potassium_permanganate",
     "cation": "potassium",
     "anion": "permanganate",
@@ -1248,12 +1417,14 @@
     "name": "過マンガン酸カリウム",
     "solidColor": "暗紫色",
     "solidColorNote": null,
-    "enabled": false,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/516875",
+    "enabled": true,
     "questionModes": {
-      "nameToFormula": true,
-      "formulaToName": true,
       "ionsToFormula": true,
-      "ionsToName": true
+      "ionsToName": true,
+      "ionNamesToFormula": true,
+      "ionNamesToName": true
     }
   },
   {
@@ -1264,12 +1435,14 @@
     "name": "クロム酸カリウム",
     "solidColor": "黄色",
     "solidColorNote": null,
-    "enabled": false,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24597",
+    "enabled": true,
     "questionModes": {
-      "nameToFormula": true,
-      "formulaToName": true,
       "ionsToFormula": true,
-      "ionsToName": true
+      "ionsToName": true,
+      "ionNamesToFormula": true,
+      "ionNamesToName": true
     }
   },
   {
@@ -1280,12 +1453,14 @@
     "name": "二クロム酸カリウム",
     "solidColor": "橙色",
     "solidColorNote": null,
-    "enabled": false,
+    "difficulty": "hard",
+    "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24502",
+    "enabled": true,
     "questionModes": {
-      "nameToFormula": true,
-      "formulaToName": true,
       "ionsToFormula": true,
-      "ionsToName": true
+      "ionsToName": true,
+      "ionNamesToFormula": true,
+      "ionNamesToName": true
     }
   },
   {
