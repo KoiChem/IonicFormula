@@ -99,6 +99,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .mode-icon { min-height: 37px; display: flex; align-items: center; color: var(--primary-dark); font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: clamp(1.15rem, 5.3vw, 1.42rem); font-weight: 700; white-space: nowrap; }
 .mode-icon.name-icon { font-family: inherit; font-size: 1rem; letter-spacing: .04em; }
 .mode-icon sup, .mode-icon sub, .question-prompt sup, .question-prompt sub, .feedback-answer sup, .feedback-answer sub, .answer-submit sub, .answer-submit sup { font-size: .62em; line-height: 0; }
+.mode-icon sub { position: relative; top: .32em; line-height: 1; vertical-align: baseline; }
 
 .segment-control { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.72); }
 .segment-control.two { grid-template-columns: repeat(2, 1fr); }
