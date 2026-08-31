@@ -1,4 +1,4 @@
-const CACHE_NAME = "ionic-formula-v7";
+const CACHE_NAME = "ionic-formula-v8";
 const APP_SHELL = [
   "./",
   "./index.html",

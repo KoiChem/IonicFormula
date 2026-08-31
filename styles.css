@@ -135,7 +135,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.9); color: var(--primary-dark);
   box-shadow: 0 6px 14px rgba(57,141,117,.09); cursor: pointer;
 }
-.weak-review-button svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+.weak-review-button svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
 .weak-review-button:active { transform: translateY(1px); }
 .weak-review-button:focus-visible, .modal-close:focus-visible { outline: 3px solid rgba(57,141,117,.25); outline-offset: 2px; }
 .weak-review-count {
@@ -179,7 +179,8 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .answer-composer.formula-mode #answer-input { color: transparent; caret-color: transparent; }
 .formula-render { position: absolute; inset: 0 68px 0 0; display: flex; align-items: center; justify-content: center; gap: 0; overflow: hidden; color: var(--ink); font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: 1.23rem; font-weight: 750; pointer-events: none; white-space: nowrap; }
 .formula-render sub, .formula-render sup { font-size: .66em; line-height: 0; }
-.formula-render .formula-charge, .answer-submit .formula-charge { display: inline-flex; align-items: flex-start; margin-left: 2px; padding: 1px 3px 2px; border-radius: 5px; background: #d8f2ed; color: #197b6d; font-family: inherit; font-size: .68em; font-weight: 900; line-height: 1; vertical-align: super; }
+.formula-render .formula-charge { display: inline-flex; align-items: flex-start; margin-left: 2px; padding: 1px 3px 2px; border-radius: 5px; background: #d8f2ed; color: #197b6d; font-family: inherit; font-size: .68em; font-weight: 900; line-height: 1; vertical-align: super; }
+.answer-submit .formula-charge { display: inline-flex; align-items: flex-start; margin-left: 2px; padding: 0; border-radius: 0; background: transparent; color: #197b6d; font-family: inherit; font-size: .68em; font-weight: 900; line-height: 1; vertical-align: super; }
 .formula-render .formula-caret { width: 1.5px; height: 1.1em; margin: 0 1px; border-radius: 1px; background: var(--primary-dark); animation: formula-caret .9s steps(1) infinite; }
 @keyframes formula-caret { 50% { opacity: 0; } }
 .answer-submit {
