@@ -35,6 +35,7 @@ const settings = await load("../data/difficulty.json");
 const ionById = new Map(ions.map((ion) => [ion.id, ion]));
 const advancedIonIds = [
   "chromium3", "manganese2", "tin2", "tin4", "gold3",
+  "lead2", "lead4",
   "sulfite", "nitrite", "hypochlorite", "chlorate", "thiosulfate", "thiocyanate", "cyanide", "iodate",
   "permanganate", "chromate", "dichromate",
 ];
@@ -55,6 +56,36 @@ const advancedCompoundFormulas = {
   potassium_permanganate: "KMnO4",
   potassium_chromate: "K2CrO4",
   potassium_dichromate: "K2Cr2O7",
+  silver_chromate: "Ag2CrO4",
+  chromium3_oxide: "Cr2O3",
+  manganese2_oxide: "MnO",
+  tin2_sulfide: "SnS",
+  manganese2_sulfide: "MnS",
+  lead2_fluoride: "PbF2",
+  lead4_fluoride: "PbF4",
+  lead2_oxide: "PbO",
+  lead2_sulfide: "PbS",
+  lead2_chloride: "PbCl2",
+  lead2_bromide: "PbBr2",
+  lead2_iodide: "PbI2",
+  lead2_nitrate: "Pb(NO3)2",
+  lead2_sulfate: "PbSO4",
+  lead2_carbonate: "PbCO3",
+  lead2_chromate: "PbCrO4",
+  chromium3_sulfide: "Cr2S3",
+  chromium3_sulfate: "Cr2(SO4)3",
+  manganese2_sulfate: "MnSO4",
+  manganese2_carbonate: "MnCO3",
+  tin2_oxide: "SnO",
+  tin4_sulfide: "SnS2",
+  tin2_sulfate: "SnSO4",
+  sodium_permanganate: "NaMnO4",
+  sodium_chromate: "Na2CrO4",
+  sodium_dichromate: "Na2Cr2O7",
+  barium_chromate: "BaCrO4",
+  calcium_hypochlorite: "Ca(ClO)2",
+  silver_cyanide: "AgCN",
+  silver_thiocyanate: "AgSCN",
 };
 
 function randomFrom(seed = 1) {
@@ -65,19 +96,23 @@ function randomFrom(seed = 1) {
   };
 }
 
-test("published data includes the lithium and nitride expansion", () => {
-  assert.equal(ions.length, 44);
-  assert.equal(compounds.length, 124);
-  assert.equal(new Set(ions.map((item) => item.id)).size, 44);
-  assert.equal(new Set(compounds.map((item) => item.id)).size, 124);
+test("published data includes the lithium, nitride, and lead expansions", () => {
+  assert.equal(ions.length, 46);
+  assert.equal(compounds.length, 154);
+  assert.equal(new Set(ions.map((item) => item.id)).size, 46);
+  assert.equal(new Set(compounds.map((item) => item.id)).size, 154);
   assert.deepEqual(ions.find((item) => item.id === "lithium"), {
     id: "lithium", formula: "Li", charge: 1, name: "リチウムイオン", type: "cation",
     atomicity: "monatomic", requiresOxidationNumeral: false, enabled: true,
   });
   assert.equal(ions.find((item) => item.id === "nitride").charge, -3);
+  assert.equal(ions.find((item) => item.id === "lead2").charge, 2);
+  assert.equal(ions.find((item) => item.id === "lead4").charge, 4);
   for (const [id, formula] of [["lithium_nitride", "Li3N"], ["magnesium_nitride", "Mg3N2"], ["calcium_nitride", "Ca3N2"], ["barium_nitride", "Ba3N2"], ["zinc_nitride", "Zn3N2"], ["aluminum_nitride", "AlN"]]) {
     assert.equal(compounds.find((item) => item.id === id).formula, formula);
   }
+  assert.equal(compounds.some((item) => item.formula === "PbO2"), false);
+  assert.equal(compounds.some((item) => item.formula === "SnO2"), false);
 });
 
 test("advanced ions and verified compounds are enabled only for hard questions", () => {

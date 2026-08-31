@@ -205,6 +205,32 @@
     "enabled": true
   },
   {
+    "id": "lead2",
+    "formula": "Pb",
+    "charge": 2,
+    "name": "鉛(Ⅱ)イオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": true,
+    "compoundPromptDisplay": "formulaAndName",
+    "ionQuestionEnabled": false,
+    "difficulty": "hard",
+    "enabled": true
+  },
+  {
+    "id": "lead4",
+    "formula": "Pb",
+    "charge": 4,
+    "name": "鉛(Ⅳ)イオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": true,
+    "compoundPromptDisplay": "formulaAndName",
+    "ionQuestionEnabled": false,
+    "difficulty": "hard",
+    "enabled": true
+  },
+  {
     "id": "nitride",
     "formula": "N",
     "charge": -3,
