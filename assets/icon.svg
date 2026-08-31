@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Ionic Formula">
-  <rect width="512" height="512" rx="112" fill="#087c6d"/>
+  <rect width="512" height="512" rx="112" fill="#398d75"/>
   <circle cx="170" cy="256" r="90" fill="#f7fffc" opacity=".98"/>
-  <circle cx="342" cy="256" r="90" fill="#f4a641"/>
-  <path d="M124 256h92M170 210v92" stroke="#087c6d" stroke-width="28" stroke-linecap="round"/>
-  <path d="M296 256h92" stroke="#173b38" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="342" cy="256" r="90" fill="#a9dfc8"/>
+  <path d="M124 256h92M170 210v92" stroke="#398d75" stroke-width="28" stroke-linecap="round"/>
+  <path d="M296 256h92" stroke="#35665f" stroke-width="28" stroke-linecap="round"/>
 </svg>

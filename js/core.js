@@ -70,6 +70,19 @@ export function ionFormulaHtml(ion) {
   return `${formulaHtml(ion.formula)}<sup>${charge}</sup>`;
 }
 
+// Formula digits and charge digits can be adjacent (NO3-, NH4+, SO42-).
+// Use the registered ion's canonical input form when available rather than
+// trying to infer the split from the final digit alone.
+export function ionInputHtml(value, ions = []) {
+  const normalized = normalizeFormula(value);
+  if (!normalized) return "";
+  const ion = ions.find((item) => ionAnswer(item) === normalized);
+  if (ion) return ionFormulaHtml(ion);
+  const sign = normalized.match(/[+-]$/)?.[0];
+  if (!sign) return formulaHtml(normalized);
+  return `${formulaHtml(normalized.slice(0, -1))}<sup>${sign === "+" ? "＋" : "－"}</sup>`;
+}
+
 export function formulaHtml(formula) {
   if (!formula) return "";
   let html = "";

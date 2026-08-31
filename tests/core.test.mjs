@@ -11,6 +11,7 @@ import {
   evaluateAnswer,
   historyKey,
   ionCategory,
+  ionInputHtml,
   itemVariants,
   neutralFormula,
   normalizeFormula,
@@ -59,6 +60,14 @@ test("formula normalization accepts width and subscript variants without ignorin
   assert.equal(normalizeFormula("N³⁻"), "N3-");
   assert.notEqual(normalizeFormula("Nacl"), normalizeFormula("NaCl"));
   assert.notEqual(normalizeFormula("CaOH2"), normalizeFormula("Ca(OH)2"));
+});
+
+test("ion input preview preserves formula subscripts beside a charge", () => {
+  assert.equal(ionInputHtml("NO3-", ions), "NO<sub>3</sub><sup>－</sup>");
+  assert.equal(ionInputHtml("NH4+", ions), "NH<sub>4</sub><sup>＋</sup>");
+  assert.equal(ionInputHtml("SO42-", ions), "SO<sub>4</sub><sup>2－</sup>");
+  assert.equal(ionInputHtml("Ca2+", ions), "Ca<sup>2＋</sup>");
+  assert.equal(ionInputHtml("N3-", ions), "N<sup>3－</sup>");
 });
 
 test("Japanese name normalization accepts Roman numeral and parenthesis variants", () => {

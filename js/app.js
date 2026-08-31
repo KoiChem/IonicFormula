@@ -11,6 +11,7 @@ import {
   formulaText,
   hintFor,
   ionFormulaHtml,
+  ionInputHtml,
   normalizeFormula,
   recordHistory,
   validateData,
@@ -37,7 +38,7 @@ const elements = Object.fromEntries([
   "setup-form", "variant-label", "question-number", "question-total", "question-card",
   "question-prompt", "streak", "answer-form", "answer-label", "answer-input",
   "input-message", "submit-answer", "submit-answer-text", "formula-keyboard", "number-keys",
-  "letter-keys", "charge-keys", "feedback", "feedback-title", "feedback-answer",
+  "letter-keys", "charge-keys", "name-shortcuts", "feedback", "feedback-title", "feedback-answer",
   "feedback-detail", "next-button", "hint-button", "pass-button", "quit-button",
   "result-first", "result-retry", "result-hint", "result-pass", "result-categories",
   "retry-session", "back-to-setup", "sound-toggle", "vfx-toggle", "spark-layer",
@@ -228,9 +229,7 @@ function previewFormulaHtml() {
   const normalized = normalizeFormula(elements.answer_input.value);
   if (!normalized) return "";
   if (questionState?.question.domain !== "ion") return formulaHtml(normalized);
-  const match = normalized.match(/^(.*?)([1-8]?)([+-])$/);
-  if (!match) return formulaHtml(normalized);
-  return `${formulaHtml(match[1])}<sup>${match[2]}${match[3] === "+" ? "＋" : "－"}</sup>`;
+  return ionInputHtml(normalized, data.ions);
 }
 
 function renderAnswerSubmit() {
@@ -278,12 +277,20 @@ function configureInput(answer, question) {
   elements.formula_keyboard.hidden = !formulaMode;
   elements.formula_keyboard.classList.toggle("ion-entry", formulaMode && question.domain === "ion");
   elements.charge_keys.hidden = !(formulaMode && question.domain === "ion");
+  elements.name_shortcuts.hidden = formulaMode;
+  elements.name_shortcuts.querySelector('[data-key="イオン"]').hidden = question.domain !== "ion";
   elements.input_message.textContent = "";
   elements.submit_answer.disabled = false;
   setKeyboardCase(true);
   renderAnswerSubmit();
   setQuizActionState(true);
   setTimeout(() => elements.answer_input.focus({ preventScroll: true }), 30);
+}
+
+function nameShortcutClick(event) {
+  const button = event.target.closest("button[data-key]");
+  if (!button || elements.answer_input.disabled) return;
+  replaceSelection(button.dataset.key);
 }
 
 function currentQuestion() {
@@ -603,6 +610,8 @@ function bindEvents() {
 
 async function initialize() {
   initializeKeyboard();
+  elements.name_shortcuts.addEventListener("pointerdown", (event) => event.preventDefault());
+  elements.name_shortcuts.addEventListener("click", nameShortcutClick);
   bindEvents();
   try {
     data = await loadData();

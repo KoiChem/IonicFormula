@@ -39,22 +39,22 @@
             <label class="mode-card">
               <input type="radio" name="practice-type" value="ion" checked>
               <span class="mode-icon" aria-hidden="true">Na<sup>＋</sup></span>
-              <strong>イオン</strong>
+              <strong>イオンの学習</strong>
             </label>
             <label class="mode-card">
               <input type="radio" name="practice-type" value="ionFormula">
               <span class="mode-icon" aria-hidden="true">Ca<sup>2＋</sup>＋Cl<sup>－</sup></span>
-              <strong>イオン式</strong>
+              <strong>イオン式から解答</strong>
             </label>
             <label class="mode-card">
               <input type="radio" name="practice-type" value="ionName">
               <span class="mode-icon name-icon" aria-hidden="true">陽＋陰</span>
-              <strong>イオン名</strong>
+              <strong>イオン名から解答</strong>
             </label>
             <label class="mode-card">
               <input type="radio" name="practice-type" value="random">
               <span class="mode-icon" aria-hidden="true">?</span>
-              <strong>ランダム</strong>
+              <strong>ランダム出題</strong>
             </label>
           </div>
         </fieldset>
@@ -96,6 +96,15 @@
         </div>
         <p id="input-message" class="input-message"></p>
       </form>
+
+      <div id="name-shortcuts" class="name-shortcuts" hidden aria-label="名称入力補助">
+        <button type="button" data-key="（">（</button>
+        <button type="button" data-key="）">）</button>
+        <button type="button" data-key="Ⅰ">Ⅰ</button>
+        <button type="button" data-key="Ⅱ">Ⅱ</button>
+        <button type="button" data-key="Ⅲ">Ⅲ</button>
+        <button type="button" data-key="イオン">イオン</button>
+      </div>
 
       <div id="formula-keyboard" class="formula-keyboard" hidden aria-label="化学式入力キーボード">
         <div id="number-keys" class="key-row number-keys"></div>
