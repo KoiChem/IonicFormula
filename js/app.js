@@ -1,5 +1,4 @@
 import {
-  PRACTICE_TYPE_LABELS,
   VARIANT_LABELS,
   answerFor,
   buildEndlessRound,
@@ -38,8 +37,8 @@ const elements = Object.fromEntries([
   "letter-keys", "charge-keys", "name-shortcuts", "feedback", "feedback-title", "feedback-answer",
   "feedback-detail", "feedback-actions", "next-button", "hint-button", "pass-button", "quit-button",
   "result-first", "result-retry", "result-hint", "result-pass", "result-review", "result-review-list",
-  "retry-session", "back-to-setup", "sound-toggle", "vfx-toggle", "spark-layer",
-  "session-announcement", "start-button", "compound-options", "compound-option-message",
+  "retry-session", "back-to-setup", "sound-toggle", "spark-layer",
+  "start-button", "compound-options", "compound-option-message",
   "weak-review-button", "weak-review-count", "weak-review-dialog", "close-weak-review", "weak-review-list",
   "weak-review-empty", "start-weak-from-review",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
@@ -87,9 +86,10 @@ function rememberPresentation(question) {
 
 const preferences = {
   sound: true,
-  vfx: true,
   compoundOptions: { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false },
   ...readLocal(STORAGE.preferences, {}),
+  // FX is part of the learning feedback, not a user-configurable setting.
+  vfx: true,
 };
 preferences.compoundOptions = { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false, ...(preferences.compoundOptions ?? {}) };
 
@@ -161,8 +161,7 @@ function showScreen(name) {
   elements.brand.hidden = quiz;
   elements.quiz_actions.hidden = !quiz;
   elements.app_header.classList.toggle("quiz-header", quiz);
-  elements.session_announcement.classList.toggle("static", !preferences.vfx);
-  window.scrollTo({ top: 0, behavior: preferences.vfx ? "smooth" : "auto" });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function makeKey(label, value, className = "", action = "") {
@@ -908,9 +907,6 @@ function startSession(settings = null) {
   session.questions = round.questions;
   session.plan = round;
   showScreen("quiz");
-  elements.session_announcement.textContent = PRACTICE_TYPE_LABELS[chosen.practiceType];
-  elements.session_announcement.hidden = false;
-  setTimeout(() => { elements.session_announcement.hidden = true; }, 880);
   renderQuestion();
 }
 
@@ -1060,17 +1056,10 @@ function bindEvents() {
     if (button) switchBothField(button.dataset.bothField);
   });
   setMediaButton(elements.sound_toggle, preferences.sound);
-  setMediaButton(elements.vfx_toggle, preferences.vfx);
   elements.sound_toggle.addEventListener("click", () => {
     preferences.sound = !preferences.sound;
     setMediaButton(elements.sound_toggle, preferences.sound);
     if (preferences.sound) primeAudio();
-    writeLocal(STORAGE.preferences, preferences);
-  });
-  elements.vfx_toggle.addEventListener("click", () => {
-    preferences.vfx = !preferences.vfx;
-    setMediaButton(elements.vfx_toggle, preferences.vfx);
-    elements.session_announcement.classList.toggle("static", !preferences.vfx);
     writeLocal(STORAGE.preferences, preferences);
   });
 }
