@@ -18,12 +18,14 @@ import {
   recordHistory,
   formulaEntryValue,
   questionSkills,
+  recordRecentPresentation,
   validateData,
   weakHistoryItems,
 } from "./core.js";
 
 const STORAGE = {
   history: "ionicFormula.history.v2",
+  recentPresentations: "ionicFormula.recentPresentations.v1",
   preferences: "ionicFormula.preferences.v1",
   adminData: "ionicFormula.adminData.v2",
 };
@@ -73,6 +75,14 @@ function writeLocal(key, value) {
   } catch {
     // The app remains usable when private browsing or storage policy blocks localStorage.
   }
+}
+
+function recentPresentations() {
+  return readLocal(STORAGE.recentPresentations, []);
+}
+
+function rememberPresentation(question) {
+  writeLocal(STORAGE.recentPresentations, recordRecentPresentation(recentPresentations(), question));
 }
 
 const preferences = {
@@ -493,6 +503,9 @@ function switchBothField(fieldName) {
 function renderQuestion() {
   clearTimeout(advanceTimer);
   const question = currentQuestion();
+  // This is deliberately recorded when shown rather than when answered, so
+  // returning home mid-question cannot immediately repeat the same material.
+  rememberPresentation(question);
   const item = itemFor(question);
   const answer = answerFor(question, item);
   const fields = answer.type === "both"
@@ -821,6 +834,7 @@ function makeRound(endless) {
     compounds: data.compounds,
     settings: data.difficulty,
     history: readLocal(STORAGE.history, {}),
+    recentPresentations: recentPresentations(),
     compoundOptions: session.compoundOptions,
   });
 }

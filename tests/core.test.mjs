@@ -22,6 +22,7 @@ import {
   normalizeFormula,
   normalizeName,
   recordHistory,
+  recordRecentPresentation,
   validateData,
   weakHistoryItems,
 } from "../js/core.js";
@@ -250,6 +251,33 @@ test("weak mode prefers a lower first-try success rate while retaining unique it
   assert.equal(result.questions.length, 10);
   assert.equal(result.questions[0].itemId, "calcium_chloride");
   assert.equal(new Set(result.questions.map((question) => question.itemId)).size, 10);
+});
+
+test("normal sessions do not force the same weak material into question one", () => {
+  const constrained = structuredClone(settings);
+  constrained.categoryWeights.compound.normal = { simple11: 1, simpleRatio: 0, polyatomic: 0, variableOx: 0 };
+  const weakItem = compounds.find((item) => item.id === "sodium_chloride");
+  const history = {};
+  for (const variant of itemVariants("ionFormula", weakItem)) {
+    history[historyKey("compound", weakItem.id, variant)] = { score: 8, scoredAttempts: 8, firstTryCorrects: 0, lastSeenAt: 1 };
+  }
+  const firstItems = new Set();
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const result = buildTenQuestionSet({ practiceType: "ionFormula", difficulty: "normal", ions, compounds, settings: constrained, history, random: randomFrom(seed) });
+    firstItems.add(result.questions[0].itemId);
+  }
+  assert.ok(firstItems.size > 1);
+  assert.ok([...firstItems].some((itemId) => itemId !== weakItem.id));
+});
+
+test("recently shown materials are cooled down across abandoned sessions", () => {
+  const recent = recordRecentPresentation([], { domain: "compound", itemId: "sodium_chloride" });
+  assert.deepEqual(recent, ["compound:sodium_chloride"]);
+  const result = buildTenQuestionSet({
+    practiceType: "ionFormula", difficulty: "normal", ions, compounds, settings,
+    recentPresentations: recent, random: randomFrom(83),
+  });
+  assert.ok(!result.questions.some((question) => question.itemId === "sodium_chloride"));
 });
 
 test("endless rounds visit all eligible items exactly once and omit disabled material", () => {
