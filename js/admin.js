@@ -53,6 +53,17 @@ async function fetchJson(path) {
 function normalizeBundle(bundle) {
   return {
     ...bundle,
+    difficulty: {
+      ...bundle.difficulty,
+      variantWeights: {
+        ...bundle.difficulty.variantWeights,
+        random: {
+          ...bundle.difficulty.variantWeights.random,
+          mixedIonsToFormula: bundle.difficulty.variantWeights.random?.mixedIonsToFormula ?? 1,
+          mixedIonsToName: bundle.difficulty.variantWeights.random?.mixedIonsToName ?? 1,
+        },
+      },
+    },
     compounds: bundle.compounds.map((compound) => {
       const modes = compound.questionModes ?? {};
       return {

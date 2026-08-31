@@ -3,6 +3,7 @@ import {
   VARIANT_LABELS,
   answerFor,
   buildEndlessRound,
+  buildWeakQuestionSet,
   buildTenQuestionSet,
   evaluateAnswer,
   escapeHtml,
@@ -23,24 +24,14 @@ const STORAGE = {
   adminData: "ionicFormula.adminData.v2",
 };
 
-const CATEGORY_LABELS = {
-  ionSimple: "単原子イオン",
-  ionPolyatomic: "多原子イオン",
-  ionVariableOx: "酸化数を区別するイオン",
-  simple11: "単原子 1:1",
-  simpleRatio: "単原子 1:1以外",
-  polyatomic: "多原子イオンを含む",
-  variableOx: "酸化数を区別する化合物",
-};
-
 const elements = Object.fromEntries([
   "app-header", "brand", "quiz-actions", "setup-screen", "quiz-screen", "result-screen",
   "setup-form", "variant-label", "question-number", "question-total", "question-card",
   "question-prompt", "streak", "answer-form", "answer-label", "answer-input",
   "input-message", "submit-answer", "submit-answer-text", "formula-keyboard", "number-keys",
   "letter-keys", "charge-keys", "name-shortcuts", "feedback", "feedback-title", "feedback-answer",
-  "feedback-detail", "next-button", "hint-button", "pass-button", "quit-button",
-  "result-first", "result-retry", "result-hint", "result-pass", "result-categories",
+  "feedback-detail", "feedback-actions", "next-button", "hint-button", "pass-button", "quit-button",
+  "result-first", "result-retry", "result-hint", "result-pass", "result-review", "result-review-list",
   "retry-session", "back-to-setup", "sound-toggle", "vfx-toggle", "spark-layer",
   "session-announcement", "start-button",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
@@ -55,6 +46,9 @@ let compositionEndedAt = 0;
 let keyboardUppercase = true;
 let advanceTimer = null;
 let audioContext = null;
+let audioMasterGain = null;
+let audioCompressor = null;
+let audioPrimed = false;
 let touchStartX = null;
 
 function readLocal(key, fallback) {
@@ -85,6 +79,17 @@ async function fetchJson(path) {
 function normalizeBundle(bundle) {
   return {
     ...bundle,
+    difficulty: {
+      ...bundle.difficulty,
+      variantWeights: {
+        ...bundle.difficulty.variantWeights,
+        random: {
+          ...bundle.difficulty.variantWeights.random,
+          mixedIonsToFormula: bundle.difficulty.variantWeights.random?.mixedIonsToFormula ?? 1,
+          mixedIonsToName: bundle.difficulty.variantWeights.random?.mixedIonsToName ?? 1,
+        },
+      },
+    },
     compounds: bundle.compounds.map((compound) => {
       const modes = compound.questionModes ?? {};
       return {
@@ -121,6 +126,8 @@ async function loadData() {
 function setMediaButton(button, enabled) {
   button.setAttribute("aria-pressed", String(enabled));
   button.setAttribute("aria-label", `${button.id === "sound-toggle" ? "効果音" : "画面演出"}を${enabled ? "オフ" : "オン"}にする`);
+  button.classList.toggle("is-off", !enabled);
+  button.querySelector(".toggle-state")?.replaceChildren(enabled ? "ON" : "OFF");
 }
 
 function showScreen(name) {
@@ -131,6 +138,7 @@ function showScreen(name) {
   elements.brand.hidden = quiz;
   elements.quiz_actions.hidden = !quiz;
   elements.app_header.classList.toggle("quiz-header", quiz);
+  elements.session_announcement.classList.toggle("static", !preferences.vfx);
   window.scrollTo({ top: 0, behavior: preferences.vfx ? "smooth" : "auto" });
 }
 
@@ -148,7 +156,7 @@ function makeShiftKey() {
   const button = makeKey("", "", "case-key", "case");
   button.setAttribute("aria-label", "小文字に切り替える");
   button.setAttribute("aria-pressed", "true");
-  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3-6.5 6.5h4V21h5V9.5h4z"/></svg>';
+  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 11 6-6 6 6"/><path d="M12 5v14"/></svg>';
   return button;
 }
 
@@ -261,16 +269,33 @@ function promptFor(question, item) {
   }
   const cation = ionById.get(item.cation);
   const anion = ionById.get(item.anion);
-  const names = question.variant.startsWith("ionNames");
-  const ionsHtml = names
-    ? `<span class="ion-pair names"><span>${escapeHtml(cation.name)}</span><span class="ion-plus">＋</span><span>${escapeHtml(anion.name)}</span></span>`
-    : `<span class="ion-pair"><span>${ionFormulaHtml(cation)}</span><span class="ion-plus">＋</span><span>${ionFormulaHtml(anion)}</span></span>`;
-  return { html: ionsHtml, formula: !names };
+  const cationFirst = question.promptOrder !== "anionFirst";
+  const sides = cationFirst ? [cation, anion] : [anion, cation];
+  const styles = question.promptStyle === "nameName" ? ["name", "name"]
+    : question.promptStyle === "formulaName" ? ["formula", "name"]
+      : question.promptStyle === "nameFormula" ? ["name", "formula"]
+        : ["formula", "formula"];
+  const renderSide = (ion, style) => style === "name"
+    ? `<span class="ion-name">${escapeHtml(ion.name)}</span>`
+    : `<span class="formula-token">${ionFormulaHtml(ion)}</span>`;
+  const hasName = styles.includes("name");
+  const ionsHtml = hasName
+    ? `<span class="ion-pair names"><span class="ion-pair-first">${renderSide(sides[0], styles[0])}<span class="ion-separator" aria-hidden="true">＆</span></span><span class="ion-pair-second">${renderSide(sides[1], styles[1])}</span></span>`
+    : `<span class="ion-pair"><span>${renderSide(sides[0], styles[0])}</span><span class="ion-separator" aria-hidden="true">＆</span><span>${renderSide(sides[1], styles[1])}</span></span>`;
+  return { html: ionsHtml, formula: !hasName };
 }
 
 function setQuizActionState(enabled) {
   elements.hint_button.disabled = !enabled;
   elements.pass_button.disabled = !enabled;
+  if (!enabled) elements.feedback_actions.hidden = true;
+}
+
+function showSupportActions() {
+  elements.feedback_actions.hidden = false;
+  elements.hint_button.hidden = questionState?.usedHint ?? false;
+  elements.pass_button.hidden = false;
+  setQuizActionState(true);
 }
 
 function configureInput(answer, question) {
@@ -290,6 +315,9 @@ function configureInput(answer, question) {
   elements.name_shortcuts.querySelector('[data-key="イオン"]').hidden = question.domain !== "ion";
   elements.input_message.textContent = "";
   elements.submit_answer.disabled = false;
+  elements.feedback_actions.hidden = true;
+  elements.hint_button.hidden = false;
+  elements.pass_button.hidden = false;
   setKeyboardCase(true);
   renderAnswerSubmit();
   setQuizActionState(true);
@@ -340,29 +368,102 @@ function looksComplete(value, question) {
   return true;
 }
 
+function answerDisplayFor(question, item, answer) {
+  if (answer.type === "name") return escapeHtml(answer.canonical);
+  if (question.domain === "ion") return ionFormulaHtml(item);
+  return formulaHtml(answer.canonical);
+}
+
 function answerDisplay(answer) {
-  if (questionState.answer.type === "name") return escapeHtml(answer);
-  if (questionState.question.domain === "ion") return ionFormulaHtml(questionState.item);
-  return formulaHtml(answer);
+  return answerDisplayFor(questionState.question, questionState.item, answer);
+}
+
+function reviewStatus(result) {
+  if (result === "pass") return "パス";
+  if (questionState.usedHint) return "ヒント";
+  return "再回答";
+}
+
+function recordReviewItem(result) {
+  if (result !== "pass" && !questionState.usedHint && !questionState.hadWrong) return;
+  session.reviewItems.push({
+    question: { ...questionState.question },
+    status: reviewStatus(result),
+  });
+}
+
+function reviewHtml(review) {
+  const item = itemFor(review.question);
+  const answer = answerFor(review.question, item);
+  const prompt = promptFor(review.question, item);
+  return `<article class="review-item"><div class="review-prompt">${prompt.html}</div><div class="review-answer">正解：${answerDisplayFor(review.question, item, answer)}</div><span class="review-status">${escapeHtml(review.status)}</span></article>`;
+}
+
+function ensureAudioOutput() {
+  if (audioContext) return audioContext;
+  const Context = window.AudioContext ?? window.webkitAudioContext;
+  if (!Context) return null;
+  audioContext = new Context({ latencyHint: "interactive" });
+  audioMasterGain = audioContext.createGain();
+  audioCompressor = audioContext.createDynamicsCompressor();
+  audioMasterGain.gain.value = .72;
+  audioCompressor.threshold.value = -20;
+  audioCompressor.knee.value = 12;
+  audioCompressor.ratio.value = 8;
+  audioCompressor.attack.value = .003;
+  audioCompressor.release.value = .08;
+  audioMasterGain.connect(audioCompressor).connect(audioContext.destination);
+  return audioContext;
+}
+
+function primeAudio() {
+  if (!preferences.sound) return;
+  try {
+    const context = ensureAudioOutput();
+    if (!context) return;
+    if (context.state !== "running") context.resume().catch(() => {});
+    if (audioPrimed) return;
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = context.createBuffer(1, 1, context.sampleRate);
+    gain.gain.value = 0;
+    source.connect(gain).connect(audioMasterGain);
+    source.start();
+    audioPrimed = true;
+  } catch {
+    // Audio feedback is optional.
+  }
+}
+
+function playVoice(context, frequency, startAt, duration, volume, type = "triangle") {
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, startAt);
+  gain.gain.setValueAtTime(.0001, startAt);
+  gain.gain.exponentialRampToValueAtTime(volume, startAt + .002);
+  gain.gain.exponentialRampToValueAtTime(.0001, startAt + duration);
+  oscillator.connect(gain).connect(audioMasterGain);
+  oscillator.start(startAt);
+  oscillator.stop(startAt + duration + .01);
 }
 
 function playTone(kind) {
   if (!preferences.sound) return;
   try {
-    audioContext ??= new AudioContext();
-    const now = audioContext.currentTime;
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.type = kind === "correct" ? "sine" : "triangle";
-    oscillator.frequency.setValueAtTime(kind === "correct" ? 620 : 210, now);
-    if (kind === "correct") oscillator.frequency.exponentialRampToValueAtTime(920, now + .11);
-    else oscillator.frequency.linearRampToValueAtTime(170, now + .09);
-    gain.gain.setValueAtTime(.0001, now);
-    gain.gain.exponentialRampToValueAtTime(.055, now + .015);
-    gain.gain.exponentialRampToValueAtTime(.0001, now + .18);
-    oscillator.connect(gain).connect(audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + .2);
+    const context = ensureAudioOutput();
+    if (!context) return;
+    if (context.state !== "running") {
+      context.resume().catch(() => {});
+      return;
+    }
+    const now = context.currentTime + .003;
+    if (kind === "correct") {
+      playVoice(context, 1046.5, now, .075, .055);
+      playVoice(context, 1318.5, now + .036, .095, .05);
+    } else {
+      playVoice(context, 196, now, .09, .035);
+    }
   } catch {
     // Audio feedback is optional.
   }
@@ -403,7 +504,7 @@ function resolveResult(result) {
     if (!questionState.hadWrong && !questionState.usedHint) session.stats.first += 1;
     if (questionState.hadWrong) session.stats.retry += 1;
   }
-  session.actualCategories[questionState.question.category] = (session.actualCategories[questionState.question.category] ?? 0) + 1;
+  recordReviewItem(result);
   questionState.resolved = true;
 }
 
@@ -431,12 +532,14 @@ function submitAnswer(event) {
     elements.feedback_title.textContent = "もう一度考えてみよう";
     elements.feedback_answer.innerHTML = "";
     elements.feedback_detail.textContent = "正答はまだ表示しません。入力を直して再挑戦できます。";
+    showSupportActions();
     playTone("wrong");
     animate("wrong");
     elements.answer_input.focus({ preventScroll: true });
     return;
   }
 
+  playTone("correct");
   resolveResult("correct");
   session.streak += 1;
   elements.answer_input.disabled = true;
@@ -446,9 +549,8 @@ function submitAnswer(event) {
   elements.feedback.hidden = false;
   elements.feedback.className = "feedback correct";
   elements.feedback_title.textContent = "✓ 正解！";
-  elements.feedback_answer.innerHTML = answerDisplay(questionState.answer.canonical);
+  elements.feedback_answer.innerHTML = answerDisplay(questionState.answer);
   elements.feedback_detail.textContent = result.note ?? "";
-  playTone("correct");
   animate("correct", session.streak);
   if (result.note) {
     elements.next_button.hidden = false;
@@ -466,6 +568,8 @@ function showHint() {
   elements.feedback_title.textContent = "ヒント";
   elements.feedback_answer.innerHTML = "";
   elements.feedback_detail.textContent = hintFor(questionState.question, questionState.item, ionById);
+  elements.hint_button.hidden = true;
+  elements.feedback_actions.hidden = false;
   elements.answer_input.focus({ preventScroll: true });
 }
 
@@ -480,7 +584,7 @@ function passQuestion() {
   elements.feedback.hidden = false;
   elements.feedback.className = "feedback";
   elements.feedback_title.textContent = "正答";
-  elements.feedback_answer.innerHTML = answerDisplay(questionState.answer.canonical);
+  elements.feedback_answer.innerHTML = answerDisplay(questionState.answer);
   elements.feedback_detail.textContent = questionState.question.domain === "compound"
     ? explanationForCompound(questionState.item, ionById)
     : `${questionState.item.name}は ${formulaText(questionState.item.formula)}、電荷は${questionState.item.charge > 0 ? "＋" : "－"}${Math.abs(questionState.item.charge)}です。`;
@@ -509,7 +613,8 @@ function nextQuestion() {
 }
 
 function makeRound(endless) {
-  return (endless ? buildEndlessRound : buildTenQuestionSet)({
+  const builder = session.weakMode ? buildWeakQuestionSet : (endless ? buildEndlessRound : buildTenQuestionSet);
+  return builder({
     practiceType: session.practiceType,
     difficulty: session.difficulty,
     ions: data.ions,
@@ -521,11 +626,14 @@ function makeRound(endless) {
 
 function startSession(settings = null) {
   const formData = new FormData(elements.setup_form);
+  const questionCount = formData.get("question-count");
   const chosen = settings ?? {
     practiceType: formData.get("practice-type"),
     difficulty: formData.get("difficulty"),
-    endless: formData.get("question-count") === "endless",
+    endless: questionCount === "endless",
+    weakMode: questionCount === "weak",
   };
+  primeAudio();
   session = {
     ...chosen,
     questions: [],
@@ -534,7 +642,7 @@ function startSession(settings = null) {
     absoluteIndex: 0,
     streak: 0,
     stats: { first: 0, retry: 0, hint: 0, pass: 0 },
-    actualCategories: {},
+    reviewItems: [],
   };
   const round = makeRound(chosen.endless);
   if (!round.questions.length) {
@@ -556,10 +664,8 @@ function showResults() {
   elements.result_retry.textContent = session.stats.retry;
   elements.result_hint.textContent = session.stats.hint;
   elements.result_pass.textContent = session.stats.pass;
-  const categoryLine = Object.entries(session.actualCategories)
-    .map(([category, count]) => `${CATEGORY_LABELS[category] ?? category} ${count}問`)
-    .join(" ／ ");
-  elements.result_categories.textContent = `実際の出題内訳：${categoryLine}`;
+  elements.result_review.hidden = session.reviewItems.length === 0;
+  elements.result_review_list.innerHTML = session.reviewItems.map(reviewHtml).join("");
   showScreen("result");
 }
 
@@ -583,6 +689,7 @@ function bindEvents() {
     renderAnswerSubmit();
   });
   elements.answer_input.addEventListener("touchstart", (event) => {
+    primeAudio();
     touchStartX = event.changedTouches[0]?.clientX ?? null;
   }, { passive: true });
   elements.answer_input.addEventListener("touchend", (event) => {
@@ -601,6 +708,7 @@ function bindEvents() {
     practiceType: session.practiceType,
     difficulty: session.difficulty,
     endless: session.endless,
+    weakMode: session.weakMode,
   }));
   elements.back_to_setup.addEventListener("click", () => showScreen("setup"));
   setMediaButton(elements.sound_toggle, preferences.sound);
@@ -608,11 +716,13 @@ function bindEvents() {
   elements.sound_toggle.addEventListener("click", () => {
     preferences.sound = !preferences.sound;
     setMediaButton(elements.sound_toggle, preferences.sound);
+    if (preferences.sound) primeAudio();
     writeLocal(STORAGE.preferences, preferences);
   });
   elements.vfx_toggle.addEventListener("click", () => {
     preferences.vfx = !preferences.vfx;
     setMediaButton(elements.vfx_toggle, preferences.vfx);
+    elements.session_announcement.classList.toggle("static", !preferences.vfx);
     writeLocal(STORAGE.preferences, preferences);
   });
 }

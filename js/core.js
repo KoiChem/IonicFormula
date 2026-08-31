@@ -11,7 +11,7 @@ export const VARIANTS = {
   ion: ["ionNameToFormula", "ionFormulaToName"],
   ionFormula: ["ionsToFormula", "ionsToName"],
   ionName: ["ionNamesToFormula", "ionNamesToName"],
-  random: ["ionsToFormula", "ionsToName", "ionNamesToFormula", "ionNamesToName"],
+  random: ["ionsToFormula", "ionsToName", "ionNamesToFormula", "ionNamesToName", "mixedIonsToFormula", "mixedIonsToName"],
 };
 
 export const VARIANT_LABELS = {
@@ -21,6 +21,8 @@ export const VARIANT_LABELS = {
   ionsToName: "イオン式 → 化合物名",
   ionNamesToFormula: "イオン名 → 組成式",
   ionNamesToName: "イオン名 → 化合物名",
+  mixedIonsToFormula: "イオン名・式 → 組成式",
+  mixedIonsToName: "イオン名・式 → 化合物名",
 };
 
 const SUBSCRIPT_DIGITS = {
@@ -144,6 +146,8 @@ function compoundModeEnabled(item, variant) {
   const modes = item.questionModes ?? {};
   if (variant === "ionNamesToFormula") return modes.ionNamesToFormula ?? modes.ionsToFormula ?? false;
   if (variant === "ionNamesToName") return modes.ionNamesToName ?? modes.ionsToName ?? false;
+  if (variant === "mixedIonsToFormula") return Boolean(modes.ionsToFormula && (modes.ionNamesToFormula ?? modes.ionsToFormula));
+  if (variant === "mixedIonsToName") return Boolean(modes.ionsToName && (modes.ionNamesToName ?? modes.ionsToName));
   return modes[variant] ?? false;
 }
 
@@ -171,9 +175,12 @@ export function recordHistory(history, question, result, now = Date.now()) {
   const key = historyKey(question);
   const previous = history[key] ?? { score: 0, attempts: 0 };
   const delta = resultScore(result);
+  const firstTryCorrect = !result.passed && !result.usedHint && !result.hadWrong;
   history[key] = {
     score: Math.max(-20, Math.min(20, previous.score + delta)),
     attempts: previous.attempts + 1,
+    scoredAttempts: (Number(previous.scoredAttempts) || 0) + 1,
+    firstTryCorrects: (Number(previous.firstTryCorrects) || 0) + (firstTryCorrect ? 1 : 0),
     lastResult: result.passed ? "pass" : result.usedHint ? "hintedCorrect" : result.hadWrong ? "retryCorrect" : "firstTryCorrect",
     lastSeenAt: now,
   };
@@ -232,21 +239,58 @@ function eligibleItems(practiceType, ions, compounds, categoryWeights) {
     .filter(({ category }) => category && Number(categoryWeights[category]) > 0);
 }
 
-function choosePair({ candidates, practiceType, variantRemaining, history, wantWeak, random }) {
+function weaknessFor(history, key) {
+  const record = history[key];
+  if (!record) return { tier: 2, rate: 1, score: 0, lastSeenAt: Number.POSITIVE_INFINITY };
+  const scoredAttempts = Number(record.scoredAttempts) || 0;
+  if (scoredAttempts > 0) {
+    return {
+      tier: 0,
+      // A small prior keeps one miss from outweighing a longer learning history.
+      rate: ((Number(record.firstTryCorrects) || 0) + 1) / (scoredAttempts + 2),
+      score: Number(record.score) || 0,
+      lastSeenAt: Number(record.lastSeenAt) || 0,
+    };
+  }
+  if ((Number(record.score) || 0) > 0) return { tier: 1, rate: 1, score: Number(record.score), lastSeenAt: Number(record.lastSeenAt) || 0 };
+  return { tier: 2, rate: 1, score: Number(record.score) || 0, lastSeenAt: Number(record.lastSeenAt) || 0 };
+}
+
+function compareWeakness(left, right) {
+  if (left.tier !== right.tier) return left.tier - right.tier;
+  if (left.rate !== right.rate) return left.rate - right.rate;
+  if (left.score !== right.score) return right.score - left.score;
+  return left.lastSeenAt - right.lastSeenAt;
+}
+
+function candidateIonIds(candidate, domain) {
+  return domain === "ion" ? [candidate.item.id] : [candidate.item.cation, candidate.item.anion];
+}
+
+function ionReusePenalty(ionIds, usedIonCounts) {
+  return ionIds.reduce((total, ionId) => total + (usedIonCounts.get(ionId) ?? 0), 0);
+}
+
+function choosePair({ candidates, practiceType, variantRemaining, history, wantWeak, usedIonCounts = new Map(), random }) {
   const domain = domainForPracticeType(practiceType);
   const pairs = [];
   for (const candidate of candidates) {
     for (const variant of itemVariants(practiceType, candidate.item)) {
-      const weakScore = history[historyKey(domain, candidate.item.id, variant)]?.score ?? 0;
-      pairs.push({ candidate, variant, weakScore, variantNeed: variantRemaining[variant] ?? 0, tie: random() });
+      const weakness = weaknessFor(history, historyKey(domain, candidate.item.id, variant));
+      const ionIds = candidateIonIds(candidate, domain);
+      pairs.push({
+        candidate, variant, weakness, ionIds,
+        ionPenalty: ionReusePenalty(ionIds, usedIonCounts),
+        variantNeed: variantRemaining[variant] ?? 0, tie: random(),
+      });
     }
   }
   pairs.sort((a, b) => {
     if (wantWeak) {
-      const weakA = a.weakScore > 0 ? a.weakScore : -100;
-      const weakB = b.weakScore > 0 ? b.weakScore : -100;
-      if (weakB !== weakA) return weakB - weakA;
+      const weakCompare = compareWeakness(a.weakness, b.weakness);
+      if (weakCompare) return weakCompare;
     }
+    if (a.ionPenalty !== b.ionPenalty) return a.ionPenalty - b.ionPenalty;
     const needA = a.variantNeed > 0 ? a.variantNeed : -1;
     const needB = b.variantNeed > 0 ? b.variantNeed : -1;
     return needB - needA || a.tie - b.tie;
@@ -254,12 +298,22 @@ function choosePair({ candidates, practiceType, variantRemaining, history, wantW
   return pairs[0] ?? null;
 }
 
-function makeQuestion(practiceType, pair) {
+function makeQuestion(practiceType, pair, random) {
   const domain = domainForPracticeType(practiceType);
+  const promptStyle = domain !== "compound" ? null
+    : pair.variant.startsWith("ionNames") ? "nameName"
+      : pair.variant.startsWith("ions") ? "formulaFormula"
+        : random() < .5 ? "formulaName" : "nameFormula";
   return {
     practiceType, domain, itemId: pair.candidate.item.id, category: pair.candidate.category,
     variant: pair.variant, skill: pair.variant,
+    promptStyle,
+    promptOrder: domain === "compound" ? (random() < .5 ? "cationFirst" : "anionFirst") : null,
   };
+}
+
+function recordPairIons(pair, usedIonCounts) {
+  for (const ionId of pair.ionIds) usedIonCounts.set(ionId, (usedIonCounts.get(ionId) ?? 0) + 1);
 }
 
 function normalizedOptions(options) {
@@ -280,19 +334,46 @@ export function buildTenQuestionSet(rawOptions) {
   const categorySlots = shuffled(Object.entries(categoryCounts).flatMap(([category, count]) => Array(count).fill(category)), random);
   const remainingVariants = { ...variantCounts };
   const used = new Set();
+  const usedIonCounts = new Map();
   const questions = [];
   let weakRemaining = Math.min(Number(settings.weakQuestionTarget?.ten ?? 3), total);
   for (let index = 0; index < categorySlots.length; index += 1) {
     const category = categorySlots[index];
     const candidates = eligible.filter((candidate) => candidate.category === category && !used.has(candidate.item.id));
     const shouldSeekWeak = weakRemaining > 0 && (index % 3 === 0 || categorySlots.length - index <= weakRemaining);
-    let pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: shouldSeekWeak, random });
+    let pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: shouldSeekWeak, usedIonCounts, random });
     if (!pair) continue;
-    if (shouldSeekWeak && pair.weakScore <= 0) pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: false, random });
-    else if (pair.weakScore > 0) weakRemaining -= 1;
+    if (shouldSeekWeak && pair.weakness.tier === 2) pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: false, usedIonCounts, random });
+    else if (pair.weakness.tier < 2) weakRemaining -= 1;
     used.add(pair.candidate.item.id);
+    recordPairIons(pair, usedIonCounts);
     if (remainingVariants[pair.variant] > 0) remainingVariants[pair.variant] -= 1;
-    questions.push(makeQuestion(practiceType, pair));
+    questions.push(makeQuestion(practiceType, pair, random));
+  }
+  return { questions, categoryCounts, variantCounts, availableCount: eligible.length };
+}
+
+export function buildWeakQuestionSet(rawOptions) {
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random } = normalizedOptions(rawOptions);
+  const categoryWeights = settings.categoryWeights[domain][difficulty];
+  const variantWeights = settings.variantWeights[practiceType];
+  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights);
+  const total = Math.min(10, eligible.length);
+  const variantCounts = allocateCounts(variantWeights, total, {}, random);
+  const remainingVariants = { ...variantCounts };
+  const categoryCounts = Object.fromEntries(Object.keys(categoryWeights).map((category) => [category, 0]));
+  const used = new Set();
+  const usedIonCounts = new Map();
+  const questions = [];
+  while (questions.length < total) {
+    const candidates = eligible.filter((candidate) => !used.has(candidate.item.id));
+    const pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: true, usedIonCounts, random });
+    if (!pair) break;
+    used.add(pair.candidate.item.id);
+    recordPairIons(pair, usedIonCounts);
+    categoryCounts[pair.candidate.category] += 1;
+    if (remainingVariants[pair.variant] > 0) remainingVariants[pair.variant] -= 1;
+    questions.push(makeQuestion(practiceType, pair, random));
   }
   return { questions, categoryCounts, variantCounts, availableCount: eligible.length };
 }
@@ -305,6 +386,7 @@ export function buildEndlessRound(rawOptions) {
   const variantTargets = allocateCounts(variantWeights, remaining.length, {}, random);
   const variantRemaining = { ...variantTargets };
   const drawnByCategory = Object.fromEntries(Object.keys(categoryWeights).map((key) => [key, 0]));
+  const usedIonCounts = new Map();
   const questions = [];
   let weakRemaining = Math.ceil(remaining.length * Number(settings.weakQuestionTarget?.endlessPerTen ?? 3) / 10);
   while (remaining.length) {
@@ -318,12 +400,13 @@ export function buildEndlessRound(rawOptions) {
       .sort((a, b) => b.deficit - a.deficit || a.tie - b.tie)[0].key;
     const candidates = remaining.filter((candidate) => candidate.category === category);
     const shouldSeekWeak = weakRemaining > 0 && (questions.length % 3 === 0 || remaining.length <= weakRemaining);
-    let pair = choosePair({ candidates, practiceType, variantRemaining, history, wantWeak: shouldSeekWeak, random });
-    if (shouldSeekWeak && pair?.weakScore <= 0) pair = choosePair({ candidates, practiceType, variantRemaining, history, wantWeak: false, random });
-    else if (pair?.weakScore > 0) weakRemaining -= 1;
+    let pair = choosePair({ candidates, practiceType, variantRemaining, history, wantWeak: shouldSeekWeak, usedIonCounts, random });
+    if (shouldSeekWeak && pair?.weakness.tier === 2) pair = choosePair({ candidates, practiceType, variantRemaining, history, wantWeak: false, usedIonCounts, random });
+    else if (pair?.weakness.tier < 2) weakRemaining -= 1;
     if (!pair) break;
-    questions.push(makeQuestion(practiceType, pair));
+    questions.push(makeQuestion(practiceType, pair, random));
     drawnByCategory[category] += 1;
+    recordPairIons(pair, usedIonCounts);
     if (variantRemaining[pair.variant] > 0) variantRemaining[pair.variant] -= 1;
     remaining.splice(remaining.findIndex((candidate) => candidate.item.id === pair.candidate.item.id), 1);
   }

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "categoryWeights": {
     "ion": {
       "normal": { "ionSimple": 6, "ionPolyatomic": 3, "ionVariableOx": 1 },
@@ -14,7 +14,7 @@
     "ion": { "ionNameToFormula": 1, "ionFormulaToName": 1 },
     "ionFormula": { "ionsToFormula": 1, "ionsToName": 1 },
     "ionName": { "ionNamesToFormula": 1, "ionNamesToName": 1 },
-    "random": { "ionsToFormula": 1, "ionsToName": 1, "ionNamesToFormula": 1, "ionNamesToName": 1 }
+    "random": { "ionsToFormula": 1, "ionsToName": 1, "ionNamesToFormula": 1, "ionNamesToName": 1, "mixedIonsToFormula": 1, "mixedIonsToName": 1 }
   },
   "weakQuestionTarget": {
     "ten": 3,

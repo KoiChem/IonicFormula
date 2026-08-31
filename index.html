@@ -14,16 +14,16 @@
   <header id="app-header" class="app-header">
     <a id="brand" class="brand" href="./" aria-label="IonicFormula ホーム">IonicFormula</a>
     <div id="quiz-actions" class="quiz-actions" hidden>
-      <button id="hint-button" class="top-action" type="button">ヒント</button>
-      <button id="pass-button" class="top-action" type="button">パス</button>
-      <button id="quit-button" class="top-action" type="button">タイトル</button>
+      <button id="quit-button" class="home-button" type="button" aria-label="ホーム画面に戻る">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.5 10 8.5-7 8.5 7V21H15v-6H9v6H3.5z"/></svg>
+      </button>
     </div>
     <div class="media-controls" aria-label="効果音・画面演出">
       <button id="sound-toggle" class="media-toggle" type="button" aria-label="効果音を切り替える" aria-pressed="true">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="sound-wave" d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></svg><span>SE</span>
       </button>
       <button id="vfx-toggle" class="media-toggle" type="button" aria-label="画面演出を切り替える" aria-pressed="true">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.45 6.55L20 10l-6.55 1.45L12 18l-1.45-6.55L4 10l6.55-1.45z"/><path d="m18 16 .55 2.45L21 19l-2.45.55L18 22l-.55-2.45L15 19l2.45-.55z"/></svg><span>FX</span>
+        <svg class="fx-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2 1.45 6.55L20 10l-6.55 1.45L12 18l-1.45-6.55L4 10l6.55-1.45z"/><path d="m18 16 .55 2.45L21 19l-2.45.55L18 22l-.55-2.45L15 19l2.45-.55z"/><path class="fx-slash" d="M4 4 20 20"/></svg><span>FX</span><span class="toggle-state">ON</span>
       </button>
     </div>
   </header>
@@ -69,9 +69,10 @@
 
         <fieldset class="choice-section compact-choice">
           <legend class="sr-only">問題数</legend>
-          <div class="segment-control two">
+          <div class="segment-control three">
             <label><input type="radio" name="question-count" value="10" checked><span>10問</span></label>
             <label><input type="radio" name="question-count" value="endless"><span>エンドレス</span></label>
+            <label><input type="radio" name="question-count" value="weak"><span>苦手</span></label>
           </div>
         </fieldset>
 
@@ -120,6 +121,10 @@
         <div id="feedback-title" class="feedback-title"></div>
         <div id="feedback-answer" class="feedback-answer"></div>
         <p id="feedback-detail" class="feedback-detail"></p>
+        <div id="feedback-actions" class="feedback-actions" hidden>
+          <button id="hint-button" class="support-action" type="button">ヒント</button>
+          <button id="pass-button" class="support-action" type="button">パス</button>
+        </div>
         <button id="next-button" class="primary-button" type="button" hidden>次へ</button>
       </div>
     </section>
@@ -135,7 +140,10 @@
         <div><dt>ヒント使用</dt><dd id="result-hint">0</dd></div>
         <div><dt>パス</dt><dd id="result-pass">0</dd></div>
       </dl>
-      <div id="result-categories" class="result-categories"></div>
+      <section id="result-review" class="result-review" hidden aria-labelledby="result-review-title">
+        <h2 id="result-review-title">復習する問題</h2>
+        <div id="result-review-list" class="result-review-list"></div>
+      </section>
       <div class="result-actions">
         <button id="retry-session" class="primary-button" type="button">同じ設定でもう一度</button>
         <button id="back-to-setup" class="secondary-button" type="button">タイトルへ戻る</button>

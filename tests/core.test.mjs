@@ -7,6 +7,7 @@ import {
   answerFor,
   buildEndlessRound,
   buildTenQuestionSet,
+  buildWeakQuestionSet,
   compoundCategory,
   evaluateAnswer,
   historyKey,
@@ -120,7 +121,7 @@ test("Fe(OH)3 is absent and iron(III) hydroxide is name-only in both ion prompt 
   assert.equal(item.formula, null);
   assert.deepEqual(itemVariants("ionFormula", item), ["ionsToName"]);
   assert.deepEqual(itemVariants("ionName", item), ["ionNamesToName"]);
-  assert.deepEqual(itemVariants("random", item), ["ionsToName", "ionNamesToName"]);
+  assert.deepEqual(itemVariants("random", item), ["ionsToName", "ionNamesToName", "mixedIonsToName"]);
   const invalid = structuredClone(compounds);
   invalid.find((compound) => compound.id === "iron3_hydroxide").formula = "Fe(OH)3";
   const result = validateData(ions, invalid, settings);
@@ -152,14 +153,59 @@ test("all four problem types produce complete unique sets across both difficulti
   }
 });
 
-test("direct modes balance answer forms and random uses all four actual skills", () => {
+test("direct modes preserve their prompt type and random uses formula, name, and mixed skills", () => {
   const formula = buildTenQuestionSet({ practiceType: "ionFormula", difficulty: "normal", ions, compounds, settings, random: randomFrom(8) });
   assert.deepEqual([...new Set(formula.questions.map((question) => question.variant))].sort(), ["ionsToFormula", "ionsToName"]);
   const named = buildTenQuestionSet({ practiceType: "ionName", difficulty: "normal", ions, compounds, settings, random: randomFrom(9) });
   assert.deepEqual([...new Set(named.questions.map((question) => question.variant))].sort(), ["ionNamesToFormula", "ionNamesToName"]);
   const random = buildTenQuestionSet({ practiceType: "random", difficulty: "normal", ions, compounds, settings, random: randomFrom(10) });
-  assert.deepEqual([...new Set(random.questions.map((question) => question.variant))].sort(), ["ionNamesToFormula", "ionNamesToName", "ionsToFormula", "ionsToName"]);
+  assert.deepEqual([...new Set(random.questions.map((question) => question.variant))].sort(), ["ionNamesToFormula", "ionNamesToName", "ionsToFormula", "ionsToName", "mixedIonsToFormula", "mixedIonsToName"]);
   assert.equal(answerFor(random.questions.find((question) => question.variant === "ionsToFormula"), compounds.find((item) => item.id === random.questions.find((question) => question.variant === "ionsToFormula").itemId)).type, "formula");
+});
+
+test("compound prompts randomize ion order and mixed prompts use exactly one name", () => {
+  const orders = new Set();
+  const mixedStyles = new Set();
+  for (let seed = 1; seed <= 30; seed += 1) {
+    const result = buildTenQuestionSet({ practiceType: "random", difficulty: "normal", ions, compounds, settings, random: randomFrom(seed) });
+    for (const question of result.questions) {
+      orders.add(question.promptOrder);
+      if (question.variant.startsWith("mixed")) mixedStyles.add(question.promptStyle);
+    }
+  }
+  assert.deepEqual([...orders].sort(), ["anionFirst", "cationFirst"]);
+  assert.deepEqual([...mixedStyles].sort(), ["formulaName", "nameFormula"]);
+});
+
+test("ten-question compound sets minimize ion reuse across display variants", () => {
+  const compoundById = new Map(compounds.map((item) => [item.id, item]));
+  for (const practiceType of ["ionFormula", "ionName", "random"]) {
+    for (const difficulty of ["normal", "hard"]) {
+      for (let seed = 1; seed <= 20; seed += 1) {
+        const result = buildTenQuestionSet({ practiceType, difficulty, ions, compounds, settings, random: randomFrom(seed) });
+        const ionUse = {};
+        for (const question of result.questions) {
+          const item = compoundById.get(question.itemId);
+          for (const ionId of [item.cation, item.anion]) ionUse[ionId] = (ionUse[ionId] ?? 0) + 1;
+        }
+        assert.ok(Math.max(...Object.values(ionUse)) <= 2, `${practiceType}.${difficulty}, seed=${seed}`);
+      }
+    }
+  }
+});
+
+test("weak mode prefers a lower first-try success rate while retaining unique items", () => {
+  const history = {};
+  const weakItem = compounds.find((item) => item.id === "calcium_chloride");
+  for (const variant of itemVariants("ionFormula", weakItem)) {
+    history[historyKey("compound", weakItem.id, variant)] = {
+      score: 8, attempts: 8, scoredAttempts: 8, firstTryCorrects: 0, lastSeenAt: 1,
+    };
+  }
+  const result = buildWeakQuestionSet({ practiceType: "ionFormula", difficulty: "normal", ions, compounds, settings, history, random: randomFrom(31) });
+  assert.equal(result.questions.length, 10);
+  assert.equal(result.questions[0].itemId, "calcium_chloride");
+  assert.equal(new Set(result.questions.map((question) => question.itemId)).size, 10);
 });
 
 test("endless rounds visit all eligible items exactly once and omit disabled material", () => {
@@ -175,9 +221,13 @@ test("weak history is shared by actual skill, not by the random menu choice", ()
   const question = { domain: "compound", itemId: "calcium_chloride", practiceType: "random", variant: "ionNamesToFormula", skill: "ionNamesToFormula" };
   recordHistory(history, question, { passed: false, usedHint: false, hadWrong: true }, 1);
   assert.equal(history[historyKey(question)].score, 1);
+  assert.equal(history[historyKey(question)].scoredAttempts, 1);
+  assert.equal(history[historyKey(question)].firstTryCorrects, 0);
   assert.equal(history[historyKey("compound", "calcium_chloride", "ionsToFormula")], undefined);
   recordHistory(history, { ...question, practiceType: "ionName" }, { passed: false, usedHint: false, hadWrong: false }, 2);
   assert.equal(history[historyKey(question)].score, 0);
+  assert.equal(history[historyKey(question)].scoredAttempts, 2);
+  assert.equal(history[historyKey(question)].firstTryCorrects, 1);
 });
 
 test("all app-shell assets use repository-relative paths and exist", async () => {
