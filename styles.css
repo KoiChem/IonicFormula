@@ -117,7 +117,20 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .primary-button:disabled { opacity: .52; cursor: default; box-shadow: none; }
 .secondary-button { border: 1px solid var(--primary); background: white; color: var(--primary); }
 .text-button { border: 0; background: transparent; color: var(--muted); text-decoration: underline; text-underline-offset: 4px; }
+.start-actions { display: grid; grid-template-columns: minmax(0, 1fr) 50px; gap: 8px; }
 .start-button { width: 100%; font-size: 1rem; }
+.weak-review-button {
+  position: relative; display: grid; place-items: center; min-width: 0; min-height: 48px; padding: 0;
+  border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.9); color: var(--primary-dark);
+  box-shadow: 0 6px 14px rgba(57,141,117,.09); cursor: pointer;
+}
+.weak-review-button svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.weak-review-button:active { transform: translateY(1px); }
+.weak-review-button:focus-visible, .modal-close:focus-visible { outline: 3px solid rgba(57,141,117,.25); outline-offset: 2px; }
+.weak-review-count {
+  position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; display: grid; place-items: center;
+  border: 2px solid var(--background); border-radius: 999px; background: #e79077; color: white; font-size: .61rem; font-weight: 900;
+}
 .question-card {
   position: relative; min-height: 168px; padding: 31px 18px 20px;
   display: flex; flex-direction: column; justify-content: center;
@@ -128,7 +141,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .question-prompt { font-size: clamp(1.55rem, 8.5vw, 2.6rem); font-weight: 800; line-height: 1.32; overflow-wrap: anywhere; }
 .question-prompt.formula { font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; letter-spacing: .02em; }
 .ion-pair { display: flex; align-items: center; justify-content: center; gap: clamp(8px, 3vw, 16px); white-space: nowrap; }
-.ion-pair.names { display: grid; gap: 2px; white-space: normal; font-family: inherit; font-size: clamp(1.12rem, 5.4vw, 1.55rem); line-height: 1.45; }
+.ion-pair.names { width: max-content; max-width: 100%; margin-inline: auto; font-family: inherit; font-size: clamp(1.12rem, 5.4vw, 1.55rem); line-height: 1.45; }
+.ion-pair.names.is-two-lines { display: grid; width: 100%; gap: 2px; white-space: normal; }
+.ion-pair.names.is-measuring { visibility: hidden; }
 .ion-pair-first, .ion-pair-second { display: block; }
 .ion-separator { margin-left: .32em; color: var(--muted); font-family: inherit; font-size: .72em; font-weight: 700; }
 .formula-token { font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; letter-spacing: .02em; }
@@ -154,15 +169,17 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .answer-submit:disabled { opacity: .55; }
 .input-message { min-height: 1em; margin: 3px 3px 0; color: var(--wrong); font-size: .72rem; }
 
-.name-shortcuts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 7px; }
+.name-shortcuts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(48px, 1.3fr); gap: 4px; margin-top: 7px; }
+.name-shortcuts.compound-name-entry { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(52px, 1.35fr); }
 .name-shortcuts button { min-width: 0; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.88); color: var(--primary-dark); font-size: .85rem; font-weight: 800; box-shadow: 0 2px 0 #c8ddd5; }
 .name-shortcuts button:active { transform: translateY(2px); box-shadow: none; }
+.name-shortcuts .name-clear { color: var(--muted); font-size: .72rem; }
 
 .formula-keyboard { margin-top: 8px; padding: 6px; border: 0; border-radius: 16px; background: rgba(231,245,238,.94); box-shadow: 0 8px 22px rgba(61,122,103,.08); user-select: none; }
 .formula-keyboard button { min-width: 0; min-height: 35px; padding: 0; border: 1px solid #d1e0db; border-radius: 8px; background: white; color: var(--ink); font-weight: 760; box-shadow: 0 2px 0 #bfd1cb; cursor: pointer; }
 .formula-keyboard button:active { transform: translateY(2px); box-shadow: none; }
 .formula-keyboard .case-key { display: grid; place-items: center; }
-.formula-keyboard .case-key svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.formula-keyboard .case-key svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .formula-keyboard .case-key[aria-pressed="true"] { border-color: #a7d6c5; background: #ccefe0; color: var(--primary-dark); }
 .key-row { display: grid; gap: 3px; margin: 3px auto; }
 .number-keys { grid-template-columns: repeat(10, 1fr); }
@@ -184,6 +201,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .feedback-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 11px; }
 .support-action { min-height: 39px; border: 1px solid var(--line); border-radius: 11px; background: #f7fcf9; color: var(--primary-dark); font-weight: 850; }
 .support-action:last-child { background: white; color: var(--muted); }
+.support-action.is-used { visibility: hidden; pointer-events: none; }
 .feedback .primary-button { width: 100%; margin-top: 10px; }
 .question-card.shake { animation: shake .28s ease; }
 .question-card.pop { animation: pop .32s ease; }
@@ -215,6 +233,23 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 .review-status { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); padding: 4px 7px; border-radius: 999px; background: #e4f5ed; color: var(--primary-dark); font-size: .68rem; font-weight: 850; }
 .result-actions { display: grid; gap: 8px; margin-top: 12px; }
 
+.weak-review-dialog { width: min(calc(100% - 26px), 520px); max-height: min(78dvh, 680px); margin: auto; padding: 0; border: 0; border-radius: 19px; background: transparent; color: var(--ink); box-shadow: 0 20px 64px rgba(38,89,73,.25); }
+.weak-review-dialog::backdrop { background: rgba(41, 83, 71, .28); backdrop-filter: blur(2px); }
+.weak-review-sheet { max-height: min(78dvh, 680px); padding: 17px; overflow: auto; border: 1px solid var(--line); border-radius: inherit; background: #fbfffc; }
+.weak-review-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.weak-review-kicker { margin: 0 0 2px; color: var(--muted); font-size: .69rem; font-weight: 800; letter-spacing: .08em; }
+.weak-review-heading h2 { margin: 0; font-size: 1.28rem; }
+.modal-close { width: 35px; height: 35px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--primary-dark); font-size: 1.35rem; line-height: 1; cursor: pointer; }
+.weak-review-description, .weak-review-empty { margin: 10px 0; color: var(--muted); font-size: .8rem; line-height: 1.5; }
+.weak-review-empty { padding: 13px; border: 1px dashed var(--line); border-radius: 12px; background: rgba(239,250,245,.7); text-align: center; }
+.weak-review-list { display: grid; gap: 7px; }
+.weak-item { padding: 10px 11px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.92); }
+.weak-item-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; font-size: .92rem; font-weight: 850; }
+.weak-item-formula { font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; color: var(--primary-dark); }
+.weak-item-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 6px; color: var(--muted); font-size: .7rem; font-weight: 750; }
+.weak-skill { padding: 3px 6px; border-radius: 999px; background: #e5f5ee; color: var(--primary-dark); font-size: .65rem; font-weight: 850; }
+.weak-review-sheet > .primary-button { width: 100%; margin-top: 12px; }
+
 @media (min-width: 680px) {
   .app-shell { padding-top: 18px; }
   .setup-form { max-width: 490px; margin-inline: auto; }
@@ -227,6 +262,8 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
   .mode-card { min-height: 90px; }
   .formula-keyboard button { min-height: 33px; font-size: .78rem; }
   .letter-keys .key-row:last-child { grid-template-columns: 36px repeat(7, 1fr) 36px; }
+  .name-shortcuts { grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(44px, 1.2fr); gap: 3px; }
+  .name-shortcuts.compound-name-entry { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(48px, 1.3fr); }
 }
 @media (max-width: 680px) {
   .formula-keyboard { width: calc(100% + 22px); margin-left: -11px; margin-right: -11px; padding-inline: 3px; }

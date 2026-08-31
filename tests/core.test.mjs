@@ -11,6 +11,7 @@ import {
   compoundCategory,
   evaluateAnswer,
   historyKey,
+  hintFor,
   ionCategory,
   ionInputHtml,
   itemVariants,
@@ -19,6 +20,7 @@ import {
   normalizeName,
   recordHistory,
   validateData,
+  weakHistoryItems,
 } from "../js/core.js";
 
 const load = async (path) => JSON.parse(await readFile(new URL(path, import.meta.url), "utf8"));
@@ -228,6 +230,31 @@ test("weak history is shared by actual skill, not by the random menu choice", ()
   assert.equal(history[historyKey(question)].score, 0);
   assert.equal(history[historyKey(question)].scoredAttempts, 2);
   assert.equal(history[historyKey(question)].firstTryCorrects, 1);
+});
+
+test("contextual hints prioritize ion order, parentheses, and oxidation numerals", () => {
+  const calciumChloride = compounds.find((item) => item.id === "calcium_chloride");
+  const calciumHydroxide = compounds.find((item) => item.id === "calcium_hydroxide");
+  const ironChloride = compounds.find((item) => item.id === "iron3_chloride");
+  const formulaQuestion = { domain: "compound", itemId: calciumChloride.id, variant: "ionsToFormula", promptOrder: "anionFirst" };
+  assert.match(hintFor(formulaQuestion, calciumChloride, ionById), /表示は陰イオンが先/);
+  assert.match(hintFor({ ...formulaQuestion, promptOrder: "cationFirst" }, calciumChloride, ionById, "Cl2Ca"), /陽イオン成分を先/);
+  assert.match(hintFor({ ...formulaQuestion, itemId: calciumHydroxide.id }, calciumHydroxide, ionById, "CaOH2"), /括弧/);
+  assert.match(hintFor({ domain: "compound", itemId: ironChloride.id, variant: "ionsToName" }, ironChloride, ionById), /酸化数/);
+});
+
+test("weak review groups positive-score skills by one learning item", () => {
+  const history = {
+    [historyKey("compound", "calcium_chloride", "ionsToFormula")]: { score: 2, scoredAttempts: 3, firstTryCorrects: 0, lastSeenAt: 10 },
+    [historyKey("compound", "calcium_chloride", "ionsToName")]: { score: 1, scoredAttempts: 2, firstTryCorrects: 1, lastSeenAt: 20 },
+    [historyKey("ion", "sodium", "ionNameToFormula")]: { score: -1, scoredAttempts: 1, firstTryCorrects: 1, lastSeenAt: 30 },
+  };
+  const entries = weakHistoryItems(history, ions, compounds);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].itemId, "calcium_chloride");
+  assert.equal(entries[0].score, 3);
+  assert.deepEqual(entries[0].skills, ["ionsToFormula", "ionsToName"]);
+  assert.equal(entries[0].rate, 1 / 5);
 });
 
 test("all app-shell assets use repository-relative paths and exist", async () => {

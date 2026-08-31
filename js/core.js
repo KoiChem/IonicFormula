@@ -256,6 +256,35 @@ function weaknessFor(history, key) {
   return { tier: 2, rate: 1, score: Number(record.score) || 0, lastSeenAt: Number(record.lastSeenAt) || 0 };
 }
 
+export function weakHistoryItems(history, ions, compounds) {
+  const ionById = new Map(ions.map((ion) => [ion.id, ion]));
+  const compoundById = new Map(compounds.map((compound) => [compound.id, compound]));
+  const grouped = new Map();
+  for (const [key, rawRecord] of Object.entries(history ?? {})) {
+    const [domain, itemId, skill] = key.split(":");
+    const item = domain === "ion" ? ionById.get(itemId) : domain === "compound" ? compoundById.get(itemId) : null;
+    const score = Number(rawRecord?.score) || 0;
+    if (!item || score <= 0) continue;
+    const groupKey = `${domain}:${itemId}`;
+    const current = grouped.get(groupKey) ?? {
+      domain, itemId, item, score: 0, scoredAttempts: 0, firstTryCorrects: 0, lastSeenAt: 0, skills: [],
+    };
+    current.score += score;
+    current.scoredAttempts += Number(rawRecord?.scoredAttempts) || 0;
+    current.firstTryCorrects += Number(rawRecord?.firstTryCorrects) || 0;
+    current.lastSeenAt = Math.max(current.lastSeenAt, Number(rawRecord?.lastSeenAt) || 0);
+    if (skill && !current.skills.includes(skill)) current.skills.push(skill);
+    grouped.set(groupKey, current);
+  }
+  return [...grouped.values()]
+    .map((entry) => ({
+      ...entry,
+      rate: entry.scoredAttempts > 0 ? entry.firstTryCorrects / entry.scoredAttempts : 0,
+      skills: entry.skills.sort(),
+    }))
+    .sort((left, right) => left.rate - right.rate || right.score - left.score || left.lastSeenAt - right.lastSeenAt);
+}
+
 function compareWeakness(left, right) {
   if (left.tier !== right.tier) return left.tier - right.tier;
   if (left.rate !== right.rate) return left.rate - right.rate;
@@ -444,20 +473,35 @@ export function explanationForCompound(compound, ionById) {
   return `${plus}\n${minus}\n全体の電荷が0になる最簡整数比です。`;
 }
 
-export function hintFor(question, item, ionById) {
+export function hintFor(question, item, ionById, wrongAnswer = "") {
   if (question.domain === "ion") {
     return question.variant === "ionNameToFormula"
       ? "元素記号やイオンを表す式と、電荷の符号・大きさを確認しよう。"
       : "式の元素記号・原子団と、右上の電荷に注目しよう。";
   }
-  if (question.variant.endsWith("ToName")) return "陰イオン名、陽イオン名の順につなげよう。必要なら酸化数も付けよう。";
   const cation = ionById.get(item.cation);
   const anion = ionById.get(item.anion);
+  if (question.variant.endsWith("ToName")) {
+    const needsNumeral = cation?.requiresOxidationNumeral || anion?.requiresOxidationNumeral;
+    return needsNumeral
+      ? "化合物名は陰イオン由来の名前、陽イオン名の順です。鉄や銅では酸化数も確かめよう。"
+      : "化合物名は陰イオン由来の名前、陽イオン名の順につなげよう。";
+  }
+  if (!cation || !anion) return "陽イオンと陰イオンの電荷を確認しよう。";
+  const actual = normalizeFormula(wrongAnswer);
+  const composition = neutralFormula(cation, anion);
+  const reverseFormula = composition ? `${ionTerm(anion, composition.anionCount)}${ionTerm(cation, composition.cationCount)}` : "";
+  if (actual && actual === reverseFormula) return "組成式では、陽イオン成分を先、陰イオン成分を後に書こう。";
+  if (item.formula?.includes("(") && actual && actual.replace(/[()]/g, "") === item.formula.replace(/[()]/g, "")) {
+    return "同じ多原子イオンを複数使うときは、原子団を括弧でまとめよう。";
+  }
   const left = Math.abs(cation.charge);
   const right = Math.abs(anion.charge);
-  return left === right
+  const orderHint = question.promptOrder === "anionFirst" ? "表示は陰イオンが先ですが、組成式は陽イオン成分を先に書きます。" : "";
+  const ratioHint = left === right
     ? "陽イオンと陰イオンを1個ずつ組み合わせると、全体の電荷が0になります。"
     : `＋${left}と－${right}の電荷が打ち消し合う最簡整数比を考えよう。`;
+  return `${orderHint}${ratioHint}`;
 }
 
 export function validateData(ions, compounds, settings) {

@@ -16,6 +16,7 @@ import {
   normalizeFormula,
   recordHistory,
   validateData,
+  weakHistoryItems,
 } from "./core.js";
 
 const STORAGE = {
@@ -34,6 +35,8 @@ const elements = Object.fromEntries([
   "result-first", "result-retry", "result-hint", "result-pass", "result-review", "result-review-list",
   "retry-session", "back-to-setup", "sound-toggle", "vfx-toggle", "spark-layer",
   "session-announcement", "start-button",
+  "weak-review-button", "weak-review-count", "weak-review-dialog", "close-weak-review", "weak-review-list",
+  "weak-review-empty", "start-weak-from-review",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
 
 let data;
@@ -50,6 +53,7 @@ let audioMasterGain = null;
 let audioCompressor = null;
 let audioPrimed = false;
 let touchStartX = null;
+let promptFitFrame = null;
 
 function readLocal(key, fallback) {
   try {
@@ -156,7 +160,7 @@ function makeShiftKey() {
   const button = makeKey("", "", "case-key", "case");
   button.setAttribute("aria-label", "小文字に切り替える");
   button.setAttribute("aria-pressed", "true");
-  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 11 6-6 6 6"/><path d="M12 5v14"/></svg>';
+  button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4.7 11.2L12 3.8l7.3 7.4h-4v8.6H8.7v-8.6z"/></svg>';
   return button;
 }
 
@@ -285,16 +289,31 @@ function promptFor(question, item) {
   return { html: ionsHtml, formula: !hasName };
 }
 
+function scheduleNamePromptFit() {
+  cancelAnimationFrame(promptFitFrame);
+  promptFitFrame = requestAnimationFrame(() => {
+    const pair = elements.question_prompt.querySelector(".ion-pair.names");
+    if (!pair) return;
+    pair.classList.remove("is-two-lines");
+    pair.classList.add("is-measuring");
+    requestAnimationFrame(() => {
+      pair.classList.toggle("is-two-lines", pair.scrollWidth > pair.clientWidth + 1);
+      pair.classList.remove("is-measuring");
+    });
+  });
+}
+
 function setQuizActionState(enabled) {
-  elements.hint_button.disabled = !enabled;
+  elements.hint_button.disabled = !enabled || elements.hint_button.classList.contains("is-used");
   elements.pass_button.disabled = !enabled;
   if (!enabled) elements.feedback_actions.hidden = true;
 }
 
 function showSupportActions() {
   elements.feedback_actions.hidden = false;
-  elements.hint_button.hidden = questionState?.usedHint ?? false;
-  elements.pass_button.hidden = false;
+  const hintUsed = questionState?.usedHint ?? false;
+  elements.hint_button.classList.toggle("is-used", hintUsed);
+  elements.hint_button.setAttribute("aria-hidden", String(hintUsed));
   setQuizActionState(true);
 }
 
@@ -313,11 +332,12 @@ function configureInput(answer, question) {
   elements.charge_keys.hidden = !(formulaMode && question.domain === "ion");
   elements.name_shortcuts.hidden = formulaMode;
   elements.name_shortcuts.querySelector('[data-key="イオン"]').hidden = question.domain !== "ion";
+  elements.name_shortcuts.classList.toggle("compound-name-entry", !formulaMode && question.domain !== "ion");
   elements.input_message.textContent = "";
   elements.submit_answer.disabled = false;
   elements.feedback_actions.hidden = true;
-  elements.hint_button.hidden = false;
-  elements.pass_button.hidden = false;
+  elements.hint_button.classList.remove("is-used");
+  elements.hint_button.setAttribute("aria-hidden", "false");
   setKeyboardCase(true);
   renderAnswerSubmit();
   setQuizActionState(true);
@@ -325,9 +345,15 @@ function configureInput(answer, question) {
 }
 
 function nameShortcutClick(event) {
-  const button = event.target.closest("button[data-key]");
+  const button = event.target.closest("button");
   if (!button || elements.answer_input.disabled) return;
-  replaceSelection(button.dataset.key);
+  if (button.dataset.keyAction === "clear") {
+    elements.answer_input.value = "";
+    elements.answer_input.dispatchEvent(new Event("input", { bubbles: true }));
+    elements.answer_input.focus({ preventScroll: true });
+    return;
+  }
+  if (button.dataset.key) replaceSelection(button.dataset.key);
 }
 
 function currentQuestion() {
@@ -339,13 +365,14 @@ function renderQuestion() {
   const question = currentQuestion();
   const item = itemFor(question);
   const answer = answerFor(question, item);
-  questionState = { question, item, answer, hadWrong: false, usedHint: false, resolved: false };
+  questionState = { question, item, answer, hadWrong: false, usedHint: false, lastWrongAnswer: "", resolved: false };
   const prompt = promptFor(question, item);
   elements.variant_label.textContent = VARIANT_LABELS[question.variant];
   elements.question_number.textContent = String(session.absoluteIndex + 1);
   elements.question_total.textContent = session.endless ? " / ∞" : ` / ${session.questions.length}`;
   elements.question_prompt.innerHTML = prompt.html;
   elements.question_prompt.classList.toggle("formula", prompt.formula);
+  scheduleNamePromptFit();
   elements.streak.textContent = session.streak >= 2 ? `${session.streak}問連続正解` : "";
   elements.feedback.hidden = true;
   elements.feedback.className = "feedback";
@@ -498,6 +525,7 @@ function resolveResult(result) {
     hadWrong: questionState.hadWrong,
   });
   writeLocal(STORAGE.history, history);
+  updateWeakReviewBadge();
   if (questionState.usedHint) session.stats.hint += 1;
   if (result === "pass") session.stats.pass += 1;
   else {
@@ -525,6 +553,7 @@ function submitAnswer(event) {
   elements.input_message.textContent = "";
   if (!result.correct) {
     questionState.hadWrong = true;
+    questionState.lastWrongAnswer = value;
     session.streak = 0;
     elements.answer_input.setAttribute("aria-invalid", "true");
     elements.feedback.hidden = false;
@@ -567,8 +596,10 @@ function showHint() {
   elements.feedback.className = "feedback";
   elements.feedback_title.textContent = "ヒント";
   elements.feedback_answer.innerHTML = "";
-  elements.feedback_detail.textContent = hintFor(questionState.question, questionState.item, ionById);
-  elements.hint_button.hidden = true;
+  elements.feedback_detail.textContent = hintFor(questionState.question, questionState.item, ionById, questionState.lastWrongAnswer);
+  elements.hint_button.classList.add("is-used");
+  elements.hint_button.setAttribute("aria-hidden", "true");
+  elements.hint_button.disabled = true;
   elements.feedback_actions.hidden = false;
   elements.answer_input.focus({ preventScroll: true });
 }
@@ -669,6 +700,48 @@ function showResults() {
   showScreen("result");
 }
 
+function weakItemTitle(entry) {
+  if (entry.domain === "ion") {
+    return `<span class="weak-item-formula">${ionFormulaHtml(entry.item)}</span><span>${escapeHtml(entry.item.name)}</span>`;
+  }
+  const formula = entry.item.formula ? `<span class="weak-item-formula">${formulaHtml(entry.item.formula)}</span>` : "";
+  return `${formula}<span>${escapeHtml(entry.item.name)}</span>`;
+}
+
+function weakSkillLabel(skill) {
+  if (skill === "ionNameToFormula") return "イオン式";
+  if (skill === "ionFormulaToName") return "イオン名";
+  return skill.endsWith("ToFormula") ? "組成式" : "化合物名";
+}
+
+function weakReviewHtml(entry) {
+  const labels = [...new Set(entry.skills.map(weakSkillLabel))];
+  const rate = Math.round(entry.rate * 100);
+  return `<article class="weak-item"><div class="weak-item-title">${weakItemTitle(entry)}</div><div class="weak-item-meta"><span>初回正答率 ${rate}%</span>${labels.map((label) => `<span class="weak-skill">${escapeHtml(label)}</span>`).join("")}</div></article>`;
+}
+
+function currentWeakItems() {
+  return weakHistoryItems(readLocal(STORAGE.history, {}), data?.ions ?? [], data?.compounds ?? []);
+}
+
+function updateWeakReviewBadge() {
+  const count = currentWeakItems().length;
+  elements.weak_review_count.hidden = count === 0;
+  elements.weak_review_count.textContent = count > 99 ? "99+" : String(count);
+}
+
+function openWeakReview() {
+  const entries = currentWeakItems();
+  elements.weak_review_list.innerHTML = entries.map(weakReviewHtml).join("");
+  elements.weak_review_empty.hidden = entries.length > 0;
+  elements.start_weak_from_review.hidden = entries.length === 0;
+  if (!elements.weak_review_dialog.open) elements.weak_review_dialog.showModal();
+}
+
+function closeWeakReview() {
+  if (elements.weak_review_dialog.open) elements.weak_review_dialog.close();
+}
+
 function bindEvents() {
   elements.setup_form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -711,6 +784,16 @@ function bindEvents() {
     weakMode: session.weakMode,
   }));
   elements.back_to_setup.addEventListener("click", () => showScreen("setup"));
+  elements.weak_review_button.addEventListener("click", openWeakReview);
+  elements.close_weak_review.addEventListener("click", closeWeakReview);
+  elements.weak_review_dialog.addEventListener("click", (event) => {
+    if (event.target === elements.weak_review_dialog) closeWeakReview();
+  });
+  elements.start_weak_from_review.addEventListener("click", () => {
+    closeWeakReview();
+    elements.setup_form.querySelector('[name="question-count"][value="weak"]').checked = true;
+    startSession();
+  });
   setMediaButton(elements.sound_toggle, preferences.sound);
   setMediaButton(elements.vfx_toggle, preferences.vfx);
   elements.sound_toggle.addEventListener("click", () => {
@@ -738,6 +821,10 @@ async function initialize() {
     ionById = new Map(data.ions.map((ion) => [ion.id, ion]));
     compoundById = new Map(data.compounds.map((compound) => [compound.id, compound]));
     elements.start_button.disabled = false;
+    updateWeakReviewBadge();
+    const resizeObserver = new ResizeObserver(scheduleNamePromptFit);
+    resizeObserver.observe(elements.question_card);
+    document.fonts?.ready?.then(scheduleNamePromptFit);
   } catch (error) {
     elements.setup_form.innerHTML = `<div class="feedback wrong"><strong>教材データを読み込めませんでした。</strong><p>${escapeHtml(String(error.message))}</p><p>このページはWebサーバーまたはGitHub Pagesから開いてください。</p></div>`;
   }

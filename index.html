@@ -76,7 +76,16 @@
           </div>
         </fieldset>
 
-        <button id="start-button" class="primary-button start-button" type="submit" disabled>スタート</button>
+        <div class="start-actions">
+          <button id="start-button" class="primary-button start-button" type="submit" disabled>スタート</button>
+          <button id="weak-review-button" class="weak-review-button" type="button" aria-label="苦手問題を確認" aria-haspopup="dialog">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.4"></circle>
+              <path d="m7.8 9.4 2.3 2.1m0-2.1-2.3 2.1M13.9 9.4l2.3 2.1m0-2.1-2.3 2.1M8.3 15.7c1.1-1 2.3-1.5 3.7-1.5s2.6.5 3.7 1.5"></path>
+            </svg>
+            <span id="weak-review-count" class="weak-review-count" hidden>0</span>
+          </button>
+        </div>
       </form>
     </section>
 
@@ -104,6 +113,7 @@
         <button type="button" data-key="Ⅱ">Ⅱ</button>
         <button type="button" data-key="Ⅲ">Ⅲ</button>
         <button type="button" data-key="イオン">イオン</button>
+        <button type="button" class="name-clear" data-key-action="clear">クリア</button>
       </div>
 
       <div id="formula-keyboard" class="formula-keyboard" hidden aria-label="化学式入力キーボード">
@@ -146,10 +156,26 @@
       </section>
       <div class="result-actions">
         <button id="retry-session" class="primary-button" type="button">同じ設定でもう一度</button>
-        <button id="back-to-setup" class="secondary-button" type="button">タイトルへ戻る</button>
+        <button id="back-to-setup" class="secondary-button" type="button">ホーム画面へ戻る</button>
       </div>
     </section>
   </main>
+
+  <dialog id="weak-review-dialog" class="weak-review-dialog" aria-labelledby="weak-review-title">
+    <div class="weak-review-sheet">
+      <div class="weak-review-heading">
+        <div>
+          <p class="weak-review-kicker">復習リスト</p>
+          <h2 id="weak-review-title">苦手問題</h2>
+        </div>
+        <button id="close-weak-review" class="modal-close" type="button" aria-label="苦手問題を閉じる">×</button>
+      </div>
+      <p class="weak-review-description">苦手スコアが残っている問題です。初回正答率が低い順に表示します。</p>
+      <p id="weak-review-empty" class="weak-review-empty" hidden>まだ苦手問題はありません。最初の一問を気軽に始めよう。</p>
+      <div id="weak-review-list" class="weak-review-list"></div>
+      <button id="start-weak-from-review" class="primary-button" type="button">苦手モードで始める</button>
+    </div>
+  </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
   <script type="module" src="js/app.js"></script>
