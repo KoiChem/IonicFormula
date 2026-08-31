@@ -1,6 +1,6 @@
-import { compoundCategory, validateData } from "./core.js";
+import { PRACTICE_TYPE_LABELS, compoundCategory, validateData } from "./core.js";
 
-const STORAGE_KEY = "ionicFormula.adminData.v1";
+const STORAGE_KEY = "ionicFormula.adminData.v2";
 const CATEGORY_LABELS = {
   simple11: "simple11",
   simpleRatio: "simpleRatio",
@@ -48,6 +48,23 @@ async function fetchJson(path) {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`${path}を読み込めません。`);
   return response.json();
+}
+
+function normalizeBundle(bundle) {
+  return {
+    ...bundle,
+    compounds: bundle.compounds.map((compound) => {
+      const modes = compound.questionModes ?? {};
+      return {
+        ...compound,
+        questionModes: {
+          ...modes,
+          ionNamesToFormula: modes.ionNamesToFormula ?? modes.ionsToFormula ?? false,
+          ionNamesToName: modes.ionNamesToName ?? modes.ionsToName ?? false,
+        },
+      };
+    }),
+  };
 }
 
 function readOverride() {
@@ -110,7 +127,7 @@ function aliasesText(compound) {
 }
 
 function renderCompounds() {
-  const headers = ["id", "陽イオン", "陰イオン", "組成式", "名称", "自動カテゴリ", "別表記 formula|注記", "固体色", "色注記", "名→式", "式→名", "イオン→式", "イオン→名", "有効", "操作"];
+  const headers = ["id", "陽イオン", "陰イオン", "組成式", "名称", "自動カテゴリ", "別表記 formula|注記", "固体色", "色注記", "イオン式→式", "イオン式→名", "イオン名→式", "イオン名→名", "有効", "操作"];
   elements.compoundsTable.tHead.innerHTML = `<tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr>`;
   const ionById = new Map(state.ions.map((ion) => [ion.id, ion]));
   const cations = state.ions.filter((ion) => ion.type === "cation").map((ion) => ({ value: ion.id, label: `${ion.id} (${ion.name})` }));
@@ -126,7 +143,7 @@ function renderCompounds() {
     <td>${input({ value: aliasesText(compound), field: "acceptedFormulaVariants", index })}</td>
     <td>${input({ value: compound.solidColor ?? "", field: "solidColor", index })}</td>
     <td>${input({ value: compound.solidColorNote ?? "", field: "solidColorNote", index })}</td>
-    ${["nameToFormula", "formulaToName", "ionsToFormula", "ionsToName"].map((mode) => `<td class="check-cell">${input({ type: "checkbox", field: `questionModes.${mode}`, index, checked: compound.questionModes?.[mode] })}</td>`).join("")}
+    ${["ionsToFormula", "ionsToName", "ionNamesToFormula", "ionNamesToName"].map((mode) => `<td class="check-cell">${input({ type: "checkbox", field: `questionModes.${mode}`, index, checked: compound.questionModes?.[mode] })}</td>`).join("")}
     <td class="check-cell">${input({ type: "checkbox", field: "enabled", index, checked: compound.enabled })}</td>
     <td class="action-cell"><button type="button" data-action="duplicate" data-index="${index}">複製</button><button class="delete-row" type="button" data-action="delete" data-index="${index}">削除</button></td>
   </tr>`).join("");
@@ -143,7 +160,7 @@ function weightBlock(domain, title) {
   const labels = domain === "ion"
     ? { ionSimple: "単原子", ionPolyatomic: "多原子", ionVariableOx: "酸化数区別" }
     : { simple11: "simple11", simpleRatio: "simpleRatio", polyatomic: "polyatomic", variableOx: "variableOx" };
-  const difficulties = { easy: "やさしい", standard: "標準", hard: "難しい" };
+  const difficulties = { normal: "ノーマル", hard: "ハード" };
   return `<section class="difficulty-block"><h2>${title}</h2><p>0は完全除外です。合計値ではなく相対的な重みとして扱います。</p>
     <div class="weight-grid" style="grid-template-columns:140px repeat(${Object.keys(labels).length}, minmax(100px, 1fr))">
       <span class="heading">難易度</span>${Object.values(labels).map((label) => `<span class="heading">${label}</span>`).join("")}
@@ -152,25 +169,18 @@ function weightBlock(domain, title) {
         return `<strong>${label}</strong>${Object.keys(labels).map((key) => `<label>${key}<input type="number" min="0" step="1" data-scope="category" data-domain="${domain}" data-difficulty="${difficulty}" data-key="${key}" value="${weights[key]}"></label>`).join("")}<span></span><span class="ratio-preview" style="grid-column: span ${Object.keys(labels).length}">${percentLabel(weights)}</span>`;
       }).join("")}
     </div>
-    ${domain === "ion" ? '<div class="hard-warning">現在のvariableOxは4件です。10問・難しいの設定0：4：6は、重複を避けるため実際には0：6：4へ再配分されます。</div>' : ""}
   </section>`;
 }
 
 function renderDifficulty() {
-  const ionVariants = state.difficulty.variantWeights.ion;
-  const compoundVariants = state.difficulty.variantWeights.compound;
+  const variantBlocks = Object.entries(state.difficulty.variantWeights).map(([practiceType, weights]) => `
+    <div class="weight-grid" style="margin-top:12px;grid-template-columns:140px repeat(${Object.keys(weights).length}, minmax(130px, 1fr))">
+      <strong>${PRACTICE_TYPE_LABELS[practiceType] ?? practiceType}</strong>${Object.entries(weights).map(([key, value]) => `<label>${key}<input type="number" min="0" step="1" data-scope="variant" data-practice-type="${practiceType}" data-key="${key}" value="${value}"></label>`).join("")}
+      <span></span><span class="ratio-preview" style="grid-column:span ${Object.keys(weights).length}">${percentLabel(weights)}</span>
+    </div>`).join("");
   elements.difficultyEditor.innerHTML = `${weightBlock("ion", "イオン：カテゴリ比率")}${weightBlock("compound", "化合物：カテゴリ比率")}
-    <section class="difficulty-block"><h2>出題タイプ比率</h2><p>同じ問題IDは、別の出題タイプでも同一セット・周回内に重複させません。</p>
-      <div class="weight-grid" style="grid-template-columns:140px repeat(${Object.keys(ionVariants).length}, minmax(130px, 1fr))">
-        <strong>イオン</strong>${Object.entries(ionVariants).map(([key, value]) => `<label>${key}<input type="number" min="0" step="1" data-scope="variant" data-domain="ion" data-key="${key}" value="${value}"></label>`).join("")}
-        <span></span><span class="ratio-preview" style="grid-column:span ${Object.keys(ionVariants).length}">${percentLabel(ionVariants)}</span>
-      </div>
-      <div class="weight-grid" style="margin-top:12px;grid-template-columns:140px repeat(${Object.keys(compoundVariants).length}, minmax(130px, 1fr))">
-        <strong>化合物</strong>${Object.entries(compoundVariants).map(([key, value]) => `<label>${key}<input type="number" min="0" step="1" data-scope="variant" data-domain="compound" data-key="${key}" value="${value}"></label>`).join("")}
-        <span></span><span class="ratio-preview" style="grid-column:span ${Object.keys(compoundVariants).length}">${percentLabel(compoundVariants)}</span>
-      </div>
-    </section>
-    <section class="difficulty-block"><h2>苦手問題</h2><p>履歴は「モード＋問題ID＋出題タイプ」ごとに端末へ保存します。</p>
+    <section class="difficulty-block"><h2>出題タイプ比率</h2><p>0は完全除外です。ランダムで出された問題は、実際の出題形式ごとに苦手履歴を共有します。</p>${variantBlocks}</section>
+    <section class="difficulty-block"><h2>苦手問題</h2><p>履歴は「問題ID＋実際の出題形式」ごとに端末へ保存します。</p>
       <div class="weight-grid">
         <strong>10問セット</strong><label>目標数<input type="number" min="0" max="10" step="1" data-scope="weak" data-key="ten" value="${state.difficulty.weakQuestionTarget.ten}"></label>
         <strong>エンドレス</strong><label>10問あたり<input type="number" min="0" max="10" step="1" data-scope="weak" data-key="endlessPerTen" value="${state.difficulty.weakQuestionTarget.endlessPerTen}"></label>
@@ -258,7 +268,7 @@ function addRow() {
   } else if (activeTab === "compounds") {
     const cation = state.ions.find((ion) => ion.type === "cation")?.id ?? "";
     const anion = state.ions.find((ion) => ion.type === "anion")?.id ?? "";
-    state.compounds.push({ id: "new_compound", cation, anion, formula: null, name: "新しい化合物", solidColor: null, solidColorNote: null, enabled: false, questionModes: { nameToFormula: false, formulaToName: false, ionsToFormula: false, ionsToName: false } });
+    state.compounds.push({ id: "new_compound", cation, anion, formula: null, name: "新しい化合物", solidColor: null, solidColorNote: null, enabled: false, questionModes: { ionsToFormula: false, ionsToName: false, ionNamesToFormula: false, ionNamesToName: false } });
   }
   renderActive();
   showStatus("末尾に行を追加しました。IDを変更してください。");
@@ -272,7 +282,7 @@ function difficultyChange(event) {
   if (inputElement.dataset.scope === "category") {
     state.difficulty.categoryWeights[inputElement.dataset.domain][inputElement.dataset.difficulty][inputElement.dataset.key] = value;
   } else if (inputElement.dataset.scope === "variant") {
-    state.difficulty.variantWeights[inputElement.dataset.domain][inputElement.dataset.key] = value;
+    state.difficulty.variantWeights[inputElement.dataset.practiceType][inputElement.dataset.key] = value;
   } else {
     state.difficulty.weakQuestionTarget[inputElement.dataset.key] = value;
   }
@@ -295,7 +305,7 @@ async function importJson(file) {
   try {
     const value = JSON.parse(await file.text());
     if (!value.ions || !value.compounds || !value.difficulty) throw new Error("Bundle Export形式（ions・compounds・difficulty）が必要です。");
-    state = { ions: value.ions, compounds: value.compounds, difficulty: value.difficulty };
+    state = normalizeBundle({ ions: value.ions, compounds: value.compounds, difficulty: value.difficulty });
     renderActive();
     const validation = validateAndShow();
     showStatus(validation.valid ? "JSONを読み込みました。保存前に内容を確認してください。" : "JSONを読み込みましたが、検証エラーがあります。", !validation.valid);
@@ -343,7 +353,7 @@ function bindEvents() {
     validateAndShow();
     showStatus("公開中のJSONへ戻しました。端末内の編集内容は削除されました。");
   });
-  elements.exportBundle.addEventListener("click", () => download("ionic-formula-data.json", { version: 1, ...state }));
+  elements.exportBundle.addEventListener("click", () => download("ionic-formula-data.json", { version: 2, ...state }));
   elements.exportCurrent.addEventListener("click", () => {
     if (activeTab === "ions") download("ions.json", state.ions);
     else if (activeTab === "compounds") download("compounds.json", state.compounds);
@@ -361,9 +371,9 @@ async function initialize() {
     const [ions, compounds, difficulty] = await Promise.all([
       fetchJson("data/ions.json"), fetchJson("data/compounds.json"), fetchJson("data/difficulty.json"),
     ]);
-    publishedData = { ions, compounds, difficulty };
+    publishedData = normalizeBundle({ ions, compounds, difficulty });
     const override = readOverride();
-    state = override?.ions && override?.compounds && override?.difficulty ? override : clone(publishedData);
+    state = override?.ions && override?.compounds && override?.difficulty ? normalizeBundle(override) : clone(publishedData);
     renderActive();
     validateAndShow();
     if (override) showStatus("この端末に保存された編集データを表示しています。");

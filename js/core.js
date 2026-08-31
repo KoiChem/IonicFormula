@@ -1,15 +1,26 @@
+export const PRACTICE_TYPES = ["ion", "ionFormula", "ionName", "random"];
+
+export const PRACTICE_TYPE_LABELS = {
+  ion: "イオン",
+  ionFormula: "イオン式 → 化合物",
+  ionName: "イオン名 → 化合物",
+  random: "ランダム",
+};
+
 export const VARIANTS = {
   ion: ["ionNameToFormula", "ionFormulaToName"],
-  compound: ["nameToFormula", "formulaToName", "ionsToFormula", "ionsToName"],
+  ionFormula: ["ionsToFormula", "ionsToName"],
+  ionName: ["ionNamesToFormula", "ionNamesToName"],
+  random: ["ionsToFormula", "ionsToName", "ionNamesToFormula", "ionNamesToName"],
 };
 
 export const VARIANT_LABELS = {
   ionNameToFormula: "イオン名 → イオン式",
   ionFormulaToName: "イオン式 → イオン名",
-  nameToFormula: "化合物名 → 組成式",
-  formulaToName: "組成式 → 化合物名",
-  ionsToFormula: "イオン → 組成式",
-  ionsToName: "イオン → 化合物名",
+  ionsToFormula: "イオン式 → 組成式",
+  ionsToName: "イオン式 → 化合物名",
+  ionNamesToFormula: "イオン名 → 組成式",
+  ionNamesToName: "イオン名 → 化合物名",
 };
 
 const SUBSCRIPT_DIGITS = {
@@ -62,9 +73,7 @@ export function ionFormulaHtml(ion) {
 export function formulaHtml(formula) {
   if (!formula) return "";
   let html = "";
-  for (const character of String(formula)) {
-    html += /[0-9]/.test(character) ? `<sub>${character}</sub>` : escapeHtml(character);
-  }
+  for (const character of String(formula)) html += /[0-9]/.test(character) ? `<sub>${character}</sub>` : escapeHtml(character);
   return html;
 }
 
@@ -114,13 +123,28 @@ export function compoundCategory(compound, ionById) {
   return composition?.cationCount === 1 && composition?.anionCount === 1 ? "simple11" : "simpleRatio";
 }
 
-export function itemVariants(domain, item) {
-  if (domain === "ion") return VARIANTS.ion;
-  return VARIANTS.compound.filter((variant) => item.questionModes?.[variant]);
+export function domainForPracticeType(practiceType) {
+  return practiceType === "ion" ? "ion" : "compound";
 }
 
-export function historyKey(domain, itemId, variant) {
-  return `${domain}:${itemId}:${variant}`;
+function compoundModeEnabled(item, variant) {
+  const modes = item.questionModes ?? {};
+  if (variant === "ionNamesToFormula") return modes.ionNamesToFormula ?? modes.ionsToFormula ?? false;
+  if (variant === "ionNamesToName") return modes.ionNamesToName ?? modes.ionsToName ?? false;
+  return modes[variant] ?? false;
+}
+
+export function itemVariants(practiceType, item) {
+  if (practiceType === "ion") return VARIANTS.ion;
+  return VARIANTS[practiceType].filter((variant) => compoundModeEnabled(item, variant));
+}
+
+export function historyKey(questionOrDomain, itemId, variant) {
+  if (typeof questionOrDomain === "object") {
+    const question = questionOrDomain;
+    return `${question.domain}:${question.itemId}:${question.skill ?? question.variant}`;
+  }
+  return `${questionOrDomain}:${itemId}:${variant}`;
 }
 
 export function resultScore({ passed, usedHint, hadWrong }) {
@@ -131,7 +155,7 @@ export function resultScore({ passed, usedHint, hadWrong }) {
 }
 
 export function recordHistory(history, question, result, now = Date.now()) {
-  const key = historyKey(question.domain, question.itemId, question.variant);
+  const key = historyKey(question);
   const previous = history[key] ?? { score: 0, attempts: 0 };
   const delta = resultScore(result);
   history[key] = {
@@ -157,11 +181,7 @@ export function allocateCounts(weights, total, capacities = {}, random = Math.ra
   const result = Object.fromEntries(Object.keys(weights).map((key) => [key, 0]));
   if (!entries.length || total <= 0) return result;
   const weightSum = entries.reduce((sum, [, weight]) => sum + Number(weight), 0);
-  const exact = entries.map(([key, weight]) => ({
-    key,
-    exact: total * Number(weight) / weightSum,
-    tie: random(),
-  }));
+  const exact = entries.map(([key, weight]) => ({ key, exact: total * Number(weight) / weightSum, tie: random() }));
   for (const entry of exact) result[entry.key] = Math.floor(entry.exact);
   let remaining = total - Object.values(result).reduce((sum, value) => sum + value, 0);
   exact.sort((a, b) => (b.exact % 1) - (a.exact % 1) || a.tie - b.tie);
@@ -170,7 +190,6 @@ export function allocateCounts(weights, total, capacities = {}, random = Math.ra
     result[entry.key] += 1;
     remaining -= 1;
   }
-
   let shortage = 0;
   for (const [key] of entries) {
     const capacity = capacities[key] ?? Number.POSITIVE_INFINITY;
@@ -182,11 +201,7 @@ export function allocateCounts(weights, total, capacities = {}, random = Math.ra
   while (shortage > 0) {
     const candidates = entries
       .filter(([key]) => result[key] < (capacities[key] ?? Number.POSITIVE_INFINITY))
-      .sort((a, b) => {
-        const left = result[a[0]] / Number(a[1]);
-        const right = result[b[0]] / Number(b[1]);
-        return left - right || random() - 0.5;
-      });
+      .sort((a, b) => (result[a[0]] / Number(a[1])) - (result[b[0]] / Number(b[1])) || random() - 0.5);
     if (!candidates.length) break;
     result[candidates[0][0]] += 1;
     shortage -= 1;
@@ -194,25 +209,23 @@ export function allocateCounts(weights, total, capacities = {}, random = Math.ra
   return result;
 }
 
-function eligibleItems(domain, ions, compounds, categoryWeights) {
+function eligibleItems(practiceType, ions, compounds, categoryWeights) {
+  const domain = domainForPracticeType(practiceType);
   const ionById = new Map(ions.map((ion) => [ion.id, ion]));
   const source = domain === "ion" ? ions : compounds;
   return source
-    .filter((item) => item.enabled && itemVariants(domain, item).length)
-    .map((item) => ({
-      item,
-      category: domain === "ion" ? ionCategory(item) : compoundCategory(item, ionById),
-    }))
+    .filter((item) => item.enabled && itemVariants(practiceType, item).length)
+    .map((item) => ({ item, category: domain === "ion" ? ionCategory(item) : compoundCategory(item, ionById) }))
     .filter(({ category }) => category && Number(categoryWeights[category]) > 0);
 }
 
-function choosePair({ candidates, domain, variantRemaining, history, wantWeak, random }) {
+function choosePair({ candidates, practiceType, variantRemaining, history, wantWeak, random }) {
+  const domain = domainForPracticeType(practiceType);
   const pairs = [];
   for (const candidate of candidates) {
-    for (const variant of itemVariants(domain, candidate.item)) {
+    for (const variant of itemVariants(practiceType, candidate.item)) {
       const weakScore = history[historyKey(domain, candidate.item.id, variant)]?.score ?? 0;
-      const variantNeed = variantRemaining[variant] ?? 0;
-      pairs.push({ candidate, variant, weakScore, variantNeed, tie: random() });
+      pairs.push({ candidate, variant, weakScore, variantNeed: variantRemaining[variant] ?? 0, tie: random() });
     }
   }
   pairs.sort((a, b) => {
@@ -228,19 +241,24 @@ function choosePair({ candidates, domain, variantRemaining, history, wantWeak, r
   return pairs[0] ?? null;
 }
 
-function makeQuestion(domain, pair) {
+function makeQuestion(practiceType, pair) {
+  const domain = domainForPracticeType(practiceType);
   return {
-    domain,
-    itemId: pair.candidate.item.id,
-    category: pair.candidate.category,
-    variant: pair.variant,
+    practiceType, domain, itemId: pair.candidate.item.id, category: pair.candidate.category,
+    variant: pair.variant, skill: pair.variant,
   };
 }
 
-export function buildTenQuestionSet({ domain, difficulty, ions, compounds, settings, history = {}, random = Math.random }) {
+function normalizedOptions(options) {
+  const practiceType = options.practiceType ?? options.domain ?? "ion";
+  return { ...options, practiceType, domain: domainForPracticeType(practiceType) };
+}
+
+export function buildTenQuestionSet(rawOptions) {
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random } = normalizedOptions(rawOptions);
   const categoryWeights = settings.categoryWeights[domain][difficulty];
-  const variantWeights = settings.variantWeights[domain];
-  const eligible = eligibleItems(domain, ions, compounds, categoryWeights);
+  const variantWeights = settings.variantWeights[practiceType];
+  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights);
   const capacity = {};
   for (const candidate of eligible) capacity[candidate.category] = (capacity[candidate.category] ?? 0) + 1;
   const total = Math.min(10, eligible.length);
@@ -251,35 +269,31 @@ export function buildTenQuestionSet({ domain, difficulty, ions, compounds, setti
   const used = new Set();
   const questions = [];
   let weakRemaining = Math.min(Number(settings.weakQuestionTarget?.ten ?? 3), total);
-
   for (let index = 0; index < categorySlots.length; index += 1) {
     const category = categorySlots[index];
     const candidates = eligible.filter((candidate) => candidate.category === category && !used.has(candidate.item.id));
     const shouldSeekWeak = weakRemaining > 0 && (index % 3 === 0 || categorySlots.length - index <= weakRemaining);
-    let pair = choosePair({ candidates, domain, variantRemaining: remainingVariants, history, wantWeak: shouldSeekWeak, random });
+    let pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: shouldSeekWeak, random });
     if (!pair) continue;
-    if (shouldSeekWeak && pair.weakScore <= 0) {
-      pair = choosePair({ candidates, domain, variantRemaining: remainingVariants, history, wantWeak: false, random });
-    } else if (pair.weakScore > 0) {
-      weakRemaining -= 1;
-    }
+    if (shouldSeekWeak && pair.weakScore <= 0) pair = choosePair({ candidates, practiceType, variantRemaining: remainingVariants, history, wantWeak: false, random });
+    else if (pair.weakScore > 0) weakRemaining -= 1;
     used.add(pair.candidate.item.id);
     if (remainingVariants[pair.variant] > 0) remainingVariants[pair.variant] -= 1;
-    questions.push(makeQuestion(domain, pair));
+    questions.push(makeQuestion(practiceType, pair));
   }
   return { questions, categoryCounts, variantCounts, availableCount: eligible.length };
 }
 
-export function buildEndlessRound({ domain, difficulty, ions, compounds, settings, history = {}, random = Math.random }) {
+export function buildEndlessRound(rawOptions) {
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random } = normalizedOptions(rawOptions);
   const categoryWeights = settings.categoryWeights[domain][difficulty];
-  const variantWeights = settings.variantWeights[domain];
-  const remaining = eligibleItems(domain, ions, compounds, categoryWeights);
+  const variantWeights = settings.variantWeights[practiceType];
+  const remaining = eligibleItems(practiceType, ions, compounds, categoryWeights);
   const variantTargets = allocateCounts(variantWeights, remaining.length, {}, random);
   const variantRemaining = { ...variantTargets };
   const drawnByCategory = Object.fromEntries(Object.keys(categoryWeights).map((key) => [key, 0]));
   const questions = [];
   let weakRemaining = Math.ceil(remaining.length * Number(settings.weakQuestionTarget?.endlessPerTen ?? 3) / 10);
-
   while (remaining.length) {
     const drawnTotal = questions.length;
     const availableCategories = [...new Set(remaining.map((candidate) => candidate.category))];
@@ -287,22 +301,15 @@ export function buildEndlessRound({ domain, difficulty, ions, compounds, setting
       .filter(([category, weight]) => availableCategories.includes(category) && Number(weight) > 0)
       .reduce((sum, [, weight]) => sum + Number(weight), 0);
     const category = availableCategories
-      .map((key) => ({
-        key,
-        deficit: ((drawnTotal + 1) * Number(categoryWeights[key]) / weightSum) - drawnByCategory[key],
-        tie: random(),
-      }))
+      .map((key) => ({ key, deficit: ((drawnTotal + 1) * Number(categoryWeights[key]) / weightSum) - drawnByCategory[key], tie: random() }))
       .sort((a, b) => b.deficit - a.deficit || a.tie - b.tie)[0].key;
     const candidates = remaining.filter((candidate) => candidate.category === category);
     const shouldSeekWeak = weakRemaining > 0 && (questions.length % 3 === 0 || remaining.length <= weakRemaining);
-    let pair = choosePair({ candidates, domain, variantRemaining, history, wantWeak: shouldSeekWeak, random });
-    if (shouldSeekWeak && pair?.weakScore <= 0) {
-      pair = choosePair({ candidates, domain, variantRemaining, history, wantWeak: false, random });
-    } else if (pair?.weakScore > 0) {
-      weakRemaining -= 1;
-    }
+    let pair = choosePair({ candidates, practiceType, variantRemaining, history, wantWeak: shouldSeekWeak, random });
+    if (shouldSeekWeak && pair?.weakScore <= 0) pair = choosePair({ candidates, practiceType, variantRemaining, history, wantWeak: false, random });
+    else if (pair?.weakScore > 0) weakRemaining -= 1;
     if (!pair) break;
-    questions.push(makeQuestion(domain, pair));
+    questions.push(makeQuestion(practiceType, pair));
     drawnByCategory[category] += 1;
     if (variantRemaining[pair.variant] > 0) variantRemaining[pair.variant] -= 1;
     remaining.splice(remaining.findIndex((candidate) => candidate.item.id === pair.candidate.item.id), 1);
@@ -310,28 +317,21 @@ export function buildEndlessRound({ domain, difficulty, ions, compounds, setting
   return { questions, categoryCounts: drawnByCategory, variantCounts: variantTargets, availableCount: questions.length };
 }
 
-export function answerFor(question, item, ionById) {
+export function answerFor(question, item) {
   if (question.domain === "ion") {
     return question.variant === "ionNameToFormula"
       ? { type: "formula", canonical: ionAnswer(item), accepted: [] }
       : { type: "name", canonical: item.name, accepted: [] };
   }
-  const formulaQuestion = question.variant === "nameToFormula" || question.variant === "ionsToFormula";
-  if (!formulaQuestion) return { type: "name", canonical: item.name, accepted: [] };
-  return {
-    type: "formula",
-    canonical: item.formula,
-    accepted: item.acceptedFormulaVariants ?? [],
-  };
+  if (!question.variant.endsWith("ToFormula")) return { type: "name", canonical: item.name, accepted: [] };
+  return { type: "formula", canonical: item.formula, accepted: item.acceptedFormulaVariants ?? [] };
 }
 
 export function evaluateAnswer(answer, specification) {
   const normalize = specification.type === "formula" ? normalizeFormula : normalizeName;
   const actual = normalize(answer);
   if (!actual) return { correct: false, empty: true, matchedAnswerKind: null, note: null };
-  if (actual === normalize(specification.canonical)) {
-    return { correct: true, empty: false, matchedAnswerKind: "canonical", note: null };
-  }
+  if (actual === normalize(specification.canonical)) return { correct: true, empty: false, matchedAnswerKind: "canonical", note: null };
   const alternative = specification.accepted.find((entry) => actual === normalize(entry.formula ?? entry));
   return alternative
     ? { correct: true, empty: false, matchedAnswerKind: "acceptedAlternative", note: alternative.note ?? null }
@@ -350,11 +350,11 @@ export function explanationForCompound(compound, ionById) {
 
 export function hintFor(question, item, ionById) {
   if (question.domain === "ion") {
-    if (question.variant === "ionNameToFormula") return "元素記号やイオンを表す式と、電荷の符号・大きさを確認しよう。";
-    return "式の元素記号・原子団と、右上の電荷に注目しよう。";
+    return question.variant === "ionNameToFormula"
+      ? "元素記号やイオンを表す式と、電荷の符号・大きさを確認しよう。"
+      : "式の元素記号・原子団と、右上の電荷に注目しよう。";
   }
-  if (question.variant === "formulaToName") return "陽イオンと陰イオンに分けて、陰イオンから順に名前を考えよう。";
-  if (question.variant === "ionsToName") return "陰イオン名、陽イオン名の順につなげよう。必要なら酸化数も付けよう。";
+  if (question.variant.endsWith("ToName")) return "陰イオン名、陽イオン名の順につなげよう。必要なら酸化数も付けよう。";
   const cation = ionById.get(item.cation);
   const anion = ionById.get(item.anion);
   const left = Math.abs(cation.charge);
@@ -394,32 +394,26 @@ export function validateData(ions, compounds, settings) {
     if (compound.enabled && cation && !cation.enabled) errors.push(`${path}: 有効な化合物が無効な陽イオンを参照しています。`);
     if (compound.enabled && anion && !anion.enabled) errors.push(`${path}: 有効な化合物が無効な陰イオンを参照しています。`);
     if (compound.enabled && !Object.values(compound.questionModes ?? {}).some(Boolean)) errors.push(`${path}: enabledですが全questionModesがfalseです。`);
-    if (compound.formula == null && ["nameToFormula", "formulaToName", "ionsToFormula"].some((mode) => compound.questionModes?.[mode])) {
-      errors.push(`${path}: formula=nullで組成式を使う問題が有効です。`);
-    }
+    const formulaModes = ["nameToFormula", "ionsToFormula", "ionNamesToFormula"];
+    if (compound.formula == null && formulaModes.some((mode) => compound.questionModes?.[mode])) errors.push(`${path}: formula=nullで組成式を使う問題が有効です。`);
     const serialized = JSON.stringify({ formula: compound.formula, aliases: compound.acceptedFormulaVariants ?? [] });
     if (serialized.includes("Fe(OH)3") || serialized.includes("Fe(OH)₃")) errors.push(`${path}: Fe(OH)3は禁止されています。`);
     if (cation && anion && compound.formula) {
       const generated = neutralFormula(cation, anion)?.formula;
       const registered = [compound.formula, ...(compound.acceptedFormulaVariants ?? []).map((entry) => entry.formula)];
-      if (!registered.some((formula) => normalizeFormula(formula) === normalizeFormula(generated))) {
-        errors.push(`${path}: 組成式が電荷の最簡整数比「${generated}」と整合しません。`);
-      } else if (normalizeFormula(compound.formula) !== normalizeFormula(generated)) {
-        warnings.push(`${path}: 保存式「${compound.formula}」は陽イオン先頭式「${generated}」と異なります（許容別表記登録済み）。`);
-      }
+      if (!registered.some((formula) => normalizeFormula(formula) === normalizeFormula(generated))) errors.push(`${path}: 組成式が電荷の最簡整数比「${generated}」と整合しません。`);
+      else if (normalizeFormula(compound.formula) !== normalizeFormula(generated)) warnings.push(`${path}: 保存式「${compound.formula}」は陽イオン先頭式「${generated}」と異なります（許容別表記登録済み）。`);
     }
   }
   for (const domain of ["ion", "compound"]) {
-    for (const difficulty of ["easy", "standard", "hard"]) {
+    for (const difficulty of ["normal", "hard"]) {
       const weights = settings?.categoryWeights?.[domain]?.[difficulty];
-      if (!weights || Object.values(weights).some((value) => !Number.isFinite(Number(value)) || Number(value) < 0) || !Object.values(weights).some((value) => Number(value) > 0)) {
-        errors.push(`difficulty: ${domain}.${difficulty}は0以上で、少なくとも1項目を正数にしてください。`);
-      }
+      if (!weights || Object.values(weights).some((value) => !Number.isFinite(Number(value)) || Number(value) < 0) || !Object.values(weights).some((value) => Number(value) > 0)) errors.push(`difficulty: ${domain}.${difficulty}は0以上で、少なくとも1項目を正数にしてください。`);
     }
-    const variantWeights = settings?.variantWeights?.[domain];
-    if (!variantWeights || Object.values(variantWeights).some((value) => !Number.isFinite(Number(value)) || Number(value) < 0) || !Object.values(variantWeights).some((value) => Number(value) > 0)) {
-      errors.push(`difficulty: ${domain}の出題タイプ比率が不正です。`);
-    }
+  }
+  for (const practiceType of PRACTICE_TYPES) {
+    const weights = settings?.variantWeights?.[practiceType];
+    if (!weights || Object.values(weights).some((value) => !Number.isFinite(Number(value)) || Number(value) < 0) || !Object.values(weights).some((value) => Number(value) > 0)) errors.push(`difficulty: ${practiceType}の出題タイプ比率が不正です。`);
   }
   return { errors, warnings, valid: errors.length === 0 };
 }

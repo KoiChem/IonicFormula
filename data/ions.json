@@ -1,5 +1,15 @@
 [
   {
+    "id": "lithium",
+    "formula": "Li",
+    "charge": 1,
+    "name": "リチウムイオン",
+    "type": "cation",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
+    "enabled": true
+  },
+  {
     "id": "sodium",
     "formula": "Na",
     "charge": 1,
@@ -127,6 +137,16 @@
     "type": "cation",
     "atomicity": "monatomic",
     "requiresOxidationNumeral": true,
+    "enabled": true
+  },
+  {
+    "id": "nitride",
+    "formula": "N",
+    "charge": -3,
+    "name": "窒化物イオン",
+    "type": "anion",
+    "atomicity": "monatomic",
+    "requiresOxidationNumeral": false,
     "enabled": true
   },
   {
@@ -267,7 +287,7 @@
     "type": "anion",
     "atomicity": "polyatomic",
     "requiresOxidationNumeral": false,
-    "enabled": true
+    "enabled": false
   },
   {
     "id": "chromate",
@@ -277,7 +297,7 @@
     "type": "anion",
     "atomicity": "polyatomic",
     "requiresOxidationNumeral": false,
-    "enabled": true
+    "enabled": false
   },
   {
     "id": "dichromate",
@@ -287,6 +307,6 @@
     "type": "anion",
     "atomicity": "polyatomic",
     "requiresOxidationNumeral": false,
-    "enabled": true
+    "enabled": false
   }
 ]

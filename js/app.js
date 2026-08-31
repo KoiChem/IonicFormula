@@ -1,4 +1,5 @@
 import {
+  PRACTICE_TYPE_LABELS,
   VARIANT_LABELS,
   answerFor,
   buildEndlessRound,
@@ -16,9 +17,9 @@ import {
 } from "./core.js";
 
 const STORAGE = {
-  history: "ionicFormula.history.v1",
+  history: "ionicFormula.history.v2",
   preferences: "ionicFormula.preferences.v1",
-  adminData: "ionicFormula.adminData.v1",
+  adminData: "ionicFormula.adminData.v2",
 };
 
 const CATEGORY_LABELS = {
@@ -32,15 +33,15 @@ const CATEGORY_LABELS = {
 };
 
 const elements = Object.fromEntries([
-  "setup-screen", "quiz-screen", "result-screen", "setup-form", "difficulty-note",
-  "domain-label", "variant-label", "question-number", "question-total", "progress-bar",
-  "question-card", "instruction", "question-prompt", "streak", "answer-form", "answer-label",
-  "answer-input", "formula-preview", "input-message", "submit-answer", "formula-keyboard",
-  "number-keys", "letter-keys", "charge-keys", "feedback", "feedback-title", "feedback-answer",
-  "feedback-detail", "next-button", "retry-actions", "hint-button", "pass-button", "quit-button",
+  "app-header", "brand", "quiz-actions", "setup-screen", "quiz-screen", "result-screen",
+  "setup-form", "variant-label", "question-number", "question-total", "question-card",
+  "question-prompt", "streak", "answer-form", "answer-label", "answer-input",
+  "input-message", "submit-answer", "submit-answer-text", "formula-keyboard", "number-keys",
+  "letter-keys", "charge-keys", "feedback", "feedback-title", "feedback-answer",
+  "feedback-detail", "next-button", "hint-button", "pass-button", "quit-button",
   "result-first", "result-retry", "result-hint", "result-pass", "result-categories",
-  "retry-session", "back-to-setup", "settings-button", "settings-dialog", "sound-toggle",
-  "vfx-toggle", "spark-layer", "session-announcement", "start-button",
+  "retry-session", "back-to-setup", "sound-toggle", "vfx-toggle", "spark-layer",
+  "session-announcement", "start-button",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
 
 let data;
@@ -53,6 +54,7 @@ let compositionEndedAt = 0;
 let keyboardUppercase = true;
 let advanceTimer = null;
 let audioContext = null;
+let touchStartX = null;
 
 function readLocal(key, fallback) {
   try {
@@ -71,16 +73,29 @@ function writeLocal(key, value) {
   }
 }
 
-const preferences = {
-  sound: true,
-  vfx: true,
-  ...readLocal(STORAGE.preferences, {}),
-};
+const preferences = { sound: true, vfx: true, ...readLocal(STORAGE.preferences, {}) };
 
 async function fetchJson(path) {
   const response = await fetch(path);
   if (!response.ok) throw new Error(`${path}を読み込めませんでした。`);
   return response.json();
+}
+
+function normalizeBundle(bundle) {
+  return {
+    ...bundle,
+    compounds: bundle.compounds.map((compound) => {
+      const modes = compound.questionModes ?? {};
+      return {
+        ...compound,
+        questionModes: {
+          ...modes,
+          ionNamesToFormula: modes.ionNamesToFormula ?? modes.ionsToFormula ?? false,
+          ionNamesToName: modes.ionNamesToName ?? modes.ionsToName ?? false,
+        },
+      };
+    }),
+  };
 }
 
 async function loadData() {
@@ -89,65 +104,61 @@ async function loadData() {
     fetchJson("data/compounds.json"),
     fetchJson("data/difficulty.json"),
   ]);
+  const published = normalizeBundle({ ions, compounds, difficulty });
   const localOverride = readLocal(STORAGE.adminData, null);
   const candidate = localOverride?.ions && localOverride?.compounds && localOverride?.difficulty
-    ? localOverride
-    : { ions, compounds, difficulty };
+    ? normalizeBundle(localOverride)
+    : published;
   const validation = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
   if (!validation.valid) {
-    if (localOverride) {
-      localStorage.removeItem(STORAGE.adminData);
-      return { ions, compounds, difficulty };
-    }
+    if (localOverride) return published;
     throw new Error(`教材データに${validation.errors.length}件のエラーがあります。`);
   }
   return candidate;
+}
+
+function setMediaButton(button, enabled) {
+  button.setAttribute("aria-pressed", String(enabled));
+  button.setAttribute("aria-label", `${button.id === "sound-toggle" ? "効果音" : "画面演出"}を${enabled ? "オフ" : "オン"}にする`);
 }
 
 function showScreen(name) {
   for (const screen of [elements.setup_screen, elements.quiz_screen, elements.result_screen]) {
     screen.hidden = screen.id !== `${name}-screen`;
   }
+  const quiz = name === "quiz";
+  elements.brand.hidden = quiz;
+  elements.quiz_actions.hidden = !quiz;
+  elements.app_header.classList.toggle("quiz-header", quiz);
   window.scrollTo({ top: 0, behavior: preferences.vfx ? "smooth" : "auto" });
 }
 
-function difficultyDescription() {
-  const domain = new FormData(elements.setup_form).get("game-mode");
-  const difficulty = new FormData(elements.setup_form).get("difficulty");
-  const labels = {
-    ion: {
-      easy: "単原子7：多原子3（酸化数を区別するイオンは出ません）",
-      standard: "単原子3：多原子5：酸化数を区別するイオン2",
-      hard: "多原子4：酸化数を区別するイオン6を目標に出題",
-    },
-    compound: {
-      easy: "基本的な1：1の組合せを中心に出題",
-      standard: "4つの構造カテゴリをバランスよく出題",
-      hard: "多原子イオンと酸化数を区別する化合物を中心に出題",
-    },
-  };
-  elements.difficulty_note.textContent = labels[domain][difficulty];
+function makeKey(label, value, className = "", action = "") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = label;
+  if (value) button.dataset.key = value;
+  if (action) button.dataset.keyAction = action;
+  if (className) button.className = className;
+  return button;
 }
 
 function initializeKeyboard() {
-  const makeKey = (label, value, className = "") => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = label;
-    button.dataset.key = value;
-    if (className) button.className = className;
-    return button;
-  };
   for (const value of ["1", "2", "3", "4", "5", "6", "7", "8", "(", ")"]) {
     elements.number_keys.append(makeKey(value, value));
   }
-  const rows = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
-  for (const row of rows) {
+  for (const row of ["QWERTYUIOP", "ASDFGHJKL"]) {
     const container = document.createElement("div");
     container.className = "key-row";
     for (const letter of row) container.append(makeKey(letter, letter));
     elements.letter_keys.append(container);
   }
+  const lastRow = document.createElement("div");
+  lastRow.className = "key-row";
+  lastRow.append(makeKey("Aa", "", "", "case"));
+  for (const letter of "ZXCVBNM") lastRow.append(makeKey(letter, letter));
+  lastRow.append(makeKey("⌫", "", "", "backspace"));
+  elements.letter_keys.append(lastRow);
   for (const [label, value] of [["＋", "+"], ["2＋", "2+"], ["3＋", "3+"], ["－", "-"], ["2－", "2-"], ["3－", "3-"]]) {
     elements.charge_keys.append(makeKey(label, value, "charge-key"));
   }
@@ -177,15 +188,22 @@ function replaceSelection(text) {
   input.focus({ preventScroll: true });
 }
 
+function moveCaret(direction) {
+  const input = elements.answer_input;
+  const current = input.selectionStart ?? input.value.length;
+  const next = Math.max(0, Math.min(input.value.length, current + direction));
+  input.setSelectionRange(next, next);
+  input.focus({ preventScroll: true });
+}
+
 function keyboardClick(event) {
   const button = event.target.closest("button");
   if (!button || elements.answer_input.disabled) return;
   const action = button.dataset.keyAction;
   if (action === "case") setKeyboardCase(!keyboardUppercase);
-  else if (action === "left" || action === "right") {
-    const next = Math.max(0, Math.min(elements.answer_input.value.length, (elements.answer_input.selectionStart ?? 0) + (action === "left" ? -1 : 1)));
-    elements.answer_input.setSelectionRange(next, next);
-  } else if (action === "backspace") {
+  else if (action === "left") moveCaret(-1);
+  else if (action === "right") moveCaret(1);
+  else if (action === "backspace") {
     const input = elements.answer_input;
     const start = input.selectionStart ?? input.value.length;
     const end = input.selectionEnd ?? start;
@@ -206,25 +224,20 @@ function keyboardClick(event) {
   elements.answer_input.focus({ preventScroll: true });
 }
 
-function renderFormulaPreview() {
-  if (questionState?.answer.type !== "formula") {
-    elements.formula_preview.innerHTML = "";
-    return;
-  }
+function previewFormulaHtml() {
   const normalized = normalizeFormula(elements.answer_input.value);
-  const expectedFormula = questionState.question.domain === "ion" ? questionState.item.formula : "";
-  const expectedCharge = expectedFormula && normalized.startsWith(expectedFormula)
-    ? normalized.slice(expectedFormula.length).match(/^([1-8]?)([+-])$/)
-    : null;
-  const ionMatch = expectedCharge
-    ? [normalized, expectedFormula, expectedCharge[1], expectedCharge[2]]
-    : questionState.question.domain === "ion" ? normalized.match(/^(.*?)([1-8]?)([+-])$/) : null;
-  if (ionMatch) {
-    const sign = ionMatch[3] === "+" ? "＋" : "－";
-    elements.formula_preview.innerHTML = `${formulaHtml(ionMatch[1])}<sup>${ionMatch[2]}${sign}</sup>`;
-  } else {
-    elements.formula_preview.innerHTML = formulaHtml(normalized);
-  }
+  if (!normalized) return "";
+  if (questionState?.question.domain !== "ion") return formulaHtml(normalized);
+  const match = normalized.match(/^(.*?)([1-8]?)([+-])$/);
+  if (!match) return formulaHtml(normalized);
+  return `${formulaHtml(match[1])}<sup>${match[2]}${match[3] === "+" ? "＋" : "－"}</sup>`;
+}
+
+function renderAnswerSubmit() {
+  const formulaMode = questionState?.answer.type === "formula";
+  const preview = formulaMode ? previewFormulaHtml() : "";
+  elements.submit_answer_text.innerHTML = preview || "✓";
+  elements.submit_answer.classList.toggle("has-formula", Boolean(preview));
 }
 
 function itemFor(question) {
@@ -235,37 +248,41 @@ function promptFor(question, item) {
   const formulaClass = (html) => `<span class="formula">${html}</span>`;
   if (question.domain === "ion") {
     return question.variant === "ionNameToFormula"
-      ? { instruction: "イオン式を答えよう", html: escapeHtml(item.name), formula: false }
-      : { instruction: "イオン名を答えよう", html: formulaClass(ionFormulaHtml(item)), formula: true };
+      ? { html: escapeHtml(item.name), formula: false }
+      : { html: formulaClass(ionFormulaHtml(item)), formula: true };
   }
   const cation = ionById.get(item.cation);
   const anion = ionById.get(item.anion);
-  if (question.variant === "nameToFormula") return { instruction: "組成式を答えよう", html: escapeHtml(item.name), formula: false };
-  if (question.variant === "formulaToName") return { instruction: "化合物名を答えよう", html: formulaClass(formulaHtml(item.formula)), formula: true };
-  const ionsHtml = `<span class="ion-pair"><span>${ionFormulaHtml(cation)}</span><span class="ion-plus">＋</span><span>${ionFormulaHtml(anion)}</span></span>`;
-  return {
-    instruction: question.variant === "ionsToFormula" ? "組成式を答えよう" : "化合物名を答えよう",
-    html: ionsHtml,
-    formula: true,
-  };
+  const names = question.variant.startsWith("ionNames");
+  const ionsHtml = names
+    ? `<span class="ion-pair names"><span>${escapeHtml(cation.name)}</span><span class="ion-plus">＋</span><span>${escapeHtml(anion.name)}</span></span>`
+    : `<span class="ion-pair"><span>${ionFormulaHtml(cation)}</span><span class="ion-plus">＋</span><span>${ionFormulaHtml(anion)}</span></span>`;
+  return { html: ionsHtml, formula: !names };
+}
+
+function setQuizActionState(enabled) {
+  elements.hint_button.disabled = !enabled;
+  elements.pass_button.disabled = !enabled;
 }
 
 function configureInput(answer, question) {
   const formulaMode = answer.type === "formula";
-  elements.answer_label.textContent = formulaMode ? (question.domain === "ion" ? "イオン式" : "組成式") : (question.domain === "ion" ? "イオン名" : "化合物名");
+  const answerLabel = formulaMode ? (question.domain === "ion" ? "イオン式" : "組成式") : (question.domain === "ion" ? "イオン名" : "化合物名");
+  elements.answer_label.textContent = answerLabel;
   elements.answer_input.value = "";
   elements.answer_input.disabled = false;
   elements.answer_input.setAttribute("aria-invalid", "false");
   elements.answer_input.inputMode = formulaMode ? "none" : "text";
-  elements.answer_input.placeholder = formulaMode ? (question.domain === "ion" ? "例：Ca2+" : "例：CaCl2") : "日本語で入力";
+  elements.answer_input.placeholder = answerLabel;
   elements.answer_input.autocapitalize = formulaMode ? "off" : "sentences";
   elements.formula_keyboard.hidden = !formulaMode;
+  elements.formula_keyboard.classList.toggle("ion-entry", formulaMode && question.domain === "ion");
   elements.charge_keys.hidden = !(formulaMode && question.domain === "ion");
-  elements.formula_preview.hidden = !formulaMode;
   elements.input_message.textContent = "";
   elements.submit_answer.disabled = false;
   setKeyboardCase(true);
-  renderFormulaPreview();
+  renderAnswerSubmit();
+  setQuizActionState(true);
   setTimeout(() => elements.answer_input.focus({ preventScroll: true }), 30);
 }
 
@@ -277,21 +294,17 @@ function renderQuestion() {
   clearTimeout(advanceTimer);
   const question = currentQuestion();
   const item = itemFor(question);
-  const answer = answerFor(question, item, ionById);
+  const answer = answerFor(question, item);
   questionState = { question, item, answer, hadWrong: false, usedHint: false, resolved: false };
   const prompt = promptFor(question, item);
-  elements.domain_label.textContent = question.domain === "ion" ? "イオン" : "化合物";
   elements.variant_label.textContent = VARIANT_LABELS[question.variant];
   elements.question_number.textContent = String(session.absoluteIndex + 1);
   elements.question_total.textContent = session.endless ? " / ∞" : ` / ${session.questions.length}`;
-  elements.progress_bar.style.width = session.endless ? `${((session.index + 1) / session.questions.length) * 100}%` : `${((session.index + 1) / session.questions.length) * 100}%`;
-  elements.instruction.textContent = prompt.instruction;
   elements.question_prompt.innerHTML = prompt.html;
   elements.question_prompt.classList.toggle("formula", prompt.formula);
   elements.streak.textContent = session.streak >= 2 ? `${session.streak}問連続正解` : "";
   elements.feedback.hidden = true;
   elements.feedback.className = "feedback";
-  elements.retry_actions.hidden = true;
   elements.next_button.hidden = true;
   configureInput(answer, question);
 }
@@ -339,20 +352,22 @@ function playTone(kind) {
   }
 }
 
-function animate(kind) {
+function animate(kind, streak = 0) {
   if (!preferences.vfx) return;
-  elements.question_card.classList.remove("shake", "pop");
+  const milestone = kind === "correct" && [3, 5, 10].includes(streak);
+  elements.question_card.classList.remove("shake", "pop", "milestone");
   void elements.question_card.offsetWidth;
-  elements.question_card.classList.add(kind === "correct" ? "pop" : "shake");
+  elements.question_card.classList.add(kind === "correct" ? (milestone ? "milestone" : "pop") : "shake");
   if (kind !== "correct" || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const rect = elements.question_card.getBoundingClientRect();
-  for (let index = 0; index < 9; index += 1) {
+  const count = milestone ? 17 : 9;
+  for (let index = 0; index < count; index += 1) {
     const spark = document.createElement("i");
     spark.className = "spark";
     spark.style.left = `${rect.left + rect.width / 2}px`;
     spark.style.top = `${rect.top + rect.height / 2}px`;
-    spark.style.setProperty("--spark-x", `${(Math.random() - .5) * 180}px`);
-    spark.style.setProperty("--spark-y", `${(Math.random() - .7) * 150}px`);
+    spark.style.setProperty("--spark-x", `${(Math.random() - .5) * (milestone ? 230 : 180)}px`);
+    spark.style.setProperty("--spark-y", `${(Math.random() - .7) * (milestone ? 180 : 150)}px`);
     elements.spark_layer.append(spark);
     setTimeout(() => spark.remove(), 700);
   }
@@ -400,7 +415,6 @@ function submitAnswer(event) {
     elements.feedback_title.textContent = "もう一度考えてみよう";
     elements.feedback_answer.innerHTML = "";
     elements.feedback_detail.textContent = "正答はまだ表示しません。入力を直して再挑戦できます。";
-    elements.retry_actions.hidden = false;
     playTone("wrong");
     animate("wrong");
     elements.answer_input.focus({ preventScroll: true });
@@ -412,14 +426,14 @@ function submitAnswer(event) {
   elements.answer_input.disabled = true;
   elements.submit_answer.disabled = true;
   elements.formula_keyboard.hidden = true;
-  elements.retry_actions.hidden = true;
+  setQuizActionState(false);
   elements.feedback.hidden = false;
   elements.feedback.className = "feedback correct";
   elements.feedback_title.textContent = "✓ 正解！";
   elements.feedback_answer.innerHTML = answerDisplay(questionState.answer.canonical);
   elements.feedback_detail.textContent = result.note ?? "";
   playTone("correct");
-  animate("correct");
+  animate("correct", session.streak);
   if (result.note) {
     elements.next_button.hidden = false;
     elements.next_button.focus({ preventScroll: true });
@@ -429,6 +443,7 @@ function submitAnswer(event) {
 }
 
 function showHint() {
+  if (questionState?.resolved) return;
   questionState.usedHint = true;
   elements.feedback.hidden = false;
   elements.feedback.className = "feedback";
@@ -439,13 +454,13 @@ function showHint() {
 }
 
 function passQuestion() {
-  if (questionState.resolved) return;
+  if (questionState?.resolved) return;
   resolveResult("pass");
   session.streak = 0;
   elements.answer_input.disabled = true;
   elements.submit_answer.disabled = true;
   elements.formula_keyboard.hidden = true;
-  elements.retry_actions.hidden = true;
+  setQuizActionState(false);
   elements.feedback.hidden = false;
   elements.feedback.className = "feedback";
   elements.feedback_title.textContent = "正答";
@@ -478,22 +493,20 @@ function nextQuestion() {
 }
 
 function makeRound(endless) {
-  const history = readLocal(STORAGE.history, {});
-  const options = {
-    domain: session.domain,
+  return (endless ? buildEndlessRound : buildTenQuestionSet)({
+    practiceType: session.practiceType,
     difficulty: session.difficulty,
     ions: data.ions,
     compounds: data.compounds,
     settings: data.difficulty,
-    history,
-  };
-  return endless ? buildEndlessRound(options) : buildTenQuestionSet(options);
+    history: readLocal(STORAGE.history, {}),
+  });
 }
 
 function startSession(settings = null) {
   const formData = new FormData(elements.setup_form);
   const chosen = settings ?? {
-    domain: formData.get("game-mode"),
+    practiceType: formData.get("practice-type"),
     difficulty: formData.get("difficulty"),
     endless: formData.get("question-count") === "endless",
   };
@@ -516,7 +529,7 @@ function startSession(settings = null) {
   session.questions = round.questions;
   session.plan = round;
   showScreen("quiz");
-  elements.session_announcement.innerHTML = `<small>START</small>${chosen.domain === "ion" ? "イオン" : "化合物"} モード`;
+  elements.session_announcement.textContent = PRACTICE_TYPE_LABELS[chosen.practiceType];
   elements.session_announcement.hidden = false;
   setTimeout(() => { elements.session_announcement.hidden = true; }, 880);
   renderQuestion();
@@ -535,7 +548,6 @@ function showResults() {
 }
 
 function bindEvents() {
-  elements.setup_form.addEventListener("change", difficultyDescription);
   elements.setup_form.addEventListener("submit", (event) => {
     event.preventDefault();
     startSession();
@@ -552,8 +564,16 @@ function bindEvents() {
   elements.answer_input.addEventListener("input", () => {
     elements.answer_input.setAttribute("aria-invalid", "false");
     elements.input_message.textContent = "";
-    renderFormulaPreview();
+    renderAnswerSubmit();
   });
+  elements.answer_input.addEventListener("touchstart", (event) => {
+    touchStartX = event.changedTouches[0]?.clientX ?? null;
+  }, { passive: true });
+  elements.answer_input.addEventListener("touchend", (event) => {
+    const endX = event.changedTouches[0]?.clientX;
+    if (touchStartX != null && endX != null && Math.abs(endX - touchStartX) >= 30) moveCaret(endX < touchStartX ? 1 : -1);
+    touchStartX = null;
+  }, { passive: true });
   elements.hint_button.addEventListener("click", showHint);
   elements.pass_button.addEventListener("click", passQuestion);
   elements.next_button.addEventListener("click", nextQuestion);
@@ -562,20 +582,21 @@ function bindEvents() {
     showScreen("setup");
   });
   elements.retry_session.addEventListener("click", () => startSession({
-    domain: session.domain,
+    practiceType: session.practiceType,
     difficulty: session.difficulty,
     endless: session.endless,
   }));
   elements.back_to_setup.addEventListener("click", () => showScreen("setup"));
-  elements.settings_button.addEventListener("click", () => elements.settings_dialog.showModal());
-  elements.sound_toggle.checked = preferences.sound;
-  elements.vfx_toggle.checked = preferences.vfx;
-  elements.sound_toggle.addEventListener("change", () => {
-    preferences.sound = elements.sound_toggle.checked;
+  setMediaButton(elements.sound_toggle, preferences.sound);
+  setMediaButton(elements.vfx_toggle, preferences.vfx);
+  elements.sound_toggle.addEventListener("click", () => {
+    preferences.sound = !preferences.sound;
+    setMediaButton(elements.sound_toggle, preferences.sound);
     writeLocal(STORAGE.preferences, preferences);
   });
-  elements.vfx_toggle.addEventListener("change", () => {
-    preferences.vfx = elements.vfx_toggle.checked;
+  elements.vfx_toggle.addEventListener("click", () => {
+    preferences.vfx = !preferences.vfx;
+    setMediaButton(elements.vfx_toggle, preferences.vfx);
     writeLocal(STORAGE.preferences, preferences);
   });
 }
@@ -583,7 +604,6 @@ function bindEvents() {
 async function initialize() {
   initializeKeyboard();
   bindEvents();
-  difficultyDescription();
   try {
     data = await loadData();
     ionById = new Map(data.ions.map((ion) => [ion.id, ion]));
@@ -592,9 +612,7 @@ async function initialize() {
   } catch (error) {
     elements.setup_form.innerHTML = `<div class="feedback wrong"><strong>教材データを読み込めませんでした。</strong><p>${escapeHtml(String(error.message))}</p><p>このページはWebサーバーまたはGitHub Pagesから開いてください。</p></div>`;
   }
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-    navigator.serviceWorker.register("service-worker.js").catch(() => {});
-  }
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("service-worker.js").catch(() => {});
 }
 
 initialize();

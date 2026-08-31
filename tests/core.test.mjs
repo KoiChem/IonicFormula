@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import {
+  PRACTICE_TYPES,
   allocateCounts,
+  answerFor,
   buildEndlessRound,
   buildTenQuestionSet,
   compoundCategory,
@@ -31,17 +33,30 @@ function randomFrom(seed = 1) {
   };
 }
 
-test("attached source data was imported completely", () => {
-  assert.equal(ions.length, 29);
-  assert.equal(compounds.length, 93);
-  assert.equal(new Set(ions.map((item) => item.id)).size, 29);
-  assert.equal(new Set(compounds.map((item) => item.id)).size, 93);
+test("published data includes the lithium and nitride expansion", () => {
+  assert.equal(ions.length, 31);
+  assert.equal(compounds.length, 111);
+  assert.equal(new Set(ions.map((item) => item.id)).size, 31);
+  assert.equal(new Set(compounds.map((item) => item.id)).size, 111);
+  assert.deepEqual(ions.find((item) => item.id === "lithium"), {
+    id: "lithium", formula: "Li", charge: 1, name: "リチウムイオン", type: "cation",
+    atomicity: "monatomic", requiresOxidationNumeral: false, enabled: true,
+  });
+  assert.equal(ions.find((item) => item.id === "nitride").charge, -3);
+  for (const [id, formula] of [["lithium_nitride", "Li3N"], ["magnesium_nitride", "Mg3N2"], ["calcium_nitride", "Ca3N2"], ["barium_nitride", "Ba3N2"], ["zinc_nitride", "Zn3N2"], ["aluminum_nitride", "AlN"]]) {
+    assert.equal(compounds.find((item) => item.id === id).formula, formula);
+  }
+});
+
+test("complex chromium and manganese content is disabled by default", () => {
+  for (const id of ["permanganate", "chromate", "dichromate"]) assert.equal(ions.find((item) => item.id === id).enabled, false);
+  for (const id of ["potassium_permanganate", "potassium_chromate", "potassium_dichromate"]) assert.equal(compounds.find((item) => item.id === id).enabled, false);
 });
 
 test("formula normalization accepts width and subscript variants without ignoring case", () => {
   assert.equal(normalizeFormula(" ＣａＣｌ₂ "), "CaCl2");
   assert.equal(normalizeFormula("Ａｌ₂（ＳＯ₄）₃"), "Al2(SO4)3");
-  assert.equal(normalizeFormula("Ca²⁺"), "Ca2+");
+  assert.equal(normalizeFormula("N³⁻"), "N3-");
   assert.notEqual(normalizeFormula("Nacl"), normalizeFormula("NaCl"));
   assert.notEqual(normalizeFormula("CaOH2"), normalizeFormula("Ca(OH)2"));
 });
@@ -51,108 +66,109 @@ test("Japanese name normalization accepts Roman numeral and parenthesis variants
   assert.equal(normalizeName("酸化鉄（Ⅲ）"), "酸化鉄(III)");
 });
 
-test("acetate stored and cation-first formulas are both correct, but only registered aliases", () => {
-  const sodium = compounds.find((item) => item.id === "sodium_acetate");
-  const specification = { type: "formula", canonical: sodium.formula, accepted: sodium.acceptedFormulaVariants };
-  assert.deepEqual(evaluateAnswer("CH3COONa", specification).matchedAnswerKind, "canonical");
-  const alternative = evaluateAnswer("NaCH3COO", specification);
+test("acetate accepts the cation-first alternative and gives the displayed-form recommendation", () => {
+  const lithium = compounds.find((item) => item.id === "lithium_acetate");
+  const specification = { type: "formula", canonical: lithium.formula, accepted: lithium.acceptedFormulaVariants };
+  assert.equal(evaluateAnswer("CH3COOLi", specification).matchedAnswerKind, "canonical");
+  const alternative = evaluateAnswer("LiCH3COO", specification);
   assert.equal(alternative.correct, true);
   assert.equal(alternative.matchedAnswerKind, "acceptedAlternative");
-  assert.match(alternative.note, /CH₃COONa/);
-  assert.equal(evaluateAnswer("NaC2H3O2", specification).correct, false);
+  assert.match(alternative.note, /CH₃COOLi/);
+  assert.equal(evaluateAnswer("LiC2H3O2", specification).correct, false);
 });
 
 test("neutral formula generator uses the simplest whole-number ratio", () => {
   assert.deepEqual(neutralFormula(ionById.get("aluminum"), ionById.get("oxide")), {
     formula: "Al2O3", cationCount: 2, anionCount: 3, totalCharge: 6,
   });
-  assert.equal(neutralFormula(ionById.get("calcium"), ionById.get("hydroxide")).formula, "Ca(OH)2");
+  assert.equal(neutralFormula(ionById.get("lithium"), ionById.get("nitride")).formula, "Li3N");
+  assert.equal(neutralFormula(ionById.get("calcium"), ionById.get("nitride")).formula, "Ca3N2");
   assert.equal(neutralFormula(ionById.get("ammonium"), ionById.get("sulfate")).formula, "(NH4)2SO4");
 });
 
 test("categories are derived from ion data with variable oxidation state taking priority", () => {
-  assert.equal(ionCategory(ionById.get("sodium")), "ionSimple");
+  assert.equal(ionCategory(ionById.get("lithium")), "ionSimple");
+  assert.equal(ionCategory(ionById.get("nitride")), "ionSimple");
   assert.equal(ionCategory(ionById.get("sulfate")), "ionPolyatomic");
   assert.equal(ionCategory(ionById.get("iron3")), "ionVariableOx");
-  assert.equal(compoundCategory(compounds.find((item) => item.id === "sodium_chloride"), ionById), "simple11");
-  assert.equal(compoundCategory(compounds.find((item) => item.id === "calcium_chloride"), ionById), "simpleRatio");
-  assert.equal(compoundCategory(compounds.find((item) => item.id === "calcium_hydroxide"), ionById), "polyatomic");
-  assert.equal(compoundCategory(compounds.find((item) => item.id === "iron3_sulfate"), ionById), "variableOx");
+  assert.equal(compoundCategory(compounds.find((item) => item.id === "aluminum_nitride"), ionById), "simple11");
+  assert.equal(compoundCategory(compounds.find((item) => item.id === "lithium_nitride"), ionById), "simpleRatio");
+  assert.equal(compoundCategory(compounds.find((item) => item.id === "lithium_hydroxide"), ionById), "polyatomic");
 });
 
-test("published data passes validation and reports only the two intentional acetate warnings", () => {
+test("published data passes validation and reports only intentional acetate warnings", () => {
   const result = validateData(ions, compounds, settings);
   assert.equal(result.valid, true, result.errors.join("\n"));
   assert.equal(result.errors.length, 0);
-  assert.equal(result.warnings.length, 2);
+  assert.equal(result.warnings.length, 3);
   assert.ok(result.warnings.every((warning) => warning.includes("許容別表記登録済み")));
 });
 
-test("Fe(OH)3 is absent and iron(III) hydroxide is name-only", () => {
+test("Fe(OH)3 is absent and iron(III) hydroxide is name-only in both ion prompt styles", () => {
   assert.equal(JSON.stringify({ ions, compounds }).includes("Fe(OH)3"), false);
   assert.equal(JSON.stringify({ ions, compounds }).includes("Fe(OH)₃"), false);
   const item = compounds.find((compound) => compound.id === "iron3_hydroxide");
   assert.equal(item.formula, null);
-  assert.deepEqual(itemVariants("compound", item), ["ionsToName"]);
-
+  assert.deepEqual(itemVariants("ionFormula", item), ["ionsToName"]);
+  assert.deepEqual(itemVariants("ionName", item), ["ionNamesToName"]);
+  assert.deepEqual(itemVariants("random", item), ["ionsToName", "ionNamesToName"]);
   const invalid = structuredClone(compounds);
   invalid.find((compound) => compound.id === "iron3_hydroxide").formula = "Fe(OH)3";
   const result = validateData(ions, invalid, settings);
   assert.ok(result.errors.some((error) => error.includes("禁止")));
 });
 
+test("normal and hard category ratios allocate their stated ten-question targets", () => {
+  assert.deepEqual(allocateCounts(settings.categoryWeights.ion.normal, 10, {}, randomFrom(1)), { ionSimple: 6, ionPolyatomic: 3, ionVariableOx: 1 });
+  assert.deepEqual(allocateCounts(settings.categoryWeights.ion.hard, 10, {}, randomFrom(2)), { ionSimple: 2, ionPolyatomic: 6, ionVariableOx: 2 });
+  assert.deepEqual(allocateCounts(settings.categoryWeights.compound.normal, 10, {}, randomFrom(3)), { simple11: 3, simpleRatio: 4, polyatomic: 2, variableOx: 1 });
+  assert.deepEqual(allocateCounts(settings.categoryWeights.compound.hard, 10, {}, randomFrom(4)), { simple11: 0, simpleRatio: 3, polyatomic: 5, variableOx: 2 });
+});
+
 test("zero-weight categories are completely excluded", () => {
-  const ionSet = buildTenQuestionSet({ domain: "ion", difficulty: "hard", ions, compounds, settings, random: randomFrom(2) });
-  assert.ok(ionSet.questions.every((question) => question.category !== "ionSimple"));
-  const compoundSet = buildTenQuestionSet({ domain: "compound", difficulty: "hard", ions, compounds, settings, random: randomFrom(3) });
+  const compoundSet = buildTenQuestionSet({ practiceType: "ionFormula", difficulty: "hard", ions, compounds, settings, random: randomFrom(5) });
   assert.ok(compoundSet.questions.every((question) => question.category !== "simple11"));
 });
 
-test("hard ion 0:4:6 target is safely redistributed to 0:6:4 with current capacity", () => {
-  const available = { ionSimple: 14, ionPolyatomic: 11, ionVariableOx: 4 };
-  const counts = allocateCounts(settings.categoryWeights.ion.hard, 10, available, randomFrom(4));
-  assert.deepEqual(counts, { ionSimple: 0, ionPolyatomic: 6, ionVariableOx: 4 });
-});
-
-test("ten-question sets contain unique item IDs and balanced variants", () => {
-  for (const [domain, difficulty, seed] of [["ion", "standard", 10], ["compound", "standard", 11], ["compound", "hard", 12]]) {
-    const result = buildTenQuestionSet({ domain, difficulty, ions, compounds, settings, random: randomFrom(seed) });
-    assert.equal(result.questions.length, 10);
-    assert.equal(new Set(result.questions.map((question) => question.itemId)).size, 10);
-    const variants = Object.values(result.questions.reduce((counts, question) => ({ ...counts, [question.variant]: (counts[question.variant] ?? 0) + 1 }), {})).sort();
-    assert.deepEqual(variants, domain === "ion" ? [5, 5] : [2, 2, 3, 3]);
-  }
-});
-
-test("all difficulty presets repeatedly produce complete, unique ten-question sets", () => {
-  for (const domain of ["ion", "compound"]) {
-    for (const difficulty of ["easy", "standard", "hard"]) {
+test("all four problem types produce complete unique sets across both difficulties", () => {
+  for (const practiceType of PRACTICE_TYPES) {
+    for (const difficulty of ["normal", "hard"]) {
       for (let seed = 1; seed <= 30; seed += 1) {
-        const result = buildTenQuestionSet({ domain, difficulty, ions, compounds, settings, random: randomFrom(seed) });
-        assert.equal(result.questions.length, 10, `${domain}.${difficulty}, seed=${seed}`);
-        assert.equal(new Set(result.questions.map((question) => question.itemId)).size, 10, `${domain}.${difficulty}, seed=${seed}`);
+        const result = buildTenQuestionSet({ practiceType, difficulty, ions, compounds, settings, random: randomFrom(seed) });
+        assert.equal(result.questions.length, 10, `${practiceType}.${difficulty}, seed=${seed}`);
+        assert.equal(new Set(result.questions.map((question) => question.itemId)).size, 10, `${practiceType}.${difficulty}, seed=${seed}`);
+        assert.ok(result.questions.every((question) => question.practiceType === practiceType));
       }
     }
   }
 });
 
-test("endless hard ion round visits every eligible item exactly once", () => {
-  const result = buildEndlessRound({ domain: "ion", difficulty: "hard", ions, compounds, settings, random: randomFrom(20) });
-  assert.equal(result.questions.length, 15);
-  assert.equal(new Set(result.questions.map((question) => question.itemId)).size, 15);
-  assert.equal(result.questions.filter((question) => question.category === "ionSimple").length, 0);
-  assert.equal(result.questions.filter((question) => question.category === "ionPolyatomic").length, 11);
-  assert.equal(result.questions.filter((question) => question.category === "ionVariableOx").length, 4);
+test("direct modes balance answer forms and random uses all four actual skills", () => {
+  const formula = buildTenQuestionSet({ practiceType: "ionFormula", difficulty: "normal", ions, compounds, settings, random: randomFrom(8) });
+  assert.deepEqual([...new Set(formula.questions.map((question) => question.variant))].sort(), ["ionsToFormula", "ionsToName"]);
+  const named = buildTenQuestionSet({ practiceType: "ionName", difficulty: "normal", ions, compounds, settings, random: randomFrom(9) });
+  assert.deepEqual([...new Set(named.questions.map((question) => question.variant))].sort(), ["ionNamesToFormula", "ionNamesToName"]);
+  const random = buildTenQuestionSet({ practiceType: "random", difficulty: "normal", ions, compounds, settings, random: randomFrom(10) });
+  assert.deepEqual([...new Set(random.questions.map((question) => question.variant))].sort(), ["ionNamesToFormula", "ionNamesToName", "ionsToFormula", "ionsToName"]);
+  assert.equal(answerFor(random.questions.find((question) => question.variant === "ionsToFormula"), compounds.find((item) => item.id === random.questions.find((question) => question.variant === "ionsToFormula").itemId)).type, "formula");
 });
 
-test("weak history is isolated by domain, item and variant", () => {
+test("endless rounds visit all eligible items exactly once and omit disabled material", () => {
+  for (const [practiceType, difficulty] of [["ion", "hard"], ["random", "hard"]]) {
+    const result = buildEndlessRound({ practiceType, difficulty, ions, compounds, settings, random: randomFrom(20) });
+    assert.equal(new Set(result.questions.map((question) => question.itemId)).size, result.questions.length);
+    assert.ok(!result.questions.some((question) => ["permanganate", "chromate", "dichromate", "potassium_permanganate", "potassium_chromate", "potassium_dichromate"].includes(question.itemId)));
+  }
+});
+
+test("weak history is shared by actual skill, not by the random menu choice", () => {
   const history = {};
-  const question = { domain: "compound", itemId: "calcium_chloride", variant: "nameToFormula" };
+  const question = { domain: "compound", itemId: "calcium_chloride", practiceType: "random", variant: "ionNamesToFormula", skill: "ionNamesToFormula" };
   recordHistory(history, question, { passed: false, usedHint: false, hadWrong: true }, 1);
-  assert.equal(history[historyKey("compound", "calcium_chloride", "nameToFormula")].score, 1);
-  assert.equal(history[historyKey("compound", "calcium_chloride", "formulaToName")], undefined);
-  recordHistory(history, question, { passed: false, usedHint: false, hadWrong: false }, 2);
-  assert.equal(history[historyKey("compound", "calcium_chloride", "nameToFormula")].score, 0);
+  assert.equal(history[historyKey(question)].score, 1);
+  assert.equal(history[historyKey("compound", "calcium_chloride", "ionsToFormula")], undefined);
+  recordHistory(history, { ...question, practiceType: "ionName" }, { passed: false, usedHint: false, hadWrong: false }, 2);
+  assert.equal(history[historyKey(question)].score, 0);
 });
 
 test("all app-shell assets use repository-relative paths and exist", async () => {

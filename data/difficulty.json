@@ -1,20 +1,20 @@
 {
-  "version": 1,
+  "version": 2,
   "categoryWeights": {
     "ion": {
-      "easy": { "ionSimple": 7, "ionPolyatomic": 3, "ionVariableOx": 0 },
-      "standard": { "ionSimple": 3, "ionPolyatomic": 5, "ionVariableOx": 2 },
-      "hard": { "ionSimple": 0, "ionPolyatomic": 4, "ionVariableOx": 6 }
+      "normal": { "ionSimple": 6, "ionPolyatomic": 3, "ionVariableOx": 1 },
+      "hard": { "ionSimple": 2, "ionPolyatomic": 6, "ionVariableOx": 2 }
     },
     "compound": {
-      "easy": { "simple11": 65, "simpleRatio": 25, "polyatomic": 10, "variableOx": 0 },
-      "standard": { "simple11": 20, "simpleRatio": 25, "polyatomic": 35, "variableOx": 20 },
-      "hard": { "simple11": 0, "simpleRatio": 20, "polyatomic": 45, "variableOx": 35 }
+      "normal": { "simple11": 3, "simpleRatio": 4, "polyatomic": 2, "variableOx": 1 },
+      "hard": { "simple11": 0, "simpleRatio": 3, "polyatomic": 5, "variableOx": 2 }
     }
   },
   "variantWeights": {
     "ion": { "ionNameToFormula": 1, "ionFormulaToName": 1 },
-    "compound": { "nameToFormula": 1, "formulaToName": 1, "ionsToFormula": 1, "ionsToName": 1 }
+    "ionFormula": { "ionsToFormula": 1, "ionsToName": 1 },
+    "ionName": { "ionNamesToFormula": 1, "ionNamesToName": 1 },
+    "random": { "ionsToFormula": 1, "ionsToName": 1, "ionNamesToFormula": 1, "ionNamesToName": 1 }
   },
   "weakQuestionTarget": {
     "ten": 3,

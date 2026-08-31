@@ -1,6 +1,6 @@
 {
-  "name": "Ionic Formula | KoiChem",
-  "short_name": "Ionic Formula",
+  "name": "IonicFormula",
+  "short_name": "IonicFormula",
   "description": "イオン式とイオン結合性化合物の組成式を学ぶWebアプリ",
   "start_url": "./",
   "scope": "./",

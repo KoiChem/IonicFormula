@@ -1132,6 +1132,115 @@
     ]
   },
   {
+    "id": "lithium_fluoride",
+    "cation": "lithium", "anion": "fluoride", "formula": "LiF", "name": "フッ化リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_chloride",
+    "cation": "lithium", "anion": "chloride", "formula": "LiCl", "name": "塩化リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_bromide",
+    "cation": "lithium", "anion": "bromide", "formula": "LiBr", "name": "臭化リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_iodide",
+    "cation": "lithium", "anion": "iodide", "formula": "LiI", "name": "ヨウ化リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_oxide",
+    "cation": "lithium", "anion": "oxide", "formula": "Li2O", "name": "酸化リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_sulfide",
+    "cation": "lithium", "anion": "sulfide", "formula": "Li2S", "name": "硫化リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_hydroxide",
+    "cation": "lithium", "anion": "hydroxide", "formula": "LiOH", "name": "水酸化リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_nitrate",
+    "cation": "lithium", "anion": "nitrate", "formula": "LiNO3", "name": "硝酸リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_sulfate",
+    "cation": "lithium", "anion": "sulfate", "formula": "Li2SO4", "name": "硫酸リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_carbonate",
+    "cation": "lithium", "anion": "carbonate", "formula": "Li2CO3", "name": "炭酸リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_phosphate",
+    "cation": "lithium", "anion": "phosphate", "formula": "Li3PO4", "name": "リン酸リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_acetate",
+    "cation": "lithium", "anion": "acetate", "formula": "CH3COOLi", "name": "酢酸リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "acceptedFormulaVariants": [{ "formula": "LiCH3COO", "note": "酢酸塩は示性式CH₃COOLiでの表記を推奨します。" }],
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "lithium_nitride",
+    "cation": "lithium", "anion": "nitride", "formula": "Li3N", "name": "窒化リチウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "magnesium_nitride",
+    "cation": "magnesium", "anion": "nitride", "formula": "Mg3N2", "name": "窒化マグネシウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "calcium_nitride",
+    "cation": "calcium", "anion": "nitride", "formula": "Ca3N2", "name": "窒化カルシウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "barium_nitride",
+    "cation": "barium", "anion": "nitride", "formula": "Ba3N2", "name": "窒化バリウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "zinc_nitride",
+    "cation": "zinc", "anion": "nitride", "formula": "Zn3N2", "name": "窒化亜鉛",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
+    "id": "aluminum_nitride",
+    "cation": "aluminum", "anion": "nitride", "formula": "AlN", "name": "窒化アルミニウム",
+    "solidColor": null, "solidColorNote": null, "enabled": true,
+    "questionModes": { "nameToFormula": true, "formulaToName": true, "ionsToFormula": true, "ionsToName": true }
+  },
+  {
     "id": "potassium_permanganate",
     "cation": "potassium",
     "anion": "permanganate",
@@ -1139,7 +1248,7 @@
     "name": "過マンガン酸カリウム",
     "solidColor": "暗紫色",
     "solidColorNote": null,
-    "enabled": true,
+    "enabled": false,
     "questionModes": {
       "nameToFormula": true,
       "formulaToName": true,
@@ -1155,7 +1264,7 @@
     "name": "クロム酸カリウム",
     "solidColor": "黄色",
     "solidColorNote": null,
-    "enabled": true,
+    "enabled": false,
     "questionModes": {
       "nameToFormula": true,
       "formulaToName": true,
@@ -1171,7 +1280,7 @@
     "name": "二クロム酸カリウム",
     "solidColor": "橙色",
     "solidColorNote": null,
-    "enabled": true,
+    "enabled": false,
     "questionModes": {
       "nameToFormula": true,
       "formulaToName": true,
