@@ -19,7 +19,8 @@
 * { box-sizing: border-box; }
 html { min-height: 100%; background: var(--background); }
 body {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   color: var(--ink);
   background:
@@ -27,6 +28,7 @@ body {
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / 22px 22px,
     radial-gradient(circle at 5% 0%, rgba(123, 209, 174, .15), transparent 30rem),
     var(--background);
+  background-attachment: fixed;
 }
 button, input { font: inherit; }
 button { touch-action: manipulation; }
