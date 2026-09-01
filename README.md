@@ -50,7 +50,7 @@ node --test tests/core.test.mjs
 
 公開URL：<https://koichem.github.io/IonicFormula/>
 
-スマホ向けパズル体験を調整したベータ版は、通常版を変更せず次のURLで公開します。
+スマホ向けパズル体験を調整した最新版を、公開URLに反映しています。比較用のベータ版も残しています。
 
 <https://koichem.github.io/IonicFormula/beta0901.html>
 

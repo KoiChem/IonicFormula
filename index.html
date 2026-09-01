@@ -8,15 +8,16 @@
   <title>IonicFormula</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260901-v1">
 </head>
-<body>
+<body class="beta0901" data-build="beta0901">
   <header id="app-header" class="app-header">
     <a id="brand" class="brand" href="./" aria-label="IonicFormula ホーム">IonicFormula</a>
     <div id="quiz-actions" class="quiz-actions" hidden>
       <button id="quit-button" class="home-button" type="button" aria-label="ホーム画面に戻る">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.5 10 8.5-7 8.5 7V21H15v-6H9v6H3.5z"/></svg>
       </button>
+      <p id="active-game-description" class="active-game-description" aria-live="polite" hidden></p>
     </div>
     <div class="media-controls" aria-label="効果音">
       <button id="sound-toggle" class="media-toggle" type="button" aria-label="効果音を切り替える" aria-pressed="true">
@@ -34,11 +35,11 @@
           <div class="mode-grid mode-grid-two">
             <label class="mode-card">
               <input type="radio" name="practice-type" value="ion" checked>
-              <span class="mode-icon"><span class="mode-formula">Na<sup>＋</sup></span><span class="mode-label">イオン</span></span>
+              <span class="mode-icon"><span class="mode-formula">Na<sup>＋</sup></span><span class="mode-label">イオンモード</span></span>
             </label>
             <label class="mode-card">
               <input type="radio" name="practice-type" value="compound">
-              <span class="mode-icon"><span class="mode-formula">(NH<sub>4</sub>)<sub>2</sub>S</span><span class="mode-label">化合物</span></span>
+              <span class="mode-icon"><span class="mode-formula">(NH<sub>4</sub>)<sub>2</sub>S</span><span class="mode-label">化合物モード</span></span>
             </label>
           </div>
         </fieldset>
@@ -54,10 +55,11 @@
           </div>
           <div class="compound-option-row">
             <span class="compound-option-title">解答</span>
-            <div class="option-toggles answer-toggles" role="group" aria-label="化合物の解答形式">
-              <button type="button" class="option-toggle is-on" data-compound-toggle="answerFormula" aria-pressed="true">組成式</button>
-              <button type="button" class="option-toggle is-on" data-compound-toggle="answerName" aria-pressed="true">化合物名</button>
-              <button type="button" class="option-toggle" data-compound-toggle="answerBoth" aria-pressed="false">式＆名</button>
+            <div id="compound-answer-presets" class="option-toggles answer-toggles" role="group" aria-label="化合物の解答形式">
+              <button type="button" class="option-toggle" data-compound-preset="name" aria-pressed="false">化合物名</button>
+              <button type="button" class="option-toggle" data-compound-preset="formula" aria-pressed="false">組成式</button>
+              <button type="button" class="option-toggle is-on" data-compound-preset="random" aria-pressed="true">式 or 名</button>
+              <button type="button" class="option-toggle" data-compound-preset="both" aria-pressed="false">式＆名</button>
             </div>
           </div>
           <p id="compound-option-message" class="compound-option-message" role="status"></p>
@@ -100,6 +102,10 @@
         <div id="question-prompt" class="question-prompt"></div>
         <p id="streak" class="streak" aria-live="polite"></p>
       </article>
+      <div id="question-progress" class="question-progress" role="progressbar" aria-label="問題の進み具合" aria-valuemin="1" hidden>
+        <span id="question-progress-bar" class="question-progress-bar"></span>
+        <span id="question-progress-label" class="sr-only"></span>
+      </div>
 
       <form id="answer-form" class="answer-area" autocomplete="off">
         <label id="answer-label" class="sr-only" for="answer-input">答え</label>
@@ -138,6 +144,12 @@
       <div id="feedback" class="feedback" aria-live="polite" hidden>
         <div id="feedback-title" class="feedback-title"></div>
         <div id="feedback-answer" class="feedback-answer"></div>
+        <div id="feedback-companion-row" class="feedback-companion-row" hidden>
+          <button id="feedback-companion-toggle" class="companion-reveal" type="button" aria-controls="feedback-companion" aria-expanded="false"></button>
+          <span id="feedback-companion" class="feedback-companion" hidden>
+            <span id="feedback-companion-value" class="feedback-companion-value"></span>
+          </span>
+        </div>
         <p id="feedback-detail" class="feedback-detail"></p>
         <div id="feedback-actions" class="feedback-actions" hidden>
           <button id="hint-button" class="support-action" type="button">ヒント</button>
@@ -151,15 +163,21 @@
       <div class="result-hero">
         <span class="result-mark" aria-hidden="true">✓</span>
         <h1 id="result-title">今回の結果</h1>
+        <p id="result-first-rate" class="result-first-rate"></p>
+        <p id="result-comparison" class="result-comparison"></p>
       </div>
       <dl class="result-grid">
-        <div><dt>初回正解</dt><dd id="result-first">0</dd></div>
-        <div><dt>再回答正解</dt><dd id="result-retry">0</dd></div>
+        <div><dt>初回で正解</dt><dd id="result-first">0</dd></div>
+        <div><dt>誤答後に正解</dt><dd id="result-retry">0</dd></div>
         <div><dt>ヒント使用</dt><dd id="result-hint">0</dd></div>
         <div><dt>パス</dt><dd id="result-pass">0</dd></div>
       </dl>
+      <p id="result-count-note" class="result-count-note">ヒント使用は、誤答後に正解した問題と重なる場合があります。</p>
       <section id="result-review" class="result-review" hidden aria-labelledby="result-review-title">
-        <h2 id="result-review-title">復習する問題</h2>
+        <div class="result-review-heading">
+          <h2 id="result-review-title">復習する問題</h2>
+          <button id="result-review-companion-toggle" class="companion-toggle" type="button" aria-pressed="true" hidden></button>
+        </div>
         <div id="result-review-list" class="result-review-list"></div>
       </section>
       <div class="result-actions">
@@ -186,6 +204,6 @@
   </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="js/app.js?v=20260901-v1"></script>
 </body>
 </html>

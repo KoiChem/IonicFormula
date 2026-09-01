@@ -471,16 +471,19 @@ test("all app-shell assets use repository-relative paths and exist", async () =>
   for (const icon of manifest.icons) await access(new URL(`../${icon.src}`, import.meta.url));
 });
 
-test("beta home keeps prompt toggles and offers four answer presets without descriptions", async () => {
-  const beta = await readFile(new URL("../beta0901.html", import.meta.url), "utf8");
-  assert.match(beta, /data-compound-toggle="promptFormula"[^>]*>イオン式/);
-  assert.match(beta, /data-compound-toggle="promptName"[^>]*>イオン名/);
-  const answerLabels = [...beta.matchAll(/data-compound-preset="[^"]+"[^>]*>([^<]+)/g)].map((match) => match[1]);
-  assert.deepEqual(answerLabels, ["化合物名", "組成式", "式 or 名", "式＆名"]);
-  assert.doesNotMatch(beta, /compound-preset-description|出題の見せ方|答え方/);
-  assert.match(beta, /イオンモード/);
-  assert.match(beta, /化合物モード/);
-  assert.match(beta, /id="active-game-description"/);
-  assert.match(beta, /id="feedback-companion-row"/);
-  assert.match(beta, /id="feedback-companion-toggle" class="companion-reveal"/);
+test("public and beta homes keep prompt toggles and offer four answer presets without descriptions", async () => {
+  for (const htmlFile of ["../index.html", "../beta0901.html"]) {
+    const html = await readFile(new URL(htmlFile, import.meta.url), "utf8");
+    assert.match(html, /<body class="beta0901" data-build="beta0901">/);
+    assert.match(html, /data-compound-toggle="promptFormula"[^>]*>イオン式/);
+    assert.match(html, /data-compound-toggle="promptName"[^>]*>イオン名/);
+    const answerLabels = [...html.matchAll(/data-compound-preset="[^"]+"[^>]*>([^<]+)/g)].map((match) => match[1]);
+    assert.deepEqual(answerLabels, ["化合物名", "組成式", "式 or 名", "式＆名"]);
+    assert.doesNotMatch(html, /compound-preset-description|出題の見せ方|答え方/);
+    assert.match(html, /イオンモード/);
+    assert.match(html, /化合物モード/);
+    assert.match(html, /id="active-game-description"/);
+    assert.match(html, /id="feedback-companion-row"/);
+    assert.match(html, /id="feedback-companion-toggle" class="companion-reveal"/);
+  }
 });
