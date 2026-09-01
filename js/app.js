@@ -22,19 +22,22 @@ import {
   recordCompoundSelectionPresentation,
   formulaEntryValue,
   questionSkills,
+  removeWeakHistoryItems,
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
 } from "./core.js";
 
-const IS_BETA = document.body.dataset.build === "beta0901";
+const IS_CURRENT = document.body.dataset.build === "current";
 
 const STORAGE = {
   history: "ionicFormula.history.v2",
   recentPresentations: "ionicFormula.recentPresentations.v1",
   compoundSelection: "ionicFormula.compoundSelection.v1",
-  preferences: IS_BETA ? "ionicFormula.beta0901.preferences.v1" : "ionicFormula.preferences.v1",
-  sessionSummaries: IS_BETA ? "ionicFormula.beta0901.sessionSummaries.v1" : "ionicFormula.sessionSummaries.v1",
+  preferences: "ionicFormula.preferences.v1",
+  sessionSummaries: "ionicFormula.sessionSummaries.v1",
+  legacyPreferences: "ionicFormula.beta0901.preferences.v1",
+  legacySessionSummaries: "ionicFormula.beta0901.sessionSummaries.v1",
   adminData: "ionicFormula.adminData.v2",
 };
 
@@ -49,7 +52,7 @@ const elements = Object.fromEntries([
   "retry-session", "back-to-setup", "sound-toggle", "spark-layer",
   "start-button", "compound-options", "compound-option-message",
   "weak-review-button", "weak-review-count", "weak-review-dialog", "close-weak-review", "weak-review-list",
-  "weak-review-empty", "start-weak-from-review",
+  "weak-review-empty", "start-weak-from-review", "clear-weak-review",
   "compound-answer-presets", "question-progress", "question-progress-bar", "question-progress-label",
   "feedback-companion-row", "feedback-companion", "feedback-companion-value", "feedback-companion-toggle",
   "result-first-rate", "result-comparison", "result-count-note", "result-review-companion-toggle",
@@ -107,6 +110,7 @@ const preferences = {
   sound: true,
   showCompanionAnswer: true,
   compoundOptions: { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false },
+  ...readLocal(STORAGE.legacyPreferences, {}),
   ...readLocal(STORAGE.preferences, {}),
   // FX is part of the learning feedback, not a user-configurable setting.
   vfx: true,
@@ -179,7 +183,7 @@ function savePreferences() {
 }
 
 function refreshBetaCompoundPresets() {
-  if (!IS_BETA || !elements.compound_answer_presets) return;
+  if (!IS_CURRENT || !elements.compound_answer_presets) return;
   const preset = compoundAnswerPresetForOptions(preferences.compoundOptions);
   for (const button of elements.compound_answer_presets.querySelectorAll("[data-compound-preset]")) {
     const active = button.dataset.compoundPreset === preset;
@@ -195,7 +199,7 @@ function setBetaCompoundPreset(preset) {
 }
 
 function betaCompanion(question = questionState?.question, item = questionState?.item) {
-  if (!IS_BETA || !questionState?.resolved) return null;
+  if (!IS_CURRENT || !questionState?.resolved) return null;
   return companionAnswerFor(question, item);
 }
 
@@ -212,7 +216,7 @@ function syncCompanionToggle(button, available) {
 }
 
 function renderBetaFeedbackCompanion() {
-  if (!IS_BETA || !elements.feedback_companion_row) return;
+  if (!IS_CURRENT || !elements.feedback_companion_row) return;
   const companion = betaCompanion();
   const available = Boolean(companion);
   elements.feedback_companion_row.hidden = !available;
@@ -229,7 +233,7 @@ function renderBetaFeedbackCompanion() {
 }
 
 function resetBetaFeedbackCompanion() {
-  if (!IS_BETA || !elements.feedback_companion_row) return;
+  if (!IS_CURRENT || !elements.feedback_companion_row) return;
   elements.feedback_companion_row.hidden = true;
   elements.feedback_companion.hidden = true;
   elements.feedback_companion_toggle.disabled = false;
@@ -239,7 +243,7 @@ function resetBetaFeedbackCompanion() {
 }
 
 function renderBetaQuestionProgress() {
-  if (!IS_BETA || !elements.question_progress) return;
+  if (!IS_CURRENT || !elements.question_progress) return;
   const visible = Boolean(session && !session.endless);
   elements.question_progress.hidden = !visible;
   if (!visible) return;
@@ -254,7 +258,7 @@ function renderBetaQuestionProgress() {
 }
 
 function betaGameDescription() {
-  if (!IS_BETA || session?.practiceType !== "compound") return "";
+  if (!IS_CURRENT || session?.practiceType !== "compound") return "";
   const options = session.compoundOptions;
   const prompt = options.promptFormula && options.promptName
     ? "イオン式・イオン名"
@@ -702,7 +706,7 @@ function reviewHtml(review) {
   const item = itemFor(review.question);
   const answer = answerFor(review.question, item);
   const prompt = promptFor(review.question, item);
-  const companion = IS_BETA && preferences.showCompanionAnswer ? companionAnswerFor(review.question, item) : null;
+  const companion = IS_CURRENT && preferences.showCompanionAnswer ? companionAnswerFor(review.question, item) : null;
   const companionHtml = companion
     ? `<div class="review-companion"><span>${escapeHtml(companion.label)}：</span><strong>${companionValueHtml(companion)}</strong></div>`
     : "";
@@ -727,16 +731,16 @@ function betaReviewHasCompanion() {
 }
 
 function renderBetaResultReview() {
-  if (!IS_BETA || !elements.result_review_list) return;
+  if (!IS_CURRENT || !elements.result_review_list) return;
   elements.result_review_list.innerHTML = session.reviewItems.map(reviewHtml).join("");
   syncCompanionToggle(elements.result_review_companion_toggle, betaReviewHasCompanion());
 }
 
 function renderBetaResultSummary() {
-  if (!IS_BETA || !elements.result_first_rate) return;
+  if (!IS_CURRENT || !elements.result_first_rate) return;
   const total = session.questions.length;
   const firstTryRate = total ? Math.round(session.stats.first / total * 100) : 0;
-  const summaries = readLocal(STORAGE.sessionSummaries, {});
+  const summaries = { ...readLocal(STORAGE.legacySessionSummaries, {}), ...readLocal(STORAGE.sessionSummaries, {}) };
   const key = betaSessionSummaryKey();
   const previous = summaries[key];
   elements.result_first_rate.textContent = `初回正解率 ${firstTryRate}%`;
@@ -939,7 +943,7 @@ function submitAnswer(event) {
   elements.feedback_detail.textContent = result.note ?? "";
   renderBetaFeedbackCompanion();
   animate("correct", session.streak);
-  const betaNeedsManualAdvance = IS_BETA
+  const betaNeedsManualAdvance = IS_CURRENT
     && questionState.question.domain === "compound"
     && questionState.answer.type !== "both";
   if (result.note || betaNeedsManualAdvance) {
@@ -1051,7 +1055,7 @@ function refreshCompoundOptions() {
 
 function toggleCompoundOption(key) {
   const options = preferences.compoundOptions;
-  if (IS_BETA && (key === "promptFormula" || key === "promptName") && options[key] && !options[key === "promptFormula" ? "promptName" : "promptFormula"]) {
+  if (IS_CURRENT && (key === "promptFormula" || key === "promptName") && options[key] && !options[key === "promptFormula" ? "promptName" : "promptFormula"]) {
     elements.compound_option_message.textContent = "イオン式またはイオン名を1つ以上選んでください。";
     return;
   }
@@ -1131,7 +1135,8 @@ function weakSkillLabel(skill) {
 function weakReviewHtml(entry) {
   const labels = [...new Set(entry.skills.map(weakSkillLabel))];
   const rate = Math.round(entry.rate * 100);
-  return `<article class="weak-item"><div class="weak-item-title">${weakItemTitle(entry)}</div><div class="weak-item-meta"><span>初回正答率 ${rate}%</span>${labels.map((label) => `<span class="weak-skill">${escapeHtml(label)}</span>`).join("")}</div></article>`;
+  const deleteLabel = escapeHtml(`${entry.item.name}を苦手リストから削除`);
+  return `<article class="weak-item"><button class="weak-item-delete" type="button" data-weak-domain="${escapeHtml(entry.domain)}" data-weak-item-id="${escapeHtml(entry.itemId)}" aria-label="${deleteLabel}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5"/></svg></button><div class="weak-item-title">${weakItemTitle(entry)}</div><div class="weak-item-meta"><span>初回正答率 ${rate}%</span>${labels.map((label) => `<span class="weak-skill">${escapeHtml(label)}</span>`).join("")}</div></article>`;
 }
 
 function currentWeakItems() {
@@ -1144,11 +1149,24 @@ function updateWeakReviewBadge() {
   elements.weak_review_count.textContent = count > 99 ? "99+" : String(count);
 }
 
-function openWeakReview() {
+function renderWeakReview() {
   const entries = currentWeakItems();
   elements.weak_review_list.innerHTML = entries.map(weakReviewHtml).join("");
   elements.weak_review_empty.hidden = entries.length > 0;
   elements.start_weak_from_review.hidden = entries.length === 0;
+  elements.clear_weak_review.hidden = entries.length === 0;
+  return entries;
+}
+
+function removeWeakReviewEntries(entries) {
+  const history = readLocal(STORAGE.history, {});
+  writeLocal(STORAGE.history, removeWeakHistoryItems(history, entries));
+  updateWeakReviewBadge();
+  renderWeakReview();
+}
+
+function openWeakReview() {
+  renderWeakReview();
   if (!elements.weak_review_dialog.open) elements.weak_review_dialog.showModal();
 }
 
@@ -1232,6 +1250,16 @@ function bindEvents() {
   elements.close_weak_review.addEventListener("click", closeWeakReview);
   elements.weak_review_dialog.addEventListener("click", (event) => {
     if (event.target === elements.weak_review_dialog) closeWeakReview();
+  });
+  elements.weak_review_list.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-weak-domain][data-weak-item-id]");
+    if (!button) return;
+    const entry = currentWeakItems().find((item) => item.domain === button.dataset.weakDomain && item.itemId === button.dataset.weakItemId);
+    if (entry) removeWeakReviewEntries([entry]);
+  });
+  elements.clear_weak_review.addEventListener("click", () => {
+    const entries = currentWeakItems();
+    if (entries.length && confirm("苦手問題をすべて削除しますか？")) removeWeakReviewEntries(entries);
   });
   elements.start_weak_from_review.addEventListener("click", () => {
     closeWeakReview();

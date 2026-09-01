@@ -480,6 +480,18 @@ export function weakHistoryItems(history, ions, compounds) {
     .sort((left, right) => left.rate - right.rate || right.score - left.score || left.lastSeenAt - right.lastSeenAt);
 }
 
+// A review card may represent more than one answer skill.  Removing it must
+// clear only the positive-score skills currently shown in that card, leaving
+// unrelated and already-mastered history intact.
+export function removeWeakHistoryItems(history, entries) {
+  const next = { ...(history ?? {}) };
+  for (const entry of entries ?? []) {
+    if (!entry?.domain || !entry?.itemId) continue;
+    for (const skill of entry.skills ?? []) delete next[historyKey(entry.domain, entry.itemId, skill)];
+  }
+  return next;
+}
+
 function compareWeakness(left, right) {
   if (left.tier !== right.tier) return left.tier - right.tier;
   if (left.rate !== right.rate) return left.rate - right.rate;

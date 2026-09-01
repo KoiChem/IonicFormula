@@ -29,6 +29,7 @@ import {
   recordCompoundSelectionPresentation,
   recordHistory,
   recordRecentPresentation,
+  removeWeakHistoryItems,
   validateData,
   weakHistoryItems,
 } from "../js/core.js";
@@ -539,8 +540,27 @@ test("weak review groups positive-score skills by one learning item", () => {
   assert.equal(entries[0].rate, 1 / 5);
 });
 
+test("removing weak review cards preserves non-weak and unrelated history", () => {
+  const formulaKey = historyKey("compound", "calcium_chloride", "ionsToFormula");
+  const nameKey = historyKey("compound", "calcium_chloride", "ionsToName");
+  const masteredKey = historyKey("compound", "calcium_chloride", "ionNamesToFormula");
+  const unrelatedKey = historyKey("ion", "sodium", "ionNameToFormula");
+  const history = {
+    [formulaKey]: { score: 2 },
+    [nameKey]: { score: 1 },
+    [masteredKey]: { score: -2 },
+    [unrelatedKey]: { score: 3 },
+  };
+  const entries = weakHistoryItems(history, ions, compounds);
+  const remaining = removeWeakHistoryItems(history, [entries.find((entry) => entry.itemId === "calcium_chloride")]);
+  assert.equal(remaining[formulaKey], undefined);
+  assert.equal(remaining[nameKey], undefined);
+  assert.deepEqual(remaining[masteredKey], { score: -2 });
+  assert.deepEqual(remaining[unrelatedKey], { score: 3 });
+});
+
 test("all app-shell assets use repository-relative paths and exist", async () => {
-  const htmlFiles = ["../index.html", "../beta0901.html", "../admin.html"];
+  const htmlFiles = ["../index.html", "../admin.html"];
   for (const htmlFile of htmlFiles) {
     const html = await readFile(new URL(htmlFile, import.meta.url), "utf8");
     const paths = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((match) => match[1]).filter((path) => !path.startsWith("#"));
@@ -551,19 +571,18 @@ test("all app-shell assets use repository-relative paths and exist", async () =>
   for (const icon of manifest.icons) await access(new URL(`../${icon.src}`, import.meta.url));
 });
 
-test("public and beta homes keep prompt toggles and offer four answer presets without descriptions", async () => {
-  for (const htmlFile of ["../index.html", "../beta0901.html"]) {
-    const html = await readFile(new URL(htmlFile, import.meta.url), "utf8");
-    assert.match(html, /<body class="beta0901" data-build="beta0901">/);
-    assert.match(html, /data-compound-toggle="promptFormula"[^>]*>イオン式/);
-    assert.match(html, /data-compound-toggle="promptName"[^>]*>イオン名/);
-    const answerLabels = [...html.matchAll(/data-compound-preset="[^"]+"[^>]*>([^<]+)/g)].map((match) => match[1]);
-    assert.deepEqual(answerLabels, ["化合物名", "組成式", "式 or 名", "式＆名"]);
-    assert.doesNotMatch(html, /compound-preset-description|出題の見せ方|答え方/);
-    assert.match(html, /イオンモード/);
-    assert.match(html, /化合物モード/);
-    assert.match(html, /id="active-game-description"/);
-    assert.match(html, /id="feedback-companion-row"/);
-    assert.match(html, /id="feedback-companion-toggle" class="companion-reveal"/);
-  }
+test("public home keeps prompt toggles and offers four answer presets without descriptions", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<body class="app-current" data-build="current">/);
+  assert.match(html, /data-compound-toggle="promptFormula"[^>]*>イオン式/);
+  assert.match(html, /data-compound-toggle="promptName"[^>]*>イオン名/);
+  const answerLabels = [...html.matchAll(/data-compound-preset="[^"]+"[^>]*>([^<]+)/g)].map((match) => match[1]);
+  assert.deepEqual(answerLabels, ["化合物名", "組成式", "式 or 名", "式 ＆ 名"]);
+  assert.match(html, /id="clear-weak-review"[^>]*>全削除/);
+  assert.doesNotMatch(html, /compound-preset-description|出題の見せ方|答え方/);
+  assert.match(html, /イオンモード/);
+  assert.match(html, /化合物モード/);
+  assert.match(html, /id="active-game-description"/);
+  assert.match(html, /id="feedback-companion-row"/);
+  assert.match(html, /id="feedback-companion-toggle" class="companion-reveal"/);
 });

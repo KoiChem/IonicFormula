@@ -8,9 +8,9 @@
   <title>IonicFormula</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260901-v1">
+  <link rel="stylesheet" href="styles.css?v=20260901-v2">
 </head>
-<body class="beta0901" data-build="beta0901">
+<body class="app-current" data-build="current">
   <header id="app-header" class="app-header">
     <a id="brand" class="brand" href="./" aria-label="IonicFormula ホーム">IonicFormula</a>
     <div id="quiz-actions" class="quiz-actions" hidden>
@@ -59,7 +59,7 @@
               <button type="button" class="option-toggle" data-compound-preset="name" aria-pressed="false">化合物名</button>
               <button type="button" class="option-toggle" data-compound-preset="formula" aria-pressed="false">組成式</button>
               <button type="button" class="option-toggle is-on" data-compound-preset="random" aria-pressed="true">式 or 名</button>
-              <button type="button" class="option-toggle" data-compound-preset="both" aria-pressed="false">式＆名</button>
+              <button type="button" class="option-toggle" data-compound-preset="both" aria-pressed="false">式 ＆ 名</button>
             </div>
           </div>
           <p id="compound-option-message" class="compound-option-message" role="status"></p>
@@ -200,10 +200,11 @@
       <p id="weak-review-empty" class="weak-review-empty" hidden>まだ苦手問題はありません。最初の一問を気軽に始めよう。</p>
       <div id="weak-review-list" class="weak-review-list"></div>
       <button id="start-weak-from-review" class="primary-button" type="button">苦手モードで始める</button>
+      <button id="clear-weak-review" class="weak-review-clear" type="button" hidden>全削除</button>
     </div>
   </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
-  <script type="module" src="js/app.js?v=20260901-v2"></script>
+  <script type="module" src="js/app.js?v=20260901-v3"></script>
 </body>
 </html>
