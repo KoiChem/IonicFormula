@@ -47,8 +47,8 @@ const elements = Object.fromEntries([
   "start-button", "compound-options", "compound-option-message",
   "weak-review-button", "weak-review-count", "weak-review-dialog", "close-weak-review", "weak-review-list",
   "weak-review-empty", "start-weak-from-review",
-  "compound-answer-presets", "compound-preset-description", "question-progress", "question-progress-bar", "question-progress-label",
-  "feedback-companion", "feedback-companion-label", "feedback-companion-value", "feedback-companion-toggle",
+  "compound-answer-presets", "question-progress", "question-progress-bar", "question-progress-label",
+  "feedback-companion-row", "feedback-companion", "feedback-companion-value", "feedback-companion-toggle",
   "result-first-rate", "result-comparison", "result-count-note", "result-review-companion-toggle",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
 
@@ -168,15 +168,6 @@ function savePreferences() {
   writeLocal(STORAGE.preferences, preferences);
 }
 
-function betaPresetDescription(preset) {
-  return {
-    random: "組成式または化合物名を1つ答えます。",
-    formula: "組成式だけを答えます。",
-    name: "化合物名だけを答えます。",
-    both: "組成式と化合物名の両方を答えます。",
-  }[preset] ?? "組成式または化合物名を1つ答えます。";
-}
-
 function refreshBetaCompoundPresets() {
   if (!IS_BETA || !elements.compound_answer_presets) return;
   const preset = compoundAnswerPresetForOptions(preferences.compoundOptions);
@@ -185,7 +176,6 @@ function refreshBetaCompoundPresets() {
     button.classList.toggle("is-on", active);
     button.setAttribute("aria-pressed", String(active));
   }
-  elements.compound_preset_description.textContent = betaPresetDescription(preset);
 }
 
 function setBetaCompoundPreset(preset) {
@@ -212,25 +202,29 @@ function syncCompanionToggle(button, available) {
 }
 
 function renderBetaFeedbackCompanion() {
-  if (!IS_BETA || !elements.feedback_companion) return;
+  if (!IS_BETA || !elements.feedback_companion_row) return;
   const companion = betaCompanion();
   const available = Boolean(companion);
-  syncCompanionToggle(elements.feedback_companion_toggle, available);
-  elements.feedback_companion.hidden = !available || !preferences.showCompanionAnswer;
+  elements.feedback_companion_row.hidden = !available;
   if (!available) {
-    elements.feedback_companion_label.textContent = "";
     elements.feedback_companion_value.innerHTML = "";
     return;
   }
-  elements.feedback_companion_label.textContent = companion.label;
+  const revealed = questionState.companionRevealed === true;
+  elements.feedback_companion_toggle.textContent = companion.label;
+  elements.feedback_companion_toggle.disabled = revealed;
+  elements.feedback_companion_toggle.setAttribute("aria-expanded", String(revealed));
+  elements.feedback_companion.hidden = !revealed;
   elements.feedback_companion_value.innerHTML = companionValueHtml(companion);
 }
 
 function resetBetaFeedbackCompanion() {
-  if (!IS_BETA || !elements.feedback_companion) return;
+  if (!IS_BETA || !elements.feedback_companion_row) return;
+  elements.feedback_companion_row.hidden = true;
   elements.feedback_companion.hidden = true;
-  elements.feedback_companion_toggle.hidden = true;
-  elements.feedback_companion_label.textContent = "";
+  elements.feedback_companion_toggle.disabled = false;
+  elements.feedback_companion_toggle.setAttribute("aria-expanded", "false");
+  elements.feedback_companion_toggle.textContent = "";
   elements.feedback_companion_value.innerHTML = "";
 }
 
@@ -614,7 +608,7 @@ function renderQuestion() {
   questionState = {
     question, item, answer, fields,
     activeField: answer.type === "both" ? "formula" : "single",
-    hadWrong: false, usedHint: false, lastWrongAnswer: "", resolved: false,
+    hadWrong: false, usedHint: false, lastWrongAnswer: "", resolved: false, companionRevealed: false,
   };
   const prompt = promptFor(question, item);
   elements.variant_label.textContent = VARIANT_LABELS[question.variant];
@@ -1222,14 +1216,17 @@ function bindEvents() {
     const button = event.target.closest("[data-compound-preset]");
     if (button) setBetaCompoundPreset(button.dataset.compoundPreset);
   });
-  const toggleCompanionAnswer = () => {
+  elements.feedback_companion_toggle?.addEventListener("click", () => {
+    if (!betaCompanion()) return;
+    questionState.companionRevealed = true;
+    renderBetaFeedbackCompanion();
+  });
+  const toggleResultCompanionAnswer = () => {
     preferences.showCompanionAnswer = !preferences.showCompanionAnswer;
     savePreferences();
-    renderBetaFeedbackCompanion();
     renderBetaResultReview();
   };
-  elements.feedback_companion_toggle?.addEventListener("click", toggleCompanionAnswer);
-  elements.result_review_companion_toggle?.addEventListener("click", toggleCompanionAnswer);
+  elements.result_review_companion_toggle?.addEventListener("click", toggleResultCompanionAnswer);
   elements.both_answer_tabs.addEventListener("click", (event) => {
     const button = event.target.closest("[data-both-field]");
     if (button) switchBothField(button.dataset.bothField);

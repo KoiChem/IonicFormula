@@ -470,3 +470,16 @@ test("all app-shell assets use repository-relative paths and exist", async () =>
   const manifest = await load("../manifest.webmanifest");
   for (const icon of manifest.icons) await access(new URL(`../${icon.src}`, import.meta.url));
 });
+
+test("beta home keeps prompt toggles and offers four answer presets without descriptions", async () => {
+  const beta = await readFile(new URL("../beta0901.html", import.meta.url), "utf8");
+  assert.match(beta, /data-compound-toggle="promptFormula"[^>]*>イオン式/);
+  assert.match(beta, /data-compound-toggle="promptName"[^>]*>イオン名/);
+  assert.match(beta, /data-compound-preset="random"[^>]*>式 or 名/);
+  assert.match(beta, /data-compound-preset="formula"[^>]*>組成式/);
+  assert.match(beta, /data-compound-preset="name"[^>]*>化合物名/);
+  assert.match(beta, /data-compound-preset="both"[^>]*>式＆名/);
+  assert.doesNotMatch(beta, /compound-preset-description|出題の見せ方|答え方/);
+  assert.match(beta, /id="feedback-companion-row"/);
+  assert.match(beta, /id="feedback-companion-toggle" class="companion-reveal"/);
+});

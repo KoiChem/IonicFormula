@@ -45,23 +45,22 @@
 
         <fieldset id="compound-options" class="choice-section compound-options" hidden>
           <legend>化合物の出題設定</legend>
-          <div class="compound-preset-heading">
-            <span class="compound-option-title">答え方</span>
-            <p id="compound-preset-description" class="compound-preset-description">組成式または化合物名を1つ答えます。</p>
-          </div>
-          <div id="compound-answer-presets" class="compound-answer-presets" role="group" aria-label="化合物の答え方">
-            <button type="button" class="compound-preset is-on" data-compound-preset="random" aria-pressed="true">おまかせ</button>
-            <button type="button" class="compound-preset" data-compound-preset="formula" aria-pressed="false">組成式</button>
-            <button type="button" class="compound-preset" data-compound-preset="name" aria-pressed="false">化合物名</button>
-            <button type="button" class="compound-preset" data-compound-preset="both" aria-pressed="false">式＆名</button>
-          </div>
-          <details id="compound-prompt-details" class="compound-prompt-details">
-            <summary>出題の見せ方</summary>
+          <div class="compound-option-row">
+            <span class="compound-option-title">出題</span>
             <div class="option-toggles" role="group" aria-label="化合物の出題形式">
               <button type="button" class="option-toggle is-on" data-compound-toggle="promptFormula" aria-pressed="true">イオン式</button>
               <button type="button" class="option-toggle is-on" data-compound-toggle="promptName" aria-pressed="true">イオン名</button>
             </div>
-          </details>
+          </div>
+          <div class="compound-option-row">
+            <span class="compound-option-title">解答</span>
+            <div id="compound-answer-presets" class="option-toggles answer-toggles" role="group" aria-label="化合物の解答形式">
+              <button type="button" class="option-toggle is-on" data-compound-preset="random" aria-pressed="true">式 or 名</button>
+              <button type="button" class="option-toggle" data-compound-preset="formula" aria-pressed="false">組成式</button>
+              <button type="button" class="option-toggle" data-compound-preset="name" aria-pressed="false">化合物名</button>
+              <button type="button" class="option-toggle" data-compound-preset="both" aria-pressed="false">式＆名</button>
+            </div>
+          </div>
           <p id="compound-option-message" class="compound-option-message" role="status"></p>
         </fieldset>
 
@@ -141,11 +140,12 @@
       <div id="feedback" class="feedback" aria-live="polite" hidden>
         <div id="feedback-title" class="feedback-title"></div>
         <div id="feedback-answer" class="feedback-answer"></div>
-        <div id="feedback-companion" class="feedback-companion" hidden>
-          <span id="feedback-companion-label" class="feedback-companion-label"></span>
-          <span id="feedback-companion-value" class="feedback-companion-value"></span>
+        <div id="feedback-companion-row" class="feedback-companion-row" hidden>
+          <button id="feedback-companion-toggle" class="companion-reveal" type="button" aria-controls="feedback-companion" aria-expanded="false"></button>
+          <span id="feedback-companion" class="feedback-companion" hidden>
+            <span id="feedback-companion-value" class="feedback-companion-value"></span>
+          </span>
         </div>
-        <button id="feedback-companion-toggle" class="companion-toggle" type="button" aria-pressed="true" aria-controls="feedback-companion" hidden></button>
         <p id="feedback-detail" class="feedback-detail"></p>
         <div id="feedback-actions" class="feedback-actions" hidden>
           <button id="hint-button" class="support-action" type="button">ヒント</button>
