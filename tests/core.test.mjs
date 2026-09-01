@@ -465,7 +465,7 @@ test("all app-shell assets use repository-relative paths and exist", async () =>
     const html = await readFile(new URL(htmlFile, import.meta.url), "utf8");
     const paths = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((match) => match[1]).filter((path) => !path.startsWith("#"));
     assert.ok(paths.every((path) => !path.startsWith("/")), `${htmlFile} contains a root-relative path`);
-    for (const path of paths) await access(new URL(`../${path.replace(/^\.\//, "")}`, import.meta.url));
+    for (const path of paths) await access(new URL(`../${path.replace(/^\.\//, "").split("?")[0]}`, import.meta.url));
   }
   const manifest = await load("../manifest.webmanifest");
   for (const icon of manifest.icons) await access(new URL(`../${icon.src}`, import.meta.url));
