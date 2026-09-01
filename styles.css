@@ -96,7 +96,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .mode-card input { position: absolute; opacity: 0; pointer-events: none; }
 .mode-card:has(input:checked) { border-color: var(--primary); background: rgba(226, 247, 238, .95); box-shadow: 0 8px 22px rgba(57,141,117,.14), inset 0 0 0 2px rgba(57,141,117,.08); transform: translateY(-1px); }
 .mode-card:has(input:focus-visible) { outline: 3px solid rgba(57,141,117,.25); outline-offset: 2px; }
-.mode-icon { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: var(--primary-dark); font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: clamp(1.15rem, 5.3vw, 1.42rem); font-weight: 700; text-align: center; white-space: nowrap; }
+.mode-icon { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--primary-dark); font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: clamp(1.15rem, 5.3vw, 1.42rem); font-weight: 700; text-align: center; white-space: nowrap; }
 .mode-formula { display: block; line-height: 1; }
 .mode-label { display: block; font-family: inherit; font-size: .73em; letter-spacing: .07em; line-height: 1; }
 .mode-icon.name-icon { font-family: inherit; font-size: 1rem; letter-spacing: .04em; }
@@ -306,12 +306,15 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 .beta0901 .app-header { min-height: 64px; padding-top: max(10px, env(safe-area-inset-top)); }
 .beta0901 .brand { font-size: 1.14rem; }
 .beta0901 .media-toggle, .beta0901 .home-button { min-width: 44px; height: 44px; }
+.beta0901 .quiz-actions { flex: 1; min-width: 0; }
+.beta0901 .active-game-description { min-width: 0; margin: 0 0 0 7px; color: var(--primary-dark); font-size: .71rem; font-weight: 850; line-height: 1.25; }
 .beta0901 .setup-form { gap: 14px; }
 .beta0901 .compound-options { padding: 13px; border-color: #9bcdbd; background: rgba(255,255,255,.88); }
 .beta0901 .compound-options legend { color: var(--primary-dark); font-size: .9rem; }
 .beta0901 .compound-option-row { grid-template-columns: 38px minmax(0, 1fr); }
 .beta0901 .compound-option-row + .compound-option-row { margin-top: 9px; }
 .beta0901 .compound-option-title { color: var(--ink); font-size: .84rem; }
+.beta0901 .compound-option-row:has(.answer-toggles) .compound-option-title { align-self: start; min-height: 44px; display: flex; align-items: center; }
 .beta0901 .option-toggles { gap: 6px; }
 .beta0901 .answer-toggles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .beta0901 .option-toggle {
@@ -353,6 +356,7 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 .beta0901 .review-companion strong { font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: 1.06em; }
 
 @media (max-width: 365px) {
+  .beta0901 .formula-keyboard { width: calc(100% + 18px); margin-left: -9px; margin-right: -9px; }
   .beta0901 .formula-keyboard button { min-height: 40px; }
   .beta0901 .result-review-heading { align-items: flex-start; }
   .beta0901 .result-review-heading .companion-toggle { min-height: 44px; font-size: .71rem; }

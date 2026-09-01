@@ -17,6 +17,7 @@
       <button id="quit-button" class="home-button" type="button" aria-label="ホーム画面に戻る">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.5 10 8.5-7 8.5 7V21H15v-6H9v6H3.5z"/></svg>
       </button>
+      <p id="active-game-description" class="active-game-description" aria-live="polite" hidden></p>
     </div>
     <div class="media-controls" aria-label="効果音">
       <button id="sound-toggle" class="media-toggle" type="button" aria-label="効果音を切り替える" aria-pressed="true">
@@ -34,11 +35,11 @@
           <div class="mode-grid mode-grid-two">
             <label class="mode-card">
               <input type="radio" name="practice-type" value="ion" checked>
-              <span class="mode-icon"><span class="mode-formula">Na<sup>＋</sup></span><span class="mode-label">イオン</span></span>
+              <span class="mode-icon"><span class="mode-formula">Na<sup>＋</sup></span><span class="mode-label">イオンモード</span></span>
             </label>
             <label class="mode-card">
               <input type="radio" name="practice-type" value="compound">
-              <span class="mode-icon"><span class="mode-formula">(NH<sub>4</sub>)<sub>2</sub>S</span><span class="mode-label">化合物</span></span>
+              <span class="mode-icon"><span class="mode-formula">(NH<sub>4</sub>)<sub>2</sub>S</span><span class="mode-label">化合物モード</span></span>
             </label>
           </div>
         </fieldset>
@@ -55,9 +56,9 @@
           <div class="compound-option-row">
             <span class="compound-option-title">解答</span>
             <div id="compound-answer-presets" class="option-toggles answer-toggles" role="group" aria-label="化合物の解答形式">
-              <button type="button" class="option-toggle is-on" data-compound-preset="random" aria-pressed="true">式 or 名</button>
-              <button type="button" class="option-toggle" data-compound-preset="formula" aria-pressed="false">組成式</button>
               <button type="button" class="option-toggle" data-compound-preset="name" aria-pressed="false">化合物名</button>
+              <button type="button" class="option-toggle" data-compound-preset="formula" aria-pressed="false">組成式</button>
+              <button type="button" class="option-toggle is-on" data-compound-preset="random" aria-pressed="true">式 or 名</button>
               <button type="button" class="option-toggle" data-compound-preset="both" aria-pressed="false">式＆名</button>
             </div>
           </div>

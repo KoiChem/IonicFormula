@@ -36,7 +36,7 @@ const STORAGE = {
 };
 
 const elements = Object.fromEntries([
-  "app-header", "brand", "quiz-actions", "setup-screen", "quiz-screen", "result-screen",
+  "app-header", "brand", "quiz-actions", "active-game-description", "setup-screen", "quiz-screen", "result-screen",
   "setup-form", "variant-label", "question-number", "question-total", "question-card",
   "question-prompt", "streak", "answer-form", "answer-label", "answer-input", "answer-composer", "formula-render", "both-answer-tabs",
   "input-message", "submit-answer", "submit-answer-text", "formula-keyboard", "number-keys",
@@ -243,6 +243,27 @@ function renderBetaQuestionProgress() {
   elements.question_progress_label.textContent = `${current} / ${total}`;
 }
 
+function betaGameDescription() {
+  if (!IS_BETA || session?.practiceType !== "compound") return "";
+  const options = session.compoundOptions;
+  const prompt = options.promptFormula && options.promptName
+    ? "イオン式・イオン名"
+    : options.promptFormula ? "イオン式" : "イオン名";
+  const answer = options.answerBoth
+    ? "組成式・化合物名"
+    : options.answerFormula && options.answerName
+      ? "組成式 or 化合物名"
+      : options.answerFormula ? "組成式" : "化合物名";
+  return `${prompt} → ${answer}`;
+}
+
+function renderBetaGameDescription(quiz) {
+  if (!elements.active_game_description) return;
+  const description = quiz ? betaGameDescription() : "";
+  elements.active_game_description.textContent = description;
+  elements.active_game_description.hidden = !description;
+}
+
 function showScreen(name) {
   for (const screen of [elements.setup_screen, elements.quiz_screen, elements.result_screen]) {
     screen.hidden = screen.id !== `${name}-screen`;
@@ -250,6 +271,7 @@ function showScreen(name) {
   const quiz = name === "quiz";
   elements.brand.hidden = quiz;
   elements.quiz_actions.hidden = !quiz;
+  renderBetaGameDescription(quiz);
   elements.app_header.classList.toggle("quiz-header", quiz);
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
