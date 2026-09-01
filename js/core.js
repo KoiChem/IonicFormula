@@ -292,6 +292,8 @@ function shuffled(values, random = Math.random) {
 }
 
 export const RECENT_PRESENTATION_LIMIT = 8;
+export const COMPOUND_RECENT_PRESENTATION_LIMIT = 20;
+export const COMPOUND_SELECTION_STATE_VERSION = 1;
 
 export function presentationKey(question) {
   return `${question.domain}:${question.itemId}`;
@@ -313,6 +315,50 @@ export function normalizeRecentPresentations(value, limit = RECENT_PRESENTATION_
 export function recordRecentPresentation(recent, question, limit = RECENT_PRESENTATION_LIMIT) {
   const key = typeof question === "string" ? question : presentationKey(question);
   return normalizeRecentPresentations([...normalizeRecentPresentations(recent, limit), key], limit);
+}
+
+function normalizeCountMap(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value)
+    .filter(([key, count]) => typeof key === "string" && Number.isFinite(Number(count)) && Number(count) >= 0)
+    .map(([key, count]) => [key, Math.floor(Number(count))]));
+}
+
+function normalizeCompoundSelectionScope(value) {
+  return {
+    shownByItem: normalizeCountMap(value?.shownByItem),
+    weakReviewBySkill: normalizeCountMap(value?.weakReviewBySkill),
+  };
+}
+
+// This state is intentionally separate from learning history.  It records
+// presentations, not success or failure, so balancing survives completed and
+// abandoned sessions alike without changing a learner's weak-score history.
+export function normalizeCompoundSelectionState(value) {
+  const scopes = value?.scopes ?? {};
+  return {
+    version: COMPOUND_SELECTION_STATE_VERSION,
+    recentCompoundItems: normalizeRecentPresentations(value?.recentCompoundItems, COMPOUND_RECENT_PRESENTATION_LIMIT)
+      .filter((key) => key.startsWith("compound:")),
+    scopes: {
+      normal: normalizeCompoundSelectionScope(scopes.normal),
+      hard: normalizeCompoundSelectionScope(scopes.hard),
+    },
+  };
+}
+
+export function recordCompoundSelectionPresentation(rawState, question) {
+  const state = normalizeCompoundSelectionState(rawState);
+  if (question?.domain !== "compound" || !question.itemId) return state;
+  const difficulty = question.difficulty === "hard" ? "hard" : "normal";
+  const scope = state.scopes[difficulty];
+  scope.shownByItem[question.itemId] = (scope.shownByItem[question.itemId] ?? 0) + 1;
+  if (question.isWeakReview && question.weakReviewSkill) {
+    scope.weakReviewBySkill[question.weakReviewSkill] = (scope.weakReviewBySkill[question.weakReviewSkill] ?? 0) + 1;
+  }
+  state.recentCompoundItems = recordRecentPresentation(state.recentCompoundItems, question, COMPOUND_RECENT_PRESENTATION_LIMIT)
+    .filter((key) => key.startsWith("compound:"));
+  return state;
 }
 
 function recentPenalty(recentPresentations, domain, itemId) {
@@ -507,7 +553,7 @@ function choosePair({ candidates, practiceType, compoundOptions, variantRemainin
   return closePool[Math.floor(random() * closePool.length)] ?? pool[0] ?? null;
 }
 
-function makeQuestion(practiceType, pair, random) {
+function makeQuestion(practiceType, pair, random, difficulty = null, extra = {}) {
   const domain = domainForPracticeType(practiceType);
   const promptStyle = domain !== "compound" ? null
     : pair.variant.startsWith("ionNames") ? "nameName"
@@ -521,6 +567,8 @@ function makeQuestion(practiceType, pair, random) {
     variant: pair.variant, skill: pair.variant,
     promptStyle,
     promptOrder: null,
+    difficulty,
+    ...extra,
   };
 }
 
@@ -561,8 +609,213 @@ function variantWeightsFor(practiceType, settings, compoundOptions) {
   return settings.variantWeights[practiceType] ?? {};
 }
 
+function positiveWeaknessForVariant(history, domain, itemId, variant) {
+  const skills = variant.endsWith("ToBoth")
+    ? [variant.replace("ToBoth", "ToFormula"), variant.replace("ToBoth", "ToName")]
+    : [variant];
+  const weaknesses = skills.map((skill) => {
+    const record = history[historyKey(domain, itemId, skill)];
+    const score = Number(record?.score) || 0;
+    if (score <= 0) return null;
+    const attempts = Number(record?.scoredAttempts) || 0;
+    return {
+      skill: historyKey(domain, itemId, skill),
+      rate: attempts > 0 ? ((Number(record?.firstTryCorrects) || 0) + 1) / (attempts + 2) : 1,
+      score,
+      lastSeenAt: Number(record?.lastSeenAt) || 0,
+    };
+  }).filter(Boolean);
+  if (!weaknesses.length) return null;
+  return weaknesses.sort((left, right) => left.rate - right.rate || right.score - left.score || left.lastSeenAt - right.lastSeenAt)[0];
+}
+
+function weakPairForCandidate(candidate, practiceType, compoundOptions, history, scope) {
+  const domain = domainForPracticeType(practiceType);
+  const variants = itemVariants(practiceType, candidate.item, compoundOptions)
+    .map((variant) => ({ variant, weakness: positiveWeaknessForVariant(history, domain, candidate.item.id, variant) }))
+    .filter(({ weakness }) => weakness);
+  if (!variants.length) return null;
+  const best = variants.sort((left, right) => {
+    const reviewLeft = scope.weakReviewBySkill[left.weakness.skill] ?? 0;
+    const reviewRight = scope.weakReviewBySkill[right.weakness.skill] ?? 0;
+    return reviewLeft - reviewRight
+      || left.weakness.rate - right.weakness.rate
+      || right.weakness.score - left.weakness.score
+      || left.weakness.lastSeenAt - right.weakness.lastSeenAt;
+  })[0];
+  return { candidate, variant: best.variant, weakness: best.weakness };
+}
+
+function selectLeastRecent(candidates, recentItems) {
+  const recent = normalizeRecentPresentations(recentItems, COMPOUND_RECENT_PRESENTATION_LIMIT);
+  const withAge = candidates.map((candidate) => ({
+    candidate,
+    age: recent.indexOf(`compound:${candidate.item.id}`),
+  }));
+  const unseen = withAge.filter(({ age }) => age < 0);
+  if (unseen.length) return unseen.map(({ candidate }) => candidate);
+  const oldest = Math.min(...withAge.map(({ age }) => age));
+  return withAge.filter(({ age }) => age === oldest).map(({ candidate }) => candidate);
+}
+
+function plannedShownCount(scope, plannedShown, itemId) {
+  return (scope.shownByItem[itemId] ?? 0) + (plannedShown.get(itemId) ?? 0);
+}
+
+function chooseFairCompoundCandidate(candidates, scope, plannedShown, recentItems, usedIonCounts, random) {
+  const cooled = selectLeastRecent(candidates, recentItems);
+  const leastShown = Math.min(...cooled.map((candidate) => plannedShownCount(scope, plannedShown, candidate.item.id)));
+  const fair = cooled.filter((candidate) => plannedShownCount(scope, plannedShown, candidate.item.id) === leastShown);
+  const withPenalty = fair.map((candidate) => ({
+    candidate,
+    ionPenalty: ionReusePenalty(candidateIonIds(candidate, "compound"), usedIonCounts),
+    tie: random(),
+  }));
+  const smallestPenalty = Math.min(...withPenalty.map(({ ionPenalty }) => ionPenalty));
+  const tied = withPenalty.filter(({ ionPenalty }) => ionPenalty === smallestPenalty).sort((left, right) => left.tie - right.tie);
+  return tied[0]?.candidate ?? null;
+}
+
+function chooseVariantForCompound(candidate, practiceType, compoundOptions, variantRemaining, history, { weakOnly = false, scope } = {}, random) {
+  const domain = domainForPracticeType(practiceType);
+  let variants = itemVariants(practiceType, candidate.item, compoundOptions).map((variant) => ({
+    variant,
+    weakness: positiveWeaknessForVariant(history, domain, candidate.item.id, variant),
+    tie: random(),
+  }));
+  if (weakOnly) variants = variants.filter(({ weakness }) => weakness);
+  if (!variants.length) return null;
+  if (weakOnly) {
+    variants.sort((left, right) => {
+      const reviewLeft = scope.weakReviewBySkill[left.weakness.skill] ?? 0;
+      const reviewRight = scope.weakReviewBySkill[right.weakness.skill] ?? 0;
+      return reviewLeft - reviewRight
+        || left.weakness.rate - right.weakness.rate
+        || right.weakness.score - left.weakness.score
+        || left.weakness.lastSeenAt - right.weakness.lastSeenAt
+        || left.tie - right.tie;
+    });
+    return { candidate, variant: variants[0].variant, weakness: variants[0].weakness };
+  }
+  const bestNeed = Math.max(...variants.map(({ variant }) => variantRemaining[variant] ?? 0));
+  const tied = variants.filter(({ variant }) => (variantRemaining[variant] ?? 0) === bestNeed).sort((left, right) => left.tie - right.tie);
+  return { candidate, variant: tied[0].variant, weakness: null };
+}
+
+function actualCategoryCounts(questions, categoryWeights) {
+  const counts = Object.fromEntries(Object.keys(categoryWeights).map((category) => [category, 0]));
+  for (const question of questions) counts[question.category] = (counts[question.category] ?? 0) + 1;
+  return counts;
+}
+
+function weakPositionsFor(total, count, random, weakMode) {
+  if (weakMode) return Array.from({ length: count }, (_, index) => index);
+  const candidates = shuffled(Array.from({ length: Math.max(0, total - 1) }, (_, index) => index + 1), random);
+  const positions = [];
+  for (const candidate of candidates) {
+    if (positions.every((position) => Math.abs(position - candidate) > 1)) positions.push(candidate);
+    if (positions.length === count) return positions.sort((left, right) => left - right);
+  }
+  return [...positions, ...candidates.filter((candidate) => !positions.includes(candidate))]
+    .slice(0, count)
+    .sort((left, right) => left - right);
+}
+
+function buildFairCompoundQuestionSet({
+  practiceType, difficulty, ions, compounds, settings, history, random, compoundOptions,
+  selectionState, total, weakTarget, weakMode = false,
+}) {
+  const categoryWeights = settings.categoryWeights.compound[difficulty];
+  const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
+  const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty);
+  const capacity = {};
+  for (const candidate of eligible) capacity[candidate.category] = (capacity[candidate.category] ?? 0) + 1;
+  const questionTotal = Math.min(total, eligible.length);
+  const targetCategoryCounts = allocateCounts(categoryWeights, questionTotal, capacity, random);
+  const categorySlots = shuffled(Object.entries(targetCategoryCounts).flatMap(([category, count]) => Array(count).fill(category)), random);
+  const variantCounts = allocateCounts(variantWeights, questionTotal, {}, random);
+  const variantRemaining = { ...variantCounts };
+  const fairState = normalizeCompoundSelectionState(selectionState);
+  const scope = fairState.scopes[difficulty === "hard" ? "hard" : "normal"];
+  const plannedShown = new Map();
+  const used = new Set();
+  const reservations = [];
+  const reservationCount = weakMode ? questionTotal : Math.min(Math.max(0, Number(weakTarget) || 0), questionTotal);
+
+  for (let index = 0; index < reservationCount; index += 1) {
+    const weakCandidates = eligible
+      .filter((candidate) => !used.has(candidate.item.id))
+      .map((candidate) => weakPairForCandidate(candidate, practiceType, compoundOptions, history, scope))
+      .filter(Boolean);
+    if (!weakCandidates.length) break;
+    const cooled = selectLeastRecent(weakCandidates.map(({ candidate }) => candidate), fairState.recentCompoundItems);
+    const cooledIds = new Set(cooled.map((candidate) => candidate.item.id));
+    const pool = weakCandidates.filter(({ candidate }) => cooledIds.has(candidate.item.id));
+    const chosen = pool.map((pair) => ({
+      pair,
+      reviewCount: scope.weakReviewBySkill[pair.weakness.skill] ?? 0,
+      shownCount: plannedShownCount(scope, plannedShown, pair.candidate.item.id),
+      tie: random(),
+    })).sort((left, right) => left.reviewCount - right.reviewCount
+      || left.shownCount - right.shownCount
+      || left.pair.weakness.rate - right.pair.weakness.rate
+      || right.pair.weakness.score - left.pair.weakness.score
+      || left.pair.weakness.lastSeenAt - right.pair.weakness.lastSeenAt
+      || left.tie - right.tie)[0].pair;
+    reservations.push(chosen);
+    used.add(chosen.candidate.item.id);
+    plannedShown.set(chosen.candidate.item.id, (plannedShown.get(chosen.candidate.item.id) ?? 0) + 1);
+    if (variantRemaining[chosen.variant] > 0) variantRemaining[chosen.variant] -= 1;
+  }
+
+  const positions = weakPositionsFor(questionTotal, reservations.length, random, weakMode);
+  const reservationAt = new Map();
+  for (const reservation of reservations) {
+    let position = positions.find((index) => !reservationAt.has(index) && categorySlots[index] === reservation.candidate.category);
+    if (position == null) position = positions.find((index) => !reservationAt.has(index));
+    if (position == null) break;
+    categorySlots[position] = reservation.candidate.category;
+    reservationAt.set(position, reservation);
+  }
+
+  const questions = [];
+  const usedIonCounts = new Map();
+  for (let index = 0; index < questionTotal; index += 1) {
+    let pair = reservationAt.get(index);
+    if (!pair) {
+      const candidates = eligible.filter((candidate) => !used.has(candidate.item.id) && candidate.category === categorySlots[index]);
+      const nonWeakCandidates = candidates.filter((candidate) => !weakPairForCandidate(candidate, practiceType, compoundOptions, history, scope));
+      const candidate = chooseFairCompoundCandidate(nonWeakCandidates.length ? nonWeakCandidates : candidates, scope, plannedShown, fairState.recentCompoundItems, usedIonCounts, random)
+        ?? chooseFairCompoundCandidate(eligible.filter((entry) => !used.has(entry.item.id)), scope, plannedShown, fairState.recentCompoundItems, usedIonCounts, random);
+      if (!candidate) break;
+      pair = chooseVariantForCompound(candidate, practiceType, compoundOptions, variantRemaining, history, { scope }, random);
+      if (!pair) break;
+      used.add(candidate.item.id);
+      plannedShown.set(candidate.item.id, (plannedShown.get(candidate.item.id) ?? 0) + 1);
+      if (variantRemaining[pair.variant] > 0) variantRemaining[pair.variant] -= 1;
+    }
+    recordPairIons({ ionIds: candidateIonIds(pair.candidate, "compound") }, usedIonCounts);
+    questions.push(makeQuestion(practiceType, pair, random, difficulty, {
+      isWeakReview: reservationAt.get(index) === pair,
+      weakReviewSkill: reservationAt.get(index) === pair ? pair.weakness?.skill ?? null : null,
+    }));
+  }
+  return {
+    questions: balanceCompoundPromptOrders(questions, random),
+    categoryCounts: actualCategoryCounts(questions, categoryWeights),
+    variantCounts,
+    availableCount: eligible.length,
+  };
+}
+
 export function buildTenQuestionSet(rawOptions) {
-  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations } = normalizedOptions(rawOptions);
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations, selectionState } = normalizedOptions(rawOptions);
+  if (domain === "compound") {
+    return buildFairCompoundQuestionSet({
+      practiceType, difficulty, ions, compounds, settings, history, random, compoundOptions, selectionState,
+      total: 10, weakTarget: settings.weakQuestionTarget?.ten ?? 2,
+    });
+  }
   const categoryWeights = settings.categoryWeights[domain][difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
   const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty);
@@ -596,7 +849,13 @@ export function buildTenQuestionSet(rawOptions) {
 }
 
 export function buildWeakQuestionSet(rawOptions) {
-  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations } = normalizedOptions(rawOptions);
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations, selectionState } = normalizedOptions(rawOptions);
+  if (domain === "compound") {
+    return buildFairCompoundQuestionSet({
+      practiceType, difficulty, ions, compounds, settings, history, random, compoundOptions, selectionState,
+      total: 10, weakTarget: 10, weakMode: true,
+    });
+  }
   const categoryWeights = settings.categoryWeights[domain][difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
   const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty);
@@ -621,7 +880,13 @@ export function buildWeakQuestionSet(rawOptions) {
 }
 
 export function buildEndlessRound(rawOptions) {
-  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations } = normalizedOptions(rawOptions);
+  const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, recentPresentations, selectionState } = normalizedOptions(rawOptions);
+  if (domain === "compound") {
+    return buildFairCompoundQuestionSet({
+      practiceType, difficulty, ions, compounds, settings, history, random, compoundOptions, selectionState,
+      total: 10, weakTarget: settings.weakQuestionTarget?.endlessPerTen ?? 2,
+    });
+  }
   const categoryWeights = settings.categoryWeights[domain][difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
   const remaining = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty);

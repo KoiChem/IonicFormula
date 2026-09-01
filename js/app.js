@@ -17,7 +17,9 @@ import {
   hintFor,
   ionFormulaHtml,
   normalizeFormula,
+  normalizeCompoundSelectionState,
   recordHistory,
+  recordCompoundSelectionPresentation,
   formulaEntryValue,
   questionSkills,
   recordRecentPresentation,
@@ -30,6 +32,7 @@ const IS_BETA = document.body.dataset.build === "beta0901";
 const STORAGE = {
   history: "ionicFormula.history.v2",
   recentPresentations: "ionicFormula.recentPresentations.v1",
+  compoundSelection: "ionicFormula.compoundSelection.v1",
   preferences: IS_BETA ? "ionicFormula.beta0901.preferences.v1" : "ionicFormula.preferences.v1",
   sessionSummaries: IS_BETA ? "ionicFormula.beta0901.sessionSummaries.v1" : "ionicFormula.sessionSummaries.v1",
   adminData: "ionicFormula.adminData.v2",
@@ -89,8 +92,15 @@ function recentPresentations() {
   return readLocal(STORAGE.recentPresentations, []);
 }
 
+function compoundSelectionState() {
+  return normalizeCompoundSelectionState(readLocal(STORAGE.compoundSelection, {}));
+}
+
 function rememberPresentation(question) {
   writeLocal(STORAGE.recentPresentations, recordRecentPresentation(recentPresentations(), question));
+  if (question.domain === "compound") {
+    writeLocal(STORAGE.compoundSelection, recordCompoundSelectionPresentation(compoundSelectionState(), question));
+  }
 }
 
 const preferences = {
@@ -1010,6 +1020,7 @@ function makeRound(endless) {
     settings: data.difficulty,
     history: readLocal(STORAGE.history, {}),
     recentPresentations: recentPresentations(),
+    selectionState: compoundSelectionState(),
     compoundOptions: session.compoundOptions,
   });
 }

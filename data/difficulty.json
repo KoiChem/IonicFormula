@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "categoryWeights": {
     "ion": {
       "normal": { "ionSimple": 6, "ionPolyatomic": 3, "ionVariableOx": 1 },
@@ -17,7 +17,7 @@
     "random": { "ionsToFormula": 1, "ionsToName": 1, "ionNamesToFormula": 1, "ionNamesToName": 1, "mixedIonsToFormula": 1, "mixedIonsToName": 1 }
   },
   "weakQuestionTarget": {
-    "ten": 3,
-    "endlessPerTen": 3
+    "ten": 2,
+    "endlessPerTen": 2
   }
 }

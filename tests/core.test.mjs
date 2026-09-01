@@ -25,6 +25,8 @@ import {
   neutralFormula,
   normalizeFormula,
   normalizeName,
+  normalizeCompoundSelectionState,
+  recordCompoundSelectionPresentation,
   recordHistory,
   recordRecentPresentation,
   validateData,
@@ -226,7 +228,15 @@ test("advanced ions stay out of the ion game and their compounds are hard-only",
   const normalIons = buildEndlessRound({ practiceType: "ion", difficulty: "normal", ions, compounds, settings, random: randomFrom(31) });
   const hardIons = buildEndlessRound({ practiceType: "ion", difficulty: "hard", ions, compounds, settings, random: randomFrom(32) });
   const normalCompounds = buildEndlessRound({ practiceType: "compound", difficulty: "normal", ions, compounds, settings, random: randomFrom(33) });
-  const hardCompounds = buildEndlessRound({ practiceType: "compound", difficulty: "hard", ions, compounds, settings, random: randomFrom(34) });
+  let selectionState = normalizeCompoundSelectionState();
+  const hardCompoundIds = new Set();
+  for (let seed = 34; seed < 54; seed += 1) {
+    const hardCompounds = buildEndlessRound({ practiceType: "compound", difficulty: "hard", ions, compounds, settings, selectionState, random: randomFrom(seed) });
+    for (const question of hardCompounds.questions) {
+      hardCompoundIds.add(question.itemId);
+      selectionState = recordCompoundSelectionPresentation(selectionState, question);
+    }
+  }
   const ids = (round) => new Set(round.questions.map((question) => question.itemId));
   for (const id of advancedIonIds) {
     assert.equal(ids(normalIons).has(id), false, id);
@@ -234,7 +244,7 @@ test("advanced ions stay out of the ion game and their compounds are hard-only",
   }
   for (const id of Object.keys(advancedCompoundFormulas)) {
     assert.equal(ids(normalCompounds).has(id), false, id);
-    assert.equal(ids(hardCompounds).has(id), true, id);
+    assert.equal(hardCompoundIds.has(id), true, id);
   }
 });
 
@@ -396,17 +406,85 @@ test("normal sessions do not force the same weak material into question one", ()
   assert.ok([...firstItems].some((itemId) => itemId !== weakItem.id));
 });
 
-test("recently shown materials are cooled down across abandoned sessions", () => {
+test("recently shown compound materials are cooled down for twenty presentations", () => {
   const recent = recordRecentPresentation([], { domain: "compound", itemId: "sodium_chloride" });
   assert.deepEqual(recent, ["compound:sodium_chloride"]);
+  let selectionState = normalizeCompoundSelectionState();
+  selectionState = recordCompoundSelectionPresentation(selectionState, {
+    domain: "compound", itemId: "sodium_chloride", difficulty: "normal",
+  });
   const result = buildTenQuestionSet({
     practiceType: "ionFormula", difficulty: "normal", ions, compounds, settings,
-    recentPresentations: recent, random: randomFrom(83),
+    recentPresentations: recent, selectionState, random: randomFrom(83),
   });
   assert.ok(!result.questions.some((question) => question.itemId === "sodium_chloride"));
+  for (const itemId of ["lithium_chloride", "potassium_chloride", "calcium_chloride", "magnesium_chloride", "barium_chloride", "zinc_chloride", "silver_chloride", "aluminum_chloride", "copper2_chloride", "iron2_chloride", "iron3_chloride", "lead2_chloride", "chromium3_chloride", "tin2_chloride", "tin4_chloride", "gold3_chloride", "sodium_bromide", "potassium_bromide", "silver_bromide"]) {
+    selectionState = recordCompoundSelectionPresentation(selectionState, {
+      domain: "compound", itemId, difficulty: "normal",
+    });
+  }
+  assert.equal(selectionState.recentCompoundItems.length, 20);
 });
 
-test("endless rounds visit all eligible items exactly once and omit disabled material", () => {
+test("compound fairness rotates each category before repeating a material", () => {
+  let selectionState = normalizeCompoundSelectionState();
+  for (let seed = 1; seed <= 40; seed += 1) {
+    const result = buildTenQuestionSet({
+      practiceType: "compound", difficulty: "normal", ions, compounds, settings, selectionState, random: randomFrom(seed),
+    });
+    for (const question of result.questions) selectionState = recordCompoundSelectionPresentation(selectionState, question);
+  }
+  const counts = selectionState.scopes.normal.shownByItem;
+  for (const category of ["simple11", "simpleRatio", "polyatomic", "variableOx"]) {
+    const values = compounds
+      .filter((item) => item.enabled && itemAvailableAtDifficulty(item, "normal") && compoundCategory(item, ionById) === category)
+      .map((item) => counts[item.id] ?? 0);
+    assert.ok(Math.max(...values) - Math.min(...values) <= 1, category);
+  }
+});
+
+test("normal compound sets reserve exactly two actual weak skills", () => {
+  const history = {};
+  const weakIds = ["calcium_chloride", "barium_nitride", "ammonium_nitrate"];
+  for (const itemId of weakIds) {
+    const item = compounds.find((compound) => compound.id === itemId);
+    for (const variant of itemVariants("compound", item)) {
+      history[historyKey("compound", itemId, variant)] = { score: 5, scoredAttempts: 4, firstTryCorrects: 0, lastSeenAt: 1 };
+    }
+  }
+  const mastered = compounds.find((compound) => compound.id === "sodium_chloride");
+  for (const variant of itemVariants("compound", mastered)) {
+    history[historyKey("compound", mastered.id, variant)] = { score: -5, scoredAttempts: 4, firstTryCorrects: 4, lastSeenAt: 1 };
+  }
+  const result = buildTenQuestionSet({
+    practiceType: "compound", difficulty: "normal", ions, compounds, settings, history, random: randomFrom(91),
+  });
+  const reviews = result.questions.filter((question) => question.isWeakReview);
+  assert.equal(reviews.length, 2);
+  assert.equal(new Set(reviews.map((question) => question.itemId)).size, 2);
+  assert.ok(reviews.every((question) => weakIds.includes(question.itemId)));
+  assert.ok(!reviews.some((question) => question.itemId === mastered.id));
+});
+
+test("mastered history does not consume a weak slot and one weak item yields one review", () => {
+  const history = {};
+  const weak = compounds.find((compound) => compound.id === "calcium_chloride");
+  for (const variant of itemVariants("compound", weak)) {
+    history[historyKey("compound", weak.id, variant)] = { score: 4, scoredAttempts: 2, firstTryCorrects: 0, lastSeenAt: 1 };
+  }
+  const mastered = compounds.find((compound) => compound.id === "sodium_chloride");
+  for (const variant of itemVariants("compound", mastered)) {
+    history[historyKey("compound", mastered.id, variant)] = { score: 0, scoredAttempts: 5, firstTryCorrects: 5, lastSeenAt: 1 };
+  }
+  const result = buildTenQuestionSet({
+    practiceType: "compound", difficulty: "normal", ions, compounds, settings, history, random: randomFrom(92),
+  });
+  const reviews = result.questions.filter((question) => question.isWeakReview);
+  assert.equal(reviews.length, 1);
+  assert.equal(reviews[0].itemId, weak.id);
+});
+
+test("endless compound batches are unique, balanced, and omit disabled material", () => {
   const disabledIons = structuredClone(ions);
   disabledIons.find((ion) => ion.id === "lithium").enabled = false;
   const ionResult = buildEndlessRound({ practiceType: "ion", difficulty: "hard", ions: disabledIons, compounds, settings, random: randomFrom(20) });
@@ -416,8 +494,10 @@ test("endless rounds visit all eligible items exactly once and omit disabled mat
   const disabledCompounds = structuredClone(compounds);
   disabledCompounds.find((compound) => compound.id === "calcium_chloride").enabled = false;
   const compoundResult = buildEndlessRound({ practiceType: "random", difficulty: "hard", ions, compounds: disabledCompounds, settings, random: randomFrom(21) });
-  assert.equal(new Set(compoundResult.questions.map((question) => question.itemId)).size, compoundResult.questions.length);
+  assert.equal(compoundResult.questions.length, 10);
+  assert.equal(new Set(compoundResult.questions.map((question) => question.itemId)).size, 10);
   assert.ok(!compoundResult.questions.some((question) => question.itemId === "calcium_chloride"));
+  assert.equal(compoundResult.questions.filter((question) => question.isWeakReview).length, 0);
 });
 
 test("weak history is shared by actual skill, not by the random menu choice", () => {
