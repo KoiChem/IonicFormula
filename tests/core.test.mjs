@@ -560,7 +560,7 @@ test("removing weak review cards preserves non-weak and unrelated history", () =
 });
 
 test("all app-shell assets use repository-relative paths and exist", async () => {
-  const htmlFiles = ["../index.html", "../admin.html"];
+  const htmlFiles = ["../index.html", "../admin.html", "../soundtest.html"];
   for (const htmlFile of htmlFiles) {
     const html = await readFile(new URL(htmlFile, import.meta.url), "utf8");
     const paths = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map((match) => match[1]).filter((path) => !path.startsWith("#"));

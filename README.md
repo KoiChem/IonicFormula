@@ -27,6 +27,7 @@ python3 -m http.server 8000
 ```
 
 その後、`http://localhost:8000/`を開きます。管理画面は`http://localhost:8000/admin.html`です。
+SEの聴き比べは`http://localhost:8000/soundtest.html`です。iPhone実機で「Crisp Ion」「Pure Keyboard」「Puzzle Pop」を切り替えて試せます。
 
 自動テストはNode.js 18以降で実行します。
 

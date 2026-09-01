@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3fbf7">
+  <meta name="description" content="IonicFormulaの効果音を実機で聴き比べるための試聴ページ">
+  <title>SE試聴 | IonicFormula</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="soundtest.css">
+</head>
+<body>
+  <header class="lab-header">
+    <a class="brand" href="./" aria-label="IonicFormula ホーム">IonicFormula</a>
+    <span class="header-label">SE試聴</span>
+  </header>
+
+  <main class="lab-shell">
+    <section class="hero" aria-labelledby="lab-title">
+      <p class="eyebrow">実機で聴き比べ</p>
+      <h1 id="lab-title">触って楽しいSEを選ぶ</h1>
+      <p>各ボタンをタップすると、その操作に対応する音が鳴ります。最初のタップで音声出力を準備するので、iPhone Safariでもそのまま試せます。</p>
+      <p id="audio-status" class="audio-status" role="status" aria-live="polite">音を出したいボタンをタップして始めてください。</p>
+    </section>
+
+    <section class="panel" aria-labelledby="preset-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">音の方向性</p>
+          <h2 id="preset-title">まずは好みを選ぶ</h2>
+        </div>
+        <button id="sound-toggle" class="sound-toggle" type="button" aria-pressed="true">SE ON</button>
+      </div>
+      <div id="preset-list" class="preset-list" role="group" aria-label="効果音の方向性">
+        <button class="preset is-selected" type="button" data-preset="crisp" aria-pressed="true">
+          <strong>Crisp Ion</strong>
+          <span>iPhone風の軽いクリックに、電荷・正解だけ結晶感を足す。</span>
+        </button>
+        <button class="preset" type="button" data-preset="pure" aria-pressed="false">
+          <strong>Pure Keyboard</strong>
+          <span>最も控えめ。入力に集中できる乾いたクリック中心。</span>
+        </button>
+        <button class="preset" type="button" data-preset="pop" aria-pressed="false">
+          <strong>Puzzle Pop</strong>
+          <span>音程差と達成感を少し強めた、遊び心のある案。</span>
+        </button>
+      </div>
+      <label class="volume-control" for="volume">
+        <span>試聴音量</span>
+        <input id="volume" type="range" min="0" max="100" value="72" aria-valuetext="72パーセント">
+        <output id="volume-value" for="volume">72%</output>
+      </label>
+    </section>
+
+    <section class="panel" aria-labelledby="input-title">
+      <div class="section-heading compact">
+        <div>
+          <p class="eyebrow">入力</p>
+          <h2 id="input-title">化学式キーボード</h2>
+        </div>
+        <p class="section-note">通常キーは短く、連打しても疲れない音量です。</p>
+      </div>
+      <div class="formula-preview" aria-label="入力例">Ca(OH)<sub>2</sub><sup>2＋</sup></div>
+      <div class="key-grid" aria-label="入力音を試す">
+        <button class="test-key primary-key" type="button" data-cue="key"><span>C</span><small>通常キー</small></button>
+        <button class="test-key primary-key" type="button" data-cue="key"><span>a</span><small>通常キー</small></button>
+        <button class="test-key primary-key" type="button" data-cue="key"><span>(</span><small>通常キー</small></button>
+        <button class="test-key primary-key" type="button" data-cue="key"><span>2</span><small>通常キー</small></button>
+        <button class="test-key charge-key" type="button" data-cue="charge"><span>2＋</span><small>電荷キー</small></button>
+        <button class="test-key control-key" type="button" data-cue="backspace"><span>⌫</span><small>削除</small></button>
+        <button class="test-key control-key" type="button" data-cue="clear"><span>クリア</span><small>全消去</small></button>
+      </div>
+      <button class="sequence-button" type="button" data-cue="sequence">連続入力を試す　Ca(OH)₂</button>
+    </section>
+
+    <section class="panel" aria-labelledby="result-title">
+      <div class="section-heading compact">
+        <div>
+          <p class="eyebrow">判定</p>
+          <h2 id="result-title">正解の気持ちよさ</h2>
+        </div>
+        <p class="section-note">不正解は責めず、再挑戦を促す温度感です。</p>
+      </div>
+      <div class="result-buttons">
+        <button class="result-button partial" type="button" data-cue="partial">
+          <strong>片方正解</strong><span>式＆名の途中</span>
+        </button>
+        <button class="result-button correct" type="button" data-cue="correct">
+          <strong>初回で正解</strong><span>基本の達成音</span>
+        </button>
+        <button class="result-button retry" type="button" data-cue="retry">
+          <strong>再挑戦で正解</strong><span>やさしく肯定</span>
+        </button>
+        <button class="result-button streak" type="button" data-cue="streak">
+          <strong>5問連続正解</strong><span>短い上乗せ</span>
+        </button>
+        <button class="result-button wrong" type="button" data-cue="wrong">
+          <strong>もう一度</strong><span>不正解</span>
+        </button>
+        <button class="result-button finish" type="button" data-cue="finish">
+          <strong>10問完了</strong><span>結果画面へ</span>
+        </button>
+      </div>
+    </section>
+
+    <aside class="listen-for" aria-labelledby="listen-title">
+      <h2 id="listen-title">聴くポイント</h2>
+      <ul>
+        <li>通常キーが、小さなiPhoneスピーカーでも埋もれず、うるさくないか。</li>
+        <li>電荷キーと正解音にだけ、化学アプリらしい特別感があるか。</li>
+        <li>連続正解・完了音が、嬉しいが長すぎないか。</li>
+      </ul>
+    </aside>
+  </main>
+
+  <script type="module" src="js/soundtest.js"></script>
+</body>
+</html>
