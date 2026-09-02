@@ -7,7 +7,7 @@ const elements = {
 };
 
 const state = {
-  preset: "crisp",
+  preset: "pure",
   enabled: true,
   volume: .72,
   keyIndex: 0,
@@ -212,8 +212,8 @@ function playKey(context, startAt, preset) {
   const index = state.keyIndex;
   state.keyIndex += 1;
   if (preset === "pure") {
-    playNoiseClick(context, startAt, { frequency: 1700 + (index % 2) * 80, duration: .018, volume: .027, q: 7 });
-    playTone(context, startAt, { frequency: 1060, duration: .018, volume: .012, type: "sine" });
+    playNoiseClick(context, startAt, { frequency: 2420 + (index % 2) * 90, duration: .022, volume: .037, q: 9 });
+    playTone(context, startAt, { frequency: 1580, duration: .021, volume: .014, type: "sine" });
     return;
   }
   if (preset === "pop") {
@@ -269,8 +269,8 @@ function playCue(cue) {
       return;
     }
     if (cue === "wrong") {
-      playNoiseClick(context, startAt, { frequency: 300, duration: .05, volume: .023, q: 1.4, type: "lowpass" });
-      playTone(context, startAt, { frequency: 196, endFrequency: preset === "pop" ? 156 : 170, duration: .085, volume: .028, type: "triangle" });
+      playNoiseClick(context, startAt, { frequency: 380, duration: .05, volume: .036, q: 1.6, type: "lowpass" });
+      playTone(context, startAt, { frequency: 196, endFrequency: preset === "pop" ? 156 : 170, duration: .085, volume: .055, type: "triangle" });
       return;
     }
     if (cue === "finish") {

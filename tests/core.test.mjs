@@ -586,3 +586,17 @@ test("public home keeps prompt toggles and offers four answer presets without de
   assert.match(html, /id="feedback-companion-row"/);
   assert.match(html, /id="feedback-companion-toggle" class="companion-reveal"/);
 });
+
+test("game and sound test use the Pure Keyboard feedback set", async () => {
+  const [app, soundTest, soundTestHtml] = await Promise.all([
+    readFile(new URL("../js/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../js/soundtest.js", import.meta.url), "utf8"),
+    readFile(new URL("../soundtest.html", import.meta.url), "utf8"),
+  ]);
+  assert.match(app, /function playInputSound\(kind\)/);
+  assert.match(app, /frequency: 2420, duration: \.022, volume: \.037, q: 9/);
+  assert.match(app, /playTone\("partial"\)/);
+  assert.match(app, /playTone\("finish"\)/);
+  assert.match(soundTest, /preset: "pure"/);
+  assert.match(soundTestHtml, /data-preset="pure" aria-pressed="true"/);
+});

@@ -71,6 +71,7 @@ let audioContext = null;
 let audioMasterGain = null;
 let audioCompressor = null;
 let audioPrimed = false;
+let audioNoiseBuffer = null;
 let touchStartX = null;
 let promptFitFrame = null;
 
@@ -433,6 +434,11 @@ function keyboardClick(event) {
   const button = event.target.closest("button");
   if (!button || elements.answer_input.disabled) return;
   const action = button.dataset.keyAction;
+  if (action === "backspace") playInputSound("backspace");
+  else if (action === "clear") playInputSound("clear");
+  else if (action === "case" || action === "left" || action === "right") playInputSound("control");
+  else if (button.classList.contains("charge-key")) playInputSound("charge");
+  else if (button.dataset.key) playInputSound("key");
   if (action === "case") setKeyboardCase(!keyboardUppercase);
   else if (action === "left") moveCaret(-1);
   else if (action === "right") moveCaret(1);
@@ -580,12 +586,16 @@ function nameShortcutClick(event) {
   const button = event.target.closest("button");
   if (!button || elements.answer_input.disabled) return;
   if (button.dataset.keyAction === "clear") {
+    playInputSound("clear");
     elements.answer_input.value = "";
     elements.answer_input.dispatchEvent(new Event("input", { bubbles: true }));
     elements.answer_input.focus({ preventScroll: true });
     return;
   }
-  if (button.dataset.key) replaceSelection(button.dataset.key);
+  if (button.dataset.key) {
+    playInputSound("key");
+    replaceSelection(button.dataset.key);
+  }
 }
 
 function currentQuestion() {
@@ -810,6 +820,68 @@ function playVoice(context, frequency, startAt, duration, volume, type = "triang
   oscillator.stop(startAt + duration + .01);
 }
 
+function getAudioNoiseBuffer(context) {
+  if (audioNoiseBuffer?.sampleRate === context.sampleRate) return audioNoiseBuffer;
+  const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * .08), context.sampleRate);
+  const samples = buffer.getChannelData(0);
+  let seed = 0x6d2b79f5;
+  for (let index = 0; index < samples.length; index += 1) {
+    seed ^= seed << 13;
+    seed ^= seed >>> 17;
+    seed ^= seed << 5;
+    samples[index] = ((seed >>> 0) / 0xffffffff) * 2 - 1;
+  }
+  audioNoiseBuffer = buffer;
+  return buffer;
+}
+
+function playClick(context, startAt, { frequency, duration, volume, q = 6, type = "bandpass" }) {
+  const source = context.createBufferSource();
+  const filter = context.createBiquadFilter();
+  const gain = context.createGain();
+  source.buffer = getAudioNoiseBuffer(context);
+  filter.type = type;
+  filter.frequency.setValueAtTime(frequency, startAt);
+  filter.Q.value = q;
+  gain.gain.setValueAtTime(.0001, startAt);
+  gain.gain.exponentialRampToValueAtTime(volume, startAt + .0015);
+  gain.gain.exponentialRampToValueAtTime(.0001, startAt + duration);
+  source.connect(filter).connect(gain).connect(audioMasterGain);
+  source.start(startAt);
+  source.stop(startAt + duration + .01);
+}
+
+function playInputSound(kind) {
+  if (!preferences.sound) return;
+  try {
+    const context = ensureAudioOutput();
+    if (!context) return;
+    if (context.state !== "running") {
+      context.resume().catch(() => {});
+      return;
+    }
+    const now = context.currentTime + .003;
+    if (kind === "backspace") {
+      playClick(context, now, { frequency: 980, duration: .03, volume: .036, q: 5 });
+      playVoice(context, 740, now, .03, .013);
+    } else if (kind === "clear") {
+      playClick(context, now, { frequency: 560, duration: .042, volume: .028, q: 2, type: "lowpass" });
+      playVoice(context, 560, now, .045, .015);
+    } else if (kind === "charge") {
+      playClick(context, now, { frequency: 1950, duration: .028, volume: .033, q: 8 });
+      playVoice(context, 1760, now + .006, .045, .018, "sine");
+    } else if (kind === "control") {
+      playClick(context, now, { frequency: 1450, duration: .018, volume: .024, q: 7 });
+    } else {
+      // Pure Keyboard: a short, hard high-frequency click with no lingering tail.
+      playClick(context, now, { frequency: 2420, duration: .022, volume: .037, q: 9 });
+      playVoice(context, 1580, now, .021, .014, "sine");
+    }
+  } catch {
+    // Audio feedback is optional.
+  }
+}
+
 function playTone(kind) {
   if (!preferences.sound) return;
   try {
@@ -820,11 +892,21 @@ function playTone(kind) {
       return;
     }
     const now = context.currentTime + .003;
-    if (kind === "correct") {
-      playVoice(context, 1046.5, now, .075, .055);
-      playVoice(context, 1318.5, now + .036, .095, .05);
-    } else {
-      playVoice(context, 196, now, .09, .035);
+    if (kind === "partial") {
+      playVoice(context, 1046.5, now, .075, .048);
+    } else if (kind === "correct" || kind === "retry" || kind === "streak") {
+      const volume = kind === "retry" ? .042 : .055;
+      playVoice(context, 1046.5, now, .075, volume);
+      playVoice(context, 1318.5, now + .036, .095, volume * .92);
+      if (kind === "streak") playVoice(context, 1568, now + .074, .11, .04, "sine");
+    } else if (kind === "finish") {
+      playVoice(context, 523.25, now, .11, .048);
+      playVoice(context, 659.25, now + .07, .12, .048);
+      playVoice(context, 783.99, now + .14, .16, .052, "sine");
+    } else if (kind === "wrong") {
+      // The transient keeps this audible on a phone speaker without becoming harsh.
+      playClick(context, now, { frequency: 380, duration: .05, volume: .036, q: 1.6, type: "lowpass" });
+      playVoice(context, 196, now, .09, .055);
     }
   } catch {
     // Audio feedback is optional.
@@ -918,7 +1000,7 @@ function submitAnswer(event) {
     field.value = value;
     const remaining = questionState.fields.formula.correct ? "name" : "formula";
     if (!questionState.fields[remaining].correct) {
-      playTone("correct");
+      playTone("partial");
       elements.feedback.hidden = false;
       elements.feedback.className = "feedback correct";
       elements.feedback_title.textContent = `${answer.type === "formula" ? "組成式" : "化合物名"}は正解！`;
@@ -929,9 +1011,10 @@ function submitAnswer(event) {
     }
   }
 
-  playTone("correct");
+  const nextStreak = session.streak + 1;
+  playTone([3, 5, 10].includes(nextStreak) ? "streak" : (questionState.hadWrong ? "retry" : "correct"));
   resolveResult("correct");
-  session.streak += 1;
+  session.streak = nextStreak;
   elements.answer_input.disabled = true;
   elements.submit_answer.disabled = true;
   elements.formula_keyboard.hidden = true;
@@ -1107,6 +1190,7 @@ function startSession(settings = null) {
 }
 
 function showResults() {
+  playTone("finish");
   elements.result_first.textContent = session.stats.first;
   elements.result_retry.textContent = session.stats.retry;
   elements.result_hint.textContent = session.stats.hint;
@@ -1191,16 +1275,19 @@ function bindEvents() {
     if (event.key === "Enter") return;
     if (event.key === "Backspace") {
       event.preventDefault();
+      playInputSound("backspace");
       formulaBackspace();
       return;
     }
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
+      playInputSound("control");
       moveCaret(event.key === "ArrowLeft" ? -1 : 1);
       return;
     }
     if (/^[A-Za-z1-8()]$/.test(event.key)) {
       event.preventDefault();
+      playInputSound("key");
       replaceSelection(event.key);
       return;
     }
