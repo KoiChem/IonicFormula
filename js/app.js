@@ -682,6 +682,7 @@ function switchBothField(fieldName) {
 
 function renderQuestion() {
   clearTimeout(advanceTimer);
+  elements.quiz_screen.classList.remove("is-both-complete");
   const question = currentQuestion();
   // This is deliberately recorded when shown rather than when answered, so
   // returning home mid-question cannot immediately repeat the same material.
@@ -1066,9 +1067,12 @@ function submitAnswer(event) {
   elements.feedback_detail.textContent = result.note ?? "";
   renderBetaFeedbackCompanion();
   animate("correct", session.streak);
-  const betaNeedsManualAdvance = IS_CURRENT
+  const completedBothCompound = IS_CURRENT
     && questionState.question.domain === "compound"
-    && questionState.answer.type !== "both";
+    && questionState.answer.type === "both";
+  elements.quiz_screen.classList.toggle("is-both-complete", completedBothCompound);
+  const betaNeedsManualAdvance = IS_CURRENT
+    && questionState.question.domain === "compound";
   if (result.note || betaNeedsManualAdvance) {
     elements.next_button.hidden = false;
     elements.next_button.focus({ preventScroll: true });

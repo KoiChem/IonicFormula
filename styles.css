@@ -342,6 +342,9 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 .app-current .question-progress { height: 7px; margin: 9px 4px 0; overflow: hidden; border-radius: 999px; background: #d7ebe4; }
 .app-current .question-progress-bar { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #1b9b7a, #69c4a5); transition: width .22s ease; }
 .app-current .both-answer-tabs button { min-height: 44px; color: #416a62; }
+.app-current #quiz-screen.is-both-complete #answer-form,
+.app-current #quiz-screen.is-both-complete #name-shortcuts,
+.app-current #quiz-screen.is-both-complete #formula-keyboard { display: none; }
 .app-current .support-action { min-height: 44px; }
 .app-current .name-shortcuts button { min-height: 44px; }
 .app-current .feedback { border-color: #b9ddd1; }
