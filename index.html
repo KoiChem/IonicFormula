@@ -8,7 +8,7 @@
   <title>IonicFormula</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260901-v2">
+  <link rel="stylesheet" href="styles.css?v=20260902-volume-v1">
 </head>
 <body class="app-current" data-build="current">
   <header id="app-header" class="app-header">
@@ -20,8 +20,8 @@
       <p id="active-game-description" class="active-game-description" aria-live="polite" hidden></p>
     </div>
     <div class="media-controls" aria-label="効果音">
-      <button id="sound-toggle" class="media-toggle" type="button" aria-label="効果音を切り替える" aria-pressed="true">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="sound-wave" d="M16 9.5a4 4 0 0 1 0 5M18.5 7a7.5 7.5 0 0 1 0 10"/></svg><span>SE</span>
+      <button id="sound-toggle" class="media-toggle" type="button" data-sound-level="medium" aria-label="効果音：中。押すと大">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="sound-wave sound-wave-inner" d="M16 9.5a4 4 0 0 1 0 5"/><path class="sound-wave sound-wave-outer" d="M18.5 7a7.5 7.5 0 0 1 0 10"/></svg><span>SE</span>
       </button>
     </div>
   </header>
@@ -205,6 +205,6 @@
   </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
-  <script type="module" src="js/app.js?v=20260902-sound-v1"></script>
+  <script type="module" src="js/app.js?v=20260902-volume-v1"></script>
 </body>
 </html>

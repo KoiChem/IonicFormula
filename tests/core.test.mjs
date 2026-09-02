@@ -600,3 +600,17 @@ test("game and sound test use the Pure Keyboard feedback set", async () => {
   assert.match(soundTest, /preset: "pure"/);
   assert.match(soundTestHtml, /data-preset="pure" aria-pressed="true"/);
 });
+
+test("current game exposes three sound levels and active difficulty text", async () => {
+  const [app, html] = await Promise.all([
+    readFile(new URL("../js/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+  ]);
+  assert.match(app, /const SOUND_LEVELS = \["off", "medium", "high"\]/);
+  assert.match(app, /const SOUND_GAINS = \{ off: \.0001, medium: \.72, high: 1 \}/);
+  assert.match(app, /session\.difficulty === "hard" \? "ややむず" : "やさしめ"/);
+  assert.match(app, /className = "active-game-difficulty"/);
+  assert.match(html, /data-sound-level="medium" aria-label="効果音：中。押すと大"/);
+  assert.match(html, /sound-wave-inner/);
+  assert.match(html, /sound-wave-outer/);
+});

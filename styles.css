@@ -63,8 +63,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .media-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
 .media-toggle svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .media-toggle svg path:first-child { fill: currentColor; stroke: none; }
-.media-toggle[aria-pressed="false"], .media-toggle.is-off { color: var(--muted); background: rgba(255,255,255,.48); }
-.media-toggle[aria-pressed="false"] .sound-wave { display: none; }
+.media-toggle[data-sound-level="off"] { color: var(--muted); background: rgba(255,255,255,.48); }
+.sound-wave { display: none; }
+.media-toggle[data-sound-level="medium"] .sound-wave-inner,
+.media-toggle[data-sound-level="high"] .sound-wave { display: block; }
 .top-action { min-width: 0; padding-inline: 9px; color: var(--ink); }
 .top-action:disabled { opacity: .42; }
 .home-button { display: grid; place-items: center; padding: 0; border: 1px solid var(--line); background: rgba(255,255,255,.85); color: var(--primary-dark); }
@@ -312,6 +314,8 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 .app-current .media-toggle, .app-current .home-button { min-width: 44px; height: 44px; }
 .app-current .quiz-actions { flex: 1; min-width: 0; }
 .app-current .active-game-description { min-width: 0; margin: 0 0 0 7px; color: var(--primary-dark); font-size: .71rem; font-weight: 850; line-height: 1.25; }
+.app-current .active-game-difficulty { display: block; color: var(--primary); font-size: .9em; letter-spacing: .04em; }
+.app-current .active-game-route { display: block; }
 .app-current .setup-form { gap: 14px; }
 .app-current .compound-options { padding: 13px; border-color: #9bcdbd; background: rgba(255,255,255,.88); }
 .app-current .compound-options legend { color: var(--primary-dark); font-size: .9rem; }

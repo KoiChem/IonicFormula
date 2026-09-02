@@ -29,6 +29,9 @@ import {
 } from "./core.js";
 
 const IS_CURRENT = document.body.dataset.build === "current";
+const SOUND_LEVELS = ["off", "medium", "high"];
+const SOUND_GAINS = { off: .0001, medium: .72, high: 1 };
+const SOUND_LABELS = { off: "なし", medium: "中", high: "大" };
 
 const STORAGE = {
   history: "ionicFormula.history.v2",
@@ -116,6 +119,10 @@ const preferences = {
   // FX is part of the learning feedback, not a user-configurable setting.
   vfx: true,
 };
+preferences.soundLevel = SOUND_LEVELS.includes(preferences.soundLevel)
+  ? preferences.soundLevel
+  : preferences.sound === false ? "off" : "medium";
+preferences.sound = preferences.soundLevel !== "off";
 preferences.compoundOptions = { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false, ...(preferences.compoundOptions ?? {}) };
 preferences.showCompanionAnswer = preferences.showCompanionAnswer !== false;
 
@@ -172,11 +179,31 @@ async function loadData() {
   return candidate;
 }
 
-function setMediaButton(button, enabled) {
-  button.setAttribute("aria-pressed", String(enabled));
-  button.setAttribute("aria-label", `${button.id === "sound-toggle" ? "効果音" : "画面演出"}を${enabled ? "オフ" : "オン"}にする`);
-  button.classList.toggle("is-off", !enabled);
-  button.querySelector(".toggle-state")?.replaceChildren(enabled ? "ON" : "OFF");
+function soundGain() {
+  return SOUND_GAINS[preferences.soundLevel] ?? SOUND_GAINS.medium;
+}
+
+function renderSoundToggle() {
+  const level = preferences.soundLevel;
+  const nextLevel = SOUND_LEVELS[(SOUND_LEVELS.indexOf(level) + 1) % SOUND_LEVELS.length];
+  elements.sound_toggle.dataset.soundLevel = level;
+  elements.sound_toggle.setAttribute("aria-label", `効果音：${SOUND_LABELS[level]}。押すと${SOUND_LABELS[nextLevel]}`);
+}
+
+function applySoundLevel() {
+  if (!audioContext || !audioMasterGain) return;
+  const now = audioContext.currentTime;
+  audioMasterGain.gain.cancelScheduledValues(now);
+  audioMasterGain.gain.setTargetAtTime(soundGain(), now, .012);
+}
+
+function setSoundLevel(level) {
+  preferences.soundLevel = SOUND_LEVELS.includes(level) ? level : "medium";
+  preferences.sound = preferences.soundLevel !== "off";
+  renderSoundToggle();
+  applySoundLevel();
+  if (preferences.sound) primeAudio();
+  savePreferences();
 }
 
 function savePreferences() {
@@ -259,7 +286,9 @@ function renderBetaQuestionProgress() {
 }
 
 function betaGameDescription() {
-  if (!IS_CURRENT || session?.practiceType !== "compound") return "";
+  if (!IS_CURRENT || !session) return null;
+  const difficulty = session.difficulty === "hard" ? "ややむず" : "やさしめ";
+  if (session.practiceType !== "compound") return { difficulty, route: "" };
   const options = session.compoundOptions;
   const prompt = options.promptFormula && options.promptName
     ? "イオン式・イオン名"
@@ -269,14 +298,25 @@ function betaGameDescription() {
     : options.answerFormula && options.answerName
       ? "組成式 or 化合物名"
       : options.answerFormula ? "組成式" : "化合物名";
-  return `${prompt} → ${answer}`;
+  return { difficulty, route: `${prompt} → ${answer}` };
 }
 
 function renderBetaGameDescription(quiz) {
   if (!elements.active_game_description) return;
   const description = quiz ? betaGameDescription() : "";
-  elements.active_game_description.textContent = description;
+  elements.active_game_description.replaceChildren();
   elements.active_game_description.hidden = !description;
+  if (!description) return;
+  const difficulty = document.createElement("span");
+  difficulty.className = "active-game-difficulty";
+  difficulty.textContent = description.difficulty;
+  elements.active_game_description.append(difficulty);
+  if (description.route) {
+    const route = document.createElement("span");
+    route.className = "active-game-route";
+    route.textContent = description.route;
+    elements.active_game_description.append(route);
+  }
 }
 
 function showScreen(name) {
@@ -778,7 +818,7 @@ function ensureAudioOutput() {
   audioContext = new Context({ latencyHint: "interactive" });
   audioMasterGain = audioContext.createGain();
   audioCompressor = audioContext.createDynamicsCompressor();
-  audioMasterGain.gain.value = .72;
+  audioMasterGain.gain.value = soundGain();
   audioCompressor.threshold.value = -20;
   audioCompressor.knee.value = 12;
   audioCompressor.ratio.value = 8;
@@ -1379,12 +1419,10 @@ function bindEvents() {
     const button = event.target.closest("[data-both-field]");
     if (button) switchBothField(button.dataset.bothField);
   });
-  setMediaButton(elements.sound_toggle, preferences.sound);
+  renderSoundToggle();
   elements.sound_toggle.addEventListener("click", () => {
-    preferences.sound = !preferences.sound;
-    setMediaButton(elements.sound_toggle, preferences.sound);
-    if (preferences.sound) primeAudio();
-    savePreferences();
+    const index = SOUND_LEVELS.indexOf(preferences.soundLevel);
+    setSoundLevel(SOUND_LEVELS[(index + 1) % SOUND_LEVELS.length]);
   });
 }
 
