@@ -640,24 +640,28 @@ test("current game exposes three sound levels and active-game descriptions", asy
   assert.match(app, /session\.difficulty === "hard" \? "ややむず" : "やさしめ"/);
   assert.match(app, /random: "イオン名 or イオン式"/);
   assert.match(app, /ionAnswerPreset: session\.practiceType === "ion"/);
+  assert.match(app, /function renderBetaResultGameMode\(\)/);
+  assert.match(app, /formula: "イオン名 → イオン式"/);
+  assert.match(app, /name: "イオン式 → イオン名"/);
   assert.match(app, /className = "active-game-difficulty"/);
   assert.match(html, /data-sound-level="medium" aria-label="効果音：中。押すと大"/);
   assert.match(html, /sound-wave-inner/);
   assert.match(html, /sound-wave-outer/);
 });
 
-test("current ion update keeps the app, core, stylesheet, and service-worker cache identifiers aligned", async () => {
+test("current result mode update keeps the app, core, stylesheet, and service-worker cache identifiers aligned", async () => {
   const [html, app, worker] = await Promise.all([
     readFile(new URL("../index.html", import.meta.url), "utf8"),
     readFile(new URL("../js/app.js", import.meta.url), "utf8"),
     readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
   ]);
-  const version = "20260904-ion-answer-v2";
+  const version = "20260904-result-mode-v1";
   assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v28"/);
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v29"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));
+  assert.match(html, /<h1 id="result-title">今回の結果<\/h1>\s*<p id="result-game-mode"/);
 });

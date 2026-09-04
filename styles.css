@@ -359,6 +359,9 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 .app-current .companion-toggle { min-height: 44px; margin-top: 8px; padding: 0 10px; border: 1px solid #9fcdbd; border-radius: 11px; background: #fff; color: var(--primary-dark); font-size: .78rem; font-weight: 850; cursor: pointer; }
 .app-current .companion-toggle[aria-pressed="false"] { border-color: #bdd8cf; color: #58776f; }
 .app-current .result-hero { padding-bottom: 10px; }
+.app-current .result-game-mode { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; color: var(--primary-dark); font-size: .78rem; font-weight: 850; }
+.app-current .result-game-difficulty { padding: 4px 8px; border-radius: 999px; background: #d9f3e8; color: var(--primary-dark); letter-spacing: .04em; }
+.app-current .result-game-route { overflow-wrap: anywhere; }
 .app-current .result-first-rate { margin: 9px 0 0; color: var(--primary-dark); font-size: 1.12rem; font-weight: 900; }
 .app-current .result-comparison { min-height: 1.3em; margin: 4px 0 0; color: var(--muted); font-size: .8rem; font-weight: 750; }
 .app-current .result-count-note { margin: 9px 2px 0; color: var(--muted); font-size: .72rem; line-height: 1.45; }

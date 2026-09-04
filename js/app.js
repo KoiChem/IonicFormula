@@ -27,7 +27,7 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20260904-ion-answer-v2";
+} from "./core.js?v=20260904-result-mode-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -59,7 +59,7 @@ const elements = Object.fromEntries([
   "weak-review-empty", "start-weak-from-review", "clear-weak-review",
   "compound-answer-presets", "question-progress", "question-progress-bar", "question-progress-label",
   "feedback-companion-row", "feedback-companion", "feedback-companion-value", "feedback-companion-toggle",
-  "result-first-rate", "result-comparison", "result-count-note", "result-review-companion-toggle",
+  "result-game-mode", "result-first-rate", "result-comparison", "result-count-note", "result-review-companion-toggle",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
 
 let data;
@@ -823,6 +823,33 @@ function renderBetaResultReview() {
   syncCompanionToggle(elements.result_review_companion_toggle, betaReviewHasCompanion());
 }
 
+function betaResultGameModeDescription() {
+  if (!IS_CURRENT || !session) return null;
+  const difficulty = session.difficulty === "hard" ? "ややむず" : "やさしめ";
+  if (session.practiceType === "compound") return { difficulty, route: betaGameDescription()?.route ?? "" };
+  const route = {
+    formula: "イオン名 → イオン式",
+    name: "イオン式 → イオン名",
+    random: "イオン名 ⇄ イオン式",
+  }[ionAnswerPresetFor(session.ionAnswerPreset)];
+  return { difficulty, route };
+}
+
+function renderBetaResultGameMode() {
+  if (!IS_CURRENT || !elements.result_game_mode) return;
+  const description = betaResultGameModeDescription();
+  elements.result_game_mode.replaceChildren();
+  elements.result_game_mode.hidden = !description;
+  if (!description) return;
+  const difficulty = document.createElement("span");
+  difficulty.className = "result-game-difficulty";
+  difficulty.textContent = description.difficulty;
+  const route = document.createElement("span");
+  route.className = "result-game-route";
+  route.textContent = description.route;
+  elements.result_game_mode.append(difficulty, route);
+}
+
 function renderBetaResultSummary() {
   if (!IS_CURRENT || !elements.result_first_rate) return;
   const total = session.questions.length;
@@ -1283,6 +1310,7 @@ function showResults() {
   elements.result_pass.textContent = session.stats.pass;
   elements.result_review.hidden = session.reviewItems.length === 0;
   elements.result_review_list.innerHTML = session.reviewItems.map(reviewHtml).join("");
+  renderBetaResultGameMode();
   renderBetaResultSummary();
   renderBetaResultReview();
   showScreen("result");
