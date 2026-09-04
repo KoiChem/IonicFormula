@@ -18,8 +18,10 @@ import {
   evaluateIonEntry,
   historyKey,
   hintFor,
+  ionAnswerPresetFor,
   ionCategory,
   ionInputHtml,
+  ionVariantsForAnswerPreset,
   itemAvailableAtDifficulty,
   itemVariants,
   neutralFormula,
@@ -275,6 +277,29 @@ test("direct modes preserve their prompt type and random uses formula, name, and
   const random = buildTenQuestionSet({ practiceType: "random", difficulty: "normal", ions, compounds, settings, random: randomFrom(10) });
   assert.deepEqual([...new Set(random.questions.map((question) => question.variant))].sort(), ["ionNamesToFormula", "ionNamesToName", "ionsToFormula", "ionsToName", "mixedIonsToFormula", "mixedIonsToName"]);
   assert.equal(answerFor(random.questions.find((question) => question.variant === "ionsToFormula"), compounds.find((item) => item.id === random.questions.find((question) => question.variant === "ionsToFormula").itemId)).type, "formula");
+});
+
+test("ion answer presets constrain the answer skill and retain a balanced random route", () => {
+  assert.equal(ionAnswerPresetFor("unknown"), "random");
+  assert.deepEqual(ionVariantsForAnswerPreset("formula"), ["ionNameToFormula"]);
+  assert.deepEqual(ionVariantsForAnswerPreset("name"), ["ionFormulaToName"]);
+  assert.deepEqual(itemVariants("ion", ions[0], undefined, "formula"), ["ionNameToFormula"]);
+  assert.deepEqual(itemVariants("ion", ions[0], undefined, "name"), ["ionFormulaToName"]);
+
+  for (const difficulty of ["normal", "hard"]) {
+    for (const [preset, variant] of [["formula", "ionNameToFormula"], ["name", "ionFormulaToName"]]) {
+      const result = buildTenQuestionSet({ practiceType: "ion", difficulty, ions, compounds, settings, ionAnswerPreset: preset, random: randomFrom(92) });
+      assert.equal(result.questions.length, 10);
+      assert.ok(result.questions.every((question) => question.variant === variant), `${difficulty}.${preset}`);
+    }
+    const random = buildTenQuestionSet({ practiceType: "ion", difficulty, ions, compounds, settings, ionAnswerPreset: "random", random: randomFrom(93) });
+    const counts = random.questions.reduce((total, question) => ({ ...total, [question.variant]: (total[question.variant] ?? 0) + 1 }), {});
+    assert.deepEqual(counts, { ionNameToFormula: 5, ionFormulaToName: 5 });
+  }
+
+  const endless = buildEndlessRound({ practiceType: "ion", difficulty: "normal", ions, compounds, settings, ionAnswerPreset: "random", random: randomFrom(94) });
+  const endlessCounts = endless.questions.reduce((total, question) => ({ ...total, [question.variant]: (total[question.variant] ?? 0) + 1 }), {});
+  assert.ok(Math.abs((endlessCounts.ionNameToFormula ?? 0) - (endlessCounts.ionFormulaToName ?? 0)) <= 1);
 });
 
 test("compound toggles make formula, name and mixed prompts equally eligible", () => {
@@ -571,13 +596,17 @@ test("all app-shell assets use repository-relative paths and exist", async () =>
   for (const icon of manifest.icons) await access(new URL(`../${icon.src}`, import.meta.url));
 });
 
-test("public home keeps prompt toggles and offers four answer presets without descriptions", async () => {
+test("public home keeps the ion and compound answer presets without descriptions", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /<body class="app-current" data-build="current">/);
   assert.match(html, /data-compound-toggle="promptFormula"[^>]*>イオン式/);
   assert.match(html, /data-compound-toggle="promptName"[^>]*>イオン名/);
   const answerLabels = [...html.matchAll(/data-compound-preset="[^"]+"[^>]*>([^<]+)/g)].map((match) => match[1]);
   assert.deepEqual(answerLabels, ["化合物名", "組成式", "式 or 名", "式 ＆ 名"]);
+  const ionAnswerLabels = [...html.matchAll(/data-ion-preset="[^"]+"[^>]*>([^<]+)/g)].map((match) => match[1]);
+  assert.deepEqual(ionAnswerLabels, ["イオン式", "イオン名", "式 or 名"]);
+  assert.match(html, /id="ion-options"/);
+  assert.match(html, /data-key-action="backspace" aria-label="1文字削除">⌫/);
   assert.match(html, /id="clear-weak-review"[^>]*>全削除/);
   assert.doesNotMatch(html, /compound-preset-description|出題の見せ方|答え方/);
   assert.match(html, /イオンモード/);
@@ -601,7 +630,7 @@ test("game and sound test use the Pure Keyboard feedback set", async () => {
   assert.match(soundTestHtml, /data-preset="pure" aria-pressed="true"/);
 });
 
-test("current game exposes three sound levels and active difficulty text", async () => {
+test("current game exposes three sound levels and active-game descriptions", async () => {
   const [app, html] = await Promise.all([
     readFile(new URL("../js/app.js", import.meta.url), "utf8"),
     readFile(new URL("../index.html", import.meta.url), "utf8"),
@@ -609,8 +638,26 @@ test("current game exposes three sound levels and active difficulty text", async
   assert.match(app, /const SOUND_LEVELS = \["off", "medium", "high"\]/);
   assert.match(app, /const SOUND_GAINS = \{ off: \.0001, medium: \.72, high: 1 \}/);
   assert.match(app, /session\.difficulty === "hard" \? "ややむず" : "やさしめ"/);
+  assert.match(app, /random: "イオン名 or イオン式"/);
+  assert.match(app, /ionAnswerPreset: session\.practiceType === "ion"/);
   assert.match(app, /className = "active-game-difficulty"/);
   assert.match(html, /data-sound-level="medium" aria-label="効果音：中。押すと大"/);
   assert.match(html, /sound-wave-inner/);
   assert.match(html, /sound-wave-outer/);
+});
+
+test("current ion update keeps the app, core, stylesheet, and service-worker cache identifiers aligned", async () => {
+  const [html, app, worker] = await Promise.all([
+    readFile(new URL("../index.html", import.meta.url), "utf8"),
+    readFile(new URL("../js/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
+  ]);
+  const version = "20260904-ion-answer-v2";
+  assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
+  assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
+  assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v28"/);
+  assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
+  assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
+  assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));
 });

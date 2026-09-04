@@ -187,10 +187,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .name-shortcuts { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(48px, 1.3fr); gap: 4px; margin-top: 7px; }
 .name-shortcuts.compound-name-entry { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(52px, 1.35fr); }
-.name-shortcuts.ion-name-entry { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(58px, 1.45fr) minmax(52px, 1.28fr); }
+.name-shortcuts.ion-name-entry { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(53px, 1.35fr) minmax(40px, 1fr) minmax(48px, 1.2fr); }
 .name-shortcuts button { min-width: 0; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.88); color: var(--primary-dark); font-size: .85rem; font-weight: 800; box-shadow: 0 2px 0 #c8ddd5; }
-.name-shortcuts button[data-key="イオン"], .name-shortcuts .name-clear { white-space: nowrap; }
+.name-shortcuts button[data-key="イオン"], .name-shortcuts .name-backspace, .name-shortcuts .name-clear { white-space: nowrap; }
 .name-shortcuts button:active { transform: translateY(2px); box-shadow: none; }
+.name-shortcuts .name-backspace { font-size: 1rem; }
 .name-shortcuts .name-clear { color: var(--muted); font-size: .72rem; }
 
 .formula-keyboard { margin-top: 8px; padding: 6px; border: 0; border-radius: 16px; background: rgba(231,245,238,.94); box-shadow: 0 8px 22px rgba(61,122,103,.08); user-select: none; }
@@ -286,7 +287,7 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
   .letter-keys .key-row:last-child { grid-template-columns: 36px repeat(7, 1fr) 36px; }
   .name-shortcuts { grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(44px, 1.2fr); gap: 3px; }
   .name-shortcuts.compound-name-entry { grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(48px, 1.3fr); }
-  .name-shortcuts.ion-name-entry { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(53px, 1.4fr) minmax(47px, 1.22fr); }
+  .name-shortcuts.ion-name-entry { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(49px, 1.3fr) minmax(37px, .95fr) minmax(44px, 1.14fr); }
 }
 @media (max-width: 680px) {
   .formula-keyboard { width: calc(100% + 22px); margin-left: -11px; margin-right: -11px; padding-inline: 3px; }
@@ -325,6 +326,7 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 .app-current .compound-option-row:has(.answer-toggles) .compound-option-title { align-self: start; min-height: 44px; display: flex; align-items: center; }
 .app-current .option-toggles { gap: 6px; }
 .app-current .answer-toggles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.app-current .ion-answer-toggles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .app-current .option-toggle {
   min-height: 44px; border: 1px solid #a7d1c4; border-radius: 11px; background: #fff;
   color: #3c655d; font-size: .83rem; font-weight: 850; cursor: pointer;

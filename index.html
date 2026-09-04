@@ -8,7 +8,7 @@
   <title>IonicFormula</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260902-both-next-v1">
+  <link rel="stylesheet" href="styles.css?v=20260904-ion-answer-v2">
 </head>
 <body class="app-current" data-build="current">
   <header id="app-header" class="app-header">
@@ -41,6 +41,18 @@
               <input type="radio" name="practice-type" value="compound">
               <span class="mode-icon"><span class="mode-formula">(NH<sub>4</sub>)<sub>2</sub>S</span><span class="mode-label">化合物モード</span></span>
             </label>
+          </div>
+        </fieldset>
+
+        <fieldset id="ion-options" class="choice-section compound-options ion-options">
+          <legend>イオンの解答設定</legend>
+          <div class="compound-option-row">
+            <span class="compound-option-title">解答</span>
+            <div id="ion-answer-presets" class="option-toggles answer-toggles ion-answer-toggles" role="group" aria-label="イオンの解答形式">
+              <button type="button" class="option-toggle" data-ion-preset="formula" aria-pressed="false">イオン式</button>
+              <button type="button" class="option-toggle" data-ion-preset="name" aria-pressed="false">イオン名</button>
+              <button type="button" class="option-toggle is-on" data-ion-preset="random" aria-pressed="true">式 or 名</button>
+            </div>
           </div>
         </fieldset>
 
@@ -127,6 +139,7 @@
         <button type="button" data-key="(Ⅲ)">(Ⅲ)</button>
         <button type="button" data-key="(Ⅳ)">(Ⅳ)</button>
         <button type="button" data-key="イオン">イオン</button>
+        <button type="button" class="name-backspace" data-key-action="backspace" aria-label="1文字削除">⌫</button>
         <button type="button" class="name-clear" data-key-action="clear">クリア</button>
       </div>
 
@@ -205,6 +218,6 @@
   </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
-  <script type="module" src="js/app.js?v=20260902-both-next-v1"></script>
+  <script type="module" src="js/app.js?v=20260904-ion-answer-v2"></script>
 </body>
 </html>

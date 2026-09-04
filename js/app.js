@@ -15,6 +15,7 @@ import {
   formulaHtml,
   formulaText,
   hintFor,
+  ionAnswerPresetFor,
   ionFormulaHtml,
   normalizeFormula,
   normalizeCompoundSelectionState,
@@ -26,7 +27,7 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js";
+} from "./core.js?v=20260904-ion-answer-v2";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -53,7 +54,7 @@ const elements = Object.fromEntries([
   "feedback-detail", "feedback-actions", "next-button", "hint-button", "pass-button", "quit-button",
   "result-first", "result-retry", "result-hint", "result-pass", "result-review", "result-review-list",
   "retry-session", "back-to-setup", "sound-toggle", "spark-layer",
-  "start-button", "compound-options", "compound-option-message",
+  "start-button", "ion-options", "ion-answer-presets", "compound-options", "compound-option-message",
   "weak-review-button", "weak-review-count", "weak-review-dialog", "close-weak-review", "weak-review-list",
   "weak-review-empty", "start-weak-from-review", "clear-weak-review",
   "compound-answer-presets", "question-progress", "question-progress-bar", "question-progress-label",
@@ -113,6 +114,7 @@ function rememberPresentation(question) {
 const preferences = {
   sound: true,
   showCompanionAnswer: true,
+  ionAnswerPreset: "random",
   compoundOptions: { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false },
   ...readLocal(STORAGE.legacyPreferences, {}),
   ...readLocal(STORAGE.preferences, {}),
@@ -123,6 +125,7 @@ preferences.soundLevel = SOUND_LEVELS.includes(preferences.soundLevel)
   ? preferences.soundLevel
   : preferences.sound === false ? "off" : "medium";
 preferences.sound = preferences.soundLevel !== "off";
+preferences.ionAnswerPreset = ionAnswerPresetFor(preferences.ionAnswerPreset);
 preferences.compoundOptions = { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false, ...(preferences.compoundOptions ?? {}) };
 preferences.showCompanionAnswer = preferences.showCompanionAnswer !== false;
 
@@ -223,7 +226,22 @@ function refreshBetaCompoundPresets() {
 function setBetaCompoundPreset(preset) {
   preferences.compoundOptions = compoundOptionsForAnswerPreset(preset, preferences.compoundOptions);
   savePreferences();
-  refreshCompoundOptions();
+  refreshPracticeOptions();
+}
+
+function refreshIonAnswerPresets() {
+  if (!IS_CURRENT || !elements.ion_answer_presets) return;
+  for (const button of elements.ion_answer_presets.querySelectorAll("[data-ion-preset]")) {
+    const active = button.dataset.ionPreset === preferences.ionAnswerPreset;
+    button.classList.toggle("is-on", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+}
+
+function setIonAnswerPreset(preset) {
+  preferences.ionAnswerPreset = ionAnswerPresetFor(preset);
+  savePreferences();
+  refreshPracticeOptions();
 }
 
 function betaCompanion(question = questionState?.question, item = questionState?.item) {
@@ -288,7 +306,14 @@ function renderBetaQuestionProgress() {
 function betaGameDescription() {
   if (!IS_CURRENT || !session) return null;
   const difficulty = session.difficulty === "hard" ? "ややむず" : "やさしめ";
-  if (session.practiceType !== "compound") return { difficulty, route: "" };
+  if (session.practiceType === "ion") {
+    const answer = {
+      formula: "イオン式",
+      name: "イオン名",
+      random: "イオン名 or イオン式",
+    }[ionAnswerPresetFor(session.ionAnswerPreset)];
+    return { difficulty, route: answer };
+  }
   const options = session.compoundOptions;
   const prompt = options.promptFormula && options.promptName
     ? "イオン式・イオン名"
@@ -470,6 +495,15 @@ function formulaBackspace() {
   syncFormulaEntry();
 }
 
+function deleteTextBeforeCaret() {
+  const input = elements.answer_input;
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+  if (start !== end) input.setRangeText("", start, end, "end");
+  else if (start > 0) input.setRangeText("", start - 1, start, "end");
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 function keyboardClick(event) {
   const button = event.target.closest("button");
   if (!button || elements.answer_input.disabled) return;
@@ -488,12 +522,7 @@ function keyboardClick(event) {
       elements.answer_input.focus({ preventScroll: true });
       return;
     }
-    const input = elements.answer_input;
-    const start = input.selectionStart ?? input.value.length;
-    const end = input.selectionEnd ?? start;
-    if (start !== end) input.setRangeText("", start, end, "end");
-    else if (start > 0) input.setRangeText("", start - 1, start, "end");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
+    deleteTextBeforeCaret();
   } else if (action === "clear") {
     if (isFormulaEntryMode()) {
       activeFieldState().entry = createFormulaEntry();
@@ -625,6 +654,12 @@ function configureInput(answer, question, field) {
 function nameShortcutClick(event) {
   const button = event.target.closest("button");
   if (!button || elements.answer_input.disabled) return;
+  if (button.dataset.keyAction === "backspace") {
+    playInputSound("backspace");
+    deleteTextBeforeCaret();
+    elements.answer_input.focus({ preventScroll: true });
+    return;
+  }
   if (button.dataset.keyAction === "clear") {
     playInputSound("clear");
     elements.answer_input.value = "";
@@ -771,6 +806,7 @@ function betaSessionSummaryKey() {
     practiceType: session.practiceType,
     difficulty: session.difficulty,
     questionCount: session.weakMode ? "weak" : (session.endless ? "endless" : "10"),
+    ionAnswerPreset: session.practiceType === "ion" ? ionAnswerPresetFor(session.ionAnswerPreset) : null,
     answerPreset: session.practiceType === "compound" ? compoundAnswerPresetForOptions(options) : null,
     promptFormula: session.practiceType === "compound" ? Boolean(options.promptFormula) : null,
     promptName: session.practiceType === "compound" ? Boolean(options.promptName) : null,
@@ -1153,6 +1189,7 @@ function makeRound(endless) {
     recentPresentations: recentPresentations(),
     selectionState: compoundSelectionState(),
     compoundOptions: session.compoundOptions,
+    ionAnswerPreset: session.ionAnswerPreset,
   });
 }
 
@@ -1165,8 +1202,11 @@ function compoundOptionsValid(options = preferences.compoundOptions) {
     && Boolean(options.answerBoth || options.answerFormula || options.answerName);
 }
 
-function refreshCompoundOptions() {
-  const compoundMode = selectedPracticeType() === "compound";
+function refreshPracticeOptions() {
+  const practiceType = selectedPracticeType();
+  const compoundMode = practiceType === "compound";
+  const ionMode = practiceType === "ion";
+  elements.ion_options.hidden = !ionMode;
   elements.compound_options.hidden = !compoundMode;
   for (const button of elements.compound_options.querySelectorAll("[data-compound-toggle]")) {
     const enabled = Boolean(preferences.compoundOptions[button.dataset.compoundToggle]);
@@ -1174,6 +1214,7 @@ function refreshCompoundOptions() {
     button.setAttribute("aria-pressed", String(enabled));
   }
   refreshBetaCompoundPresets();
+  refreshIonAnswerPresets();
   elements.compound_option_message.textContent = compoundMode && !compoundOptionsValid()
     ? "出題と解答をそれぞれ1つ以上選んでください。"
     : "";
@@ -1197,7 +1238,7 @@ function toggleCompoundOption(key) {
     if (key === "answerFormula" || key === "answerName") options.answerBoth = false;
   }
   savePreferences();
-  refreshCompoundOptions();
+  refreshPracticeOptions();
 }
 
 function startSession(settings = null) {
@@ -1209,6 +1250,7 @@ function startSession(settings = null) {
     endless: questionCount === "endless",
     weakMode: questionCount === "weak",
     compoundOptions: { ...preferences.compoundOptions },
+    ionAnswerPreset: preferences.ionAnswerPreset,
   };
   primeAudio();
   session = {
@@ -1375,6 +1417,7 @@ function bindEvents() {
     endless: session.endless,
     weakMode: session.weakMode,
     compoundOptions: { ...session.compoundOptions },
+    ionAnswerPreset: session.ionAnswerPreset,
   }));
   elements.back_to_setup.addEventListener("click", () => showScreen("setup"));
   elements.weak_review_button.addEventListener("click", openWeakReview);
@@ -1398,7 +1441,7 @@ function bindEvents() {
     startSession();
   });
   elements.setup_form.addEventListener("change", (event) => {
-    if (event.target.name === "practice-type") refreshCompoundOptions();
+    if (event.target.name === "practice-type") refreshPracticeOptions();
   });
   elements.compound_options.addEventListener("click", (event) => {
     const button = event.target.closest("[data-compound-toggle]");
@@ -1407,6 +1450,10 @@ function bindEvents() {
   elements.compound_answer_presets?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-compound-preset]");
     if (button) setBetaCompoundPreset(button.dataset.compoundPreset);
+  });
+  elements.ion_answer_presets?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-ion-preset]");
+    if (button) setIonAnswerPreset(button.dataset.ionPreset);
   });
   elements.feedback_companion_toggle?.addEventListener("click", () => {
     if (!betaCompanion()) return;
@@ -1440,7 +1487,7 @@ async function initialize() {
     data = await loadData();
     ionById = new Map(data.ions.map((ion) => [ion.id, ion]));
     compoundById = new Map(data.compounds.map((compound) => [compound.id, compound]));
-    refreshCompoundOptions();
+    refreshPracticeOptions();
     updateWeakReviewBadge();
     const resizeObserver = new ResizeObserver(scheduleNamePromptFit);
     resizeObserver.observe(elements.question_card);
