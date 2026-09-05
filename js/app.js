@@ -27,8 +27,8 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20260905-case-flick-v1";
-import { alternateCaseLetter, classifyCaseFlick } from "./formula-keyboard-gesture.js?v=20260905-case-flick-v1";
+} from "./core.js?v=20260905-case-flick-v2";
+import { alternateCaseLetter, classifyCaseFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20260905-case-flick-v2";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -80,8 +80,6 @@ let audioNoiseBuffer = null;
 let touchStartX = null;
 let promptFitFrame = null;
 let formulaLetterPointer = null;
-let suppressedFormulaLetterClick = null;
-let suppressedFormulaLetterClickTimer = null;
 
 function readLocal(key, fallback) {
   try {
@@ -465,15 +463,6 @@ function updateFormulaLetterPointer(event) {
   setFormulaLetterFlickReady(gesture, classifyFormulaLetterPointer(event, gesture) === "alternate");
 }
 
-function suppressFormulaLetterClick(button) {
-  suppressedFormulaLetterClick = button;
-  clearTimeout(suppressedFormulaLetterClickTimer);
-  suppressedFormulaLetterClickTimer = setTimeout(() => {
-    suppressedFormulaLetterClick = null;
-    suppressedFormulaLetterClickTimer = null;
-  }, 0);
-}
-
 function commitFormulaLetter(value) {
   playInputSound("key");
   replaceSelection(value);
@@ -485,7 +474,6 @@ function finishFormulaLetterPointer(event) {
   if (!gesture) return;
   const action = classifyFormulaLetterPointer(event, gesture);
   clearFormulaLetterPointer();
-  suppressFormulaLetterClick(gesture.button);
   event.preventDefault();
   if (elements.answer_input.disabled || !isFormulaEntryMode()) return;
   if (action === "tap") commitFormulaLetter(gesture.normalValue);
@@ -592,12 +580,7 @@ function deleteTextBeforeCaret() {
 function keyboardClick(event) {
   const button = event.target.closest("button");
   if (!button) return;
-  if (button === suppressedFormulaLetterClick) {
-    clearTimeout(suppressedFormulaLetterClickTimer);
-    suppressedFormulaLetterClick = null;
-    suppressedFormulaLetterClickTimer = null;
-    return;
-  }
+  if (formulaLetterButtonFor(button) && isPointerGeneratedClick(event.detail, event.pointerType)) return;
   if (elements.answer_input.disabled) return;
   const action = button.dataset.keyAction;
   if (action === "backspace") playInputSound("backspace");

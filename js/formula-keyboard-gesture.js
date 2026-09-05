@@ -12,3 +12,7 @@ export function classifyCaseFlick(deltaX, deltaY, uppercase) {
 export function alternateCaseLetter(letter, uppercase) {
   return uppercase ? letter.toLowerCase() : letter.toUpperCase();
 }
+
+export function isPointerGeneratedClick(detail, pointerType = "") {
+  return Number(detail) > 0 || ["mouse", "pen", "touch"].includes(pointerType);
+}

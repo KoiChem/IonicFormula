@@ -40,6 +40,7 @@ import {
   CASE_FLICK_MIN_DISTANCE_PX,
   alternateCaseLetter,
   classifyCaseFlick,
+  isPointerGeneratedClick,
 } from "../js/formula-keyboard-gesture.js";
 
 const load = async (path) => JSON.parse(await readFile(new URL(path, import.meta.url), "utf8"));
@@ -615,6 +616,9 @@ test("formula keyboard case flicks use the intended vertical direction only", ()
   assert.equal(classifyCaseFlick(18, 0, true), "cancel");
   assert.equal(alternateCaseLetter("Q", true), "q");
   assert.equal(alternateCaseLetter("q", false), "Q");
+  assert.equal(isPointerGeneratedClick(1, "mouse"), true);
+  assert.equal(isPointerGeneratedClick(0, "touch"), true);
+  assert.equal(isPointerGeneratedClick(0, ""), false);
 });
 
 test("public home keeps the ion and compound answer presets without descriptions", async () => {
@@ -677,12 +681,12 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
     readFile(new URL("../styles.css", import.meta.url), "utf8"),
     readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
   ]);
-  const version = "20260905-case-flick-v1";
+  const version = "20260905-case-flick-v2";
   assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`formula-keyboard-gesture\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v32"/);
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v33"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));
