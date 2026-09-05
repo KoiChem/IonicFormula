@@ -1,19 +1,19 @@
-const CACHE_NAME = "ionic-formula-v30";
+const CACHE_NAME = "ionic-formula-v31";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./admin.html",
   "./soundtest.html",
   "./styles.css",
-  "./styles.css?v=20260905-answer-display-v1",
+  "./styles.css?v=20260905-formula-position-v1",
   "./admin.css",
   "./soundtest.css",
   "./js/app.js",
-  "./js/app.js?v=20260905-answer-display-v1",
+  "./js/app.js?v=20260905-formula-position-v1",
   "./js/admin.js",
   "./js/soundtest.js",
   "./js/core.js",
-  "./js/core.js?v=20260905-answer-display-v1",
+  "./js/core.js?v=20260905-formula-position-v1",
   "./data/ions.json",
   "./data/compounds.json",
   "./data/difficulty.json",

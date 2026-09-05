@@ -27,7 +27,7 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20260905-answer-display-v1";
+} from "./core.js?v=20260905-formula-position-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];

@@ -656,11 +656,11 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
     readFile(new URL("../styles.css", import.meta.url), "utf8"),
     readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
   ]);
-  const version = "20260905-answer-display-v1";
+  const version = "20260905-formula-position-v1";
   assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v30"/);
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v31"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));
@@ -669,6 +669,12 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
   assert.doesNotMatch(app, /renderAnswerSubmit|previewFormulaHtml|submit-answer-text|has-formula/);
   assert.match(styles, /--answer-submit-space: 90px/);
   assert.match(styles, /\.formula-render[^\n]*font-size: clamp\(1\.5rem/);
+  assert.match(styles, /\.formula-render sub \{ top: \.34em; \}/);
+  assert.match(styles, /\.formula-render sup \{ top: -\.52em; \}/);
+  assert.match(styles, /\.formula-render \.formula-charge \{ position: relative; top: -\.58em/);
+  assert.match(styles, /\.formula-keyboard \{ margin-top: 0;/);
+  assert.match(styles, /\.input-message:not\(:empty\) \{ min-height: 1em; margin: 3px 3px 0; \}/);
+  assert.match(styles, /\.answer-submit \{[\s\S]*?font-size: \.78rem/);
   assert.match(styles, /@media \(orientation: portrait\) and \(max-height: 600px\)/);
   assert.match(styles, /\.app-current \.question-card \{ min-height: 98px/);
 });
