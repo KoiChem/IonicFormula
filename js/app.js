@@ -27,7 +27,7 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20260904-result-mode-v1";
+} from "./core.js?v=20260905-answer-display-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -49,7 +49,7 @@ const elements = Object.fromEntries([
   "app-header", "brand", "quiz-actions", "active-game-description", "setup-screen", "quiz-screen", "result-screen",
   "setup-form", "variant-label", "question-number", "question-total", "question-card",
   "question-prompt", "streak", "answer-form", "answer-label", "answer-input", "answer-composer", "formula-render", "both-answer-tabs",
-  "input-message", "submit-answer", "submit-answer-text", "formula-keyboard", "number-keys",
+  "input-message", "submit-answer", "formula-keyboard", "number-keys",
   "letter-keys", "charge-keys", "name-shortcuts", "feedback", "feedback-title", "feedback-answer",
   "feedback-detail", "feedback-actions", "next-button", "hint-button", "pass-button", "quit-button",
   "result-first", "result-retry", "result-hint", "result-pass", "result-review", "result-review-list",
@@ -479,7 +479,6 @@ function syncFormulaEntry() {
   if (!field?.entry) return;
   elements.answer_input.value = formulaEntryValue(field.entry);
   elements.formula_render.innerHTML = formulaEntryHtml(field.entry);
-  renderAnswerSubmit();
   elements.answer_input.setAttribute("aria-invalid", "false");
   elements.input_message.textContent = "";
 }
@@ -541,20 +540,6 @@ function keyboardClick(event) {
     replaceSelection(button.dataset.key);
   }
   elements.answer_input.focus({ preventScroll: true });
-}
-
-function previewFormulaHtml() {
-  const entry = activeFieldState()?.entry;
-  if (entry) return formulaEntryHtml(entry, false);
-  const normalized = normalizeFormula(elements.answer_input.value);
-  return normalized ? formulaHtml(normalized) : "";
-}
-
-function renderAnswerSubmit() {
-  const formulaMode = activeAnswer()?.type === "formula";
-  const preview = formulaMode ? previewFormulaHtml() : "";
-  elements.submit_answer_text.innerHTML = preview || "✓";
-  elements.submit_answer.classList.toggle("has-formula", Boolean(preview));
 }
 
 function itemFor(question) {
@@ -646,7 +631,6 @@ function configureInput(answer, question, field) {
   elements.hint_button.classList.toggle("is-used", hintUsed);
   elements.hint_button.setAttribute("aria-hidden", String(hintUsed));
   setKeyboardCase(true);
-  renderAnswerSubmit();
   setQuizActionState(true);
   setTimeout(() => elements.answer_input.focus({ preventScroll: true }), 30);
 }
@@ -1421,7 +1405,6 @@ function bindEvents() {
     if (field) field.value = elements.answer_input.value;
     elements.answer_input.setAttribute("aria-invalid", "false");
     elements.input_message.textContent = "";
-    renderAnswerSubmit();
   });
   elements.answer_input.addEventListener("touchstart", (event) => {
     primeAudio();

@@ -102,7 +102,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .mode-formula { display: block; line-height: 1; }
 .mode-label { display: block; font-family: inherit; font-size: .73em; letter-spacing: .07em; line-height: 1; }
 .mode-icon.name-icon { font-family: inherit; font-size: 1rem; letter-spacing: .04em; }
-.mode-icon sup, .mode-icon sub, .question-prompt sup, .question-prompt sub, .feedback-answer sup, .feedback-answer sub, .answer-submit sub, .answer-submit sup { font-size: .62em; line-height: 0; }
+.mode-icon sup, .mode-icon sub, .question-prompt sup, .question-prompt sub, .feedback-answer sup, .feedback-answer sub { font-size: .62em; line-height: 0; }
 .mode-icon sub { position: relative; top: .32em; line-height: 1; vertical-align: baseline; }
 
 .segment-control { display: grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border: 1px solid var(--line); border-radius: 13px; background: rgba(255,255,255,.72); }
@@ -159,10 +159,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .both-answer-tabs button.is-active { border-color: #9ad2bd; background: #e7f8ef; color: var(--primary-dark); }
 .both-answer-tabs button.is-complete { background: #f1fbf5; color: var(--primary); }
 .both-answer-tabs button:disabled { opacity: 1; }
-.answer-composer { position: relative; }
+.answer-composer { position: relative; --answer-submit-space: 90px; }
 #answer-input {
-  width: 100%; height: 57px; padding: 0 68px; border: 2px solid var(--line); border-radius: 15px;
-  background: var(--paper); color: var(--ink); font-size: 1.14rem; font-weight: 700; outline: none;
+  width: 100%; height: 57px; padding: 0 var(--answer-submit-space) 0 14px; border: 2px solid var(--line); border-radius: 15px;
+  background: var(--paper); color: var(--ink); font-size: clamp(1.28rem, 5.3vw, 1.52rem); font-weight: 700; outline: none;
   text-align: center;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
@@ -170,18 +170,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
 #answer-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(57,141,117,.1); }
 #answer-input[aria-invalid="true"] { border-color: var(--wrong); }
 .answer-composer.formula-mode #answer-input { color: transparent; caret-color: transparent; }
-.formula-render { position: absolute; inset: 0 68px 0 0; display: flex; align-items: center; justify-content: center; gap: 0; overflow: hidden; color: var(--ink); font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: 1.23rem; font-weight: 750; pointer-events: none; white-space: nowrap; }
+.formula-render { position: absolute; inset: 0 var(--answer-submit-space) 0 14px; display: flex; align-items: center; justify-content: center; gap: 0; overflow: hidden; color: var(--ink); font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: clamp(1.5rem, 6.7vw, 1.75rem); font-weight: 750; pointer-events: none; white-space: nowrap; }
 .formula-render sub, .formula-render sup { font-size: .66em; line-height: 0; }
 .formula-render .formula-charge { display: inline-flex; align-items: flex-start; margin-left: 2px; padding: 1px 3px 2px; border-radius: 5px; background: #d8f2ed; color: #197b6d; font-family: inherit; font-size: .68em; font-weight: 900; line-height: 1; vertical-align: super; }
-.answer-submit .formula-charge { display: inline-flex; align-items: flex-start; margin-left: 2px; padding: 0; border-radius: 0; background: transparent; color: #197b6d; font-family: inherit; font-size: .68em; font-weight: 900; line-height: 1; vertical-align: super; }
 .formula-render .formula-caret { width: 1.5px; height: 1.1em; margin: 0 1px; border-radius: 1px; background: var(--primary-dark); animation: formula-caret .9s steps(1) infinite; }
 @keyframes formula-caret { 50% { opacity: 0; } }
 .answer-submit {
-  position: absolute; top: 6px; right: 6px; min-width: 49px; max-width: 55%; height: 45px; padding: 0 9px;
+  position: absolute; top: 6px; right: 6px; min-width: 82px; max-width: 55%; height: 45px; padding: 0 10px;
   overflow: hidden; border: 1px solid #b6d9cf; border-radius: 10px; background: #eaf7f2; color: var(--primary-dark);
-  font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: 1.02rem; font-weight: 850; white-space: nowrap; cursor: pointer;
+  font-family: inherit; font-size: .92rem; font-weight: 850; white-space: nowrap; cursor: pointer;
 }
-.answer-submit:not(.has-formula) { font-family: inherit; font-size: 1.2rem; }
 .answer-submit:disabled { opacity: .55; }
 .input-message { min-height: 1em; margin: 3px 3px 0; color: var(--wrong); font-size: .72rem; }
 
@@ -291,6 +289,13 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 }
 @media (max-width: 680px) {
   .formula-keyboard { width: calc(100% + 22px); margin-left: -11px; margin-right: -11px; padding-inline: 3px; }
+}
+@media (orientation: portrait) and (max-height: 600px) {
+  .app-current .question-card { min-height: 98px; padding-top: 19px; padding-bottom: 11px; }
+  .app-current .question-progress { margin-top: 5px; }
+  .app-current .answer-area { margin-top: 6px; }
+  .app-current .formula-keyboard { margin-top: 4px; }
+  .app-current .input-message:empty { min-height: 0; margin-top: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

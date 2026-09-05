@@ -649,19 +649,26 @@ test("current game exposes three sound levels and active-game descriptions", asy
   assert.match(html, /sound-wave-outer/);
 });
 
-test("current result mode update keeps the app, core, stylesheet, and service-worker cache identifiers aligned", async () => {
-  const [html, app, worker] = await Promise.all([
+test("current answer display keeps the UI and cache identifiers aligned", async () => {
+  const [html, app, styles, worker] = await Promise.all([
     readFile(new URL("../index.html", import.meta.url), "utf8"),
     readFile(new URL("../js/app.js", import.meta.url), "utf8"),
+    readFile(new URL("../styles.css", import.meta.url), "utf8"),
     readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
   ]);
-  const version = "20260904-result-mode-v1";
+  const version = "20260905-answer-display-v1";
   assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v29"/);
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v30"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));
   assert.match(html, /<h1 id="result-title">今回の結果<\/h1>\s*<p id="result-game-mode"/);
+  assert.match(html, /<button id="submit-answer"[^>]*aria-label="解答をチェック">チェック<\/button>/);
+  assert.doesNotMatch(app, /renderAnswerSubmit|previewFormulaHtml|submit-answer-text|has-formula/);
+  assert.match(styles, /--answer-submit-space: 90px/);
+  assert.match(styles, /\.formula-render[^\n]*font-size: clamp\(1\.5rem/);
+  assert.match(styles, /@media \(orientation: portrait\) and \(max-height: 600px\)/);
+  assert.match(styles, /\.app-current \.question-card \{ min-height: 98px/);
 });

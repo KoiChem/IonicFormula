@@ -8,7 +8,7 @@
   <title>IonicFormula</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260904-result-mode-v1">
+  <link rel="stylesheet" href="styles.css?v=20260905-answer-display-v1">
 </head>
 <body class="app-current" data-build="current">
   <header id="app-header" class="app-header">
@@ -128,7 +128,7 @@
         <div id="answer-composer" class="answer-composer">
           <input id="answer-input" type="text" enterkeyhint="done" autocapitalize="off" autocomplete="off" spellcheck="false">
           <div id="formula-render" class="formula-render" aria-hidden="true" hidden></div>
-          <button id="submit-answer" class="answer-submit" type="submit" aria-label="回答を判定"><span id="submit-answer-text">✓</span></button>
+          <button id="submit-answer" class="answer-submit" type="submit" aria-label="解答をチェック">チェック</button>
         </div>
         <p id="input-message" class="input-message"></p>
       </form>
@@ -219,6 +219,6 @@
   </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
-  <script type="module" src="js/app.js?v=20260904-result-mode-v1"></script>
+  <script type="module" src="js/app.js?v=20260905-answer-display-v1"></script>
 </body>
 </html>
