@@ -35,6 +35,12 @@ import {
   validateData,
   weakHistoryItems,
 } from "../js/core.js";
+import {
+  CASE_FLICK_AXIS_RATIO,
+  CASE_FLICK_MIN_DISTANCE_PX,
+  alternateCaseLetter,
+  classifyCaseFlick,
+} from "../js/formula-keyboard-gesture.js";
 
 const load = async (path) => JSON.parse(await readFile(new URL(path, import.meta.url), "utf8"));
 const ions = await load("../data/ions.json");
@@ -596,6 +602,21 @@ test("all app-shell assets use repository-relative paths and exist", async () =>
   for (const icon of manifest.icons) await access(new URL(`../${icon.src}`, import.meta.url));
 });
 
+test("formula keyboard case flicks use the intended vertical direction only", () => {
+  assert.equal(CASE_FLICK_MIN_DISTANCE_PX, 18);
+  assert.equal(CASE_FLICK_AXIS_RATIO, 1.25);
+  assert.equal(classifyCaseFlick(0, 0, true), "tap");
+  assert.equal(classifyCaseFlick(0, 17, true), "tap");
+  assert.equal(classifyCaseFlick(0, 18, true), "alternate");
+  assert.equal(classifyCaseFlick(0, -18, true), "cancel");
+  assert.equal(classifyCaseFlick(0, -18, false), "alternate");
+  assert.equal(classifyCaseFlick(0, 18, false), "cancel");
+  assert.equal(classifyCaseFlick(18, 18, true), "cancel");
+  assert.equal(classifyCaseFlick(18, 0, true), "cancel");
+  assert.equal(alternateCaseLetter("Q", true), "q");
+  assert.equal(alternateCaseLetter("q", false), "Q");
+});
+
 test("public home keeps the ion and compound answer presets without descriptions", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /<body class="app-current" data-build="current">/);
@@ -656,14 +677,17 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
     readFile(new URL("../styles.css", import.meta.url), "utf8"),
     readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
   ]);
-  const version = "20260905-formula-position-v1";
+  const version = "20260905-case-flick-v1";
   assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v31"/);
+  assert.match(app, new RegExp(`formula-keyboard-gesture\\.js\\?v=${version}`));
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v32"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));
+  assert.match(worker, new RegExp(`js/formula-keyboard-gesture\\.js\\?v=${version}`));
+  assert.match(html, /化学式入力キーボード。大文字表示では下フリックで小文字、小文字表示では上フリックで大文字を入力できます。/);
   assert.match(html, /<h1 id="result-title">今回の結果<\/h1>\s*<p id="result-game-mode"/);
   assert.match(html, /<button id="submit-answer"[^>]*aria-label="解答をチェック">チェック<\/button>/);
   assert.doesNotMatch(app, /renderAnswerSubmit|previewFormulaHtml|submit-answer-text|has-formula/);
@@ -673,6 +697,7 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
   assert.match(styles, /\.formula-render sup \{ top: -\.52em; \}/);
   assert.match(styles, /\.formula-render \.formula-charge \{ position: relative; top: -\.58em/);
   assert.match(styles, /\.formula-keyboard \{ margin-top: 0;/);
+  assert.match(styles, /\.letter-keys button\[data-key\] \{ touch-action: pan-x pinch-zoom; \}/);
   assert.match(styles, /\.input-message:not\(:empty\) \{ min-height: 1em; margin: 3px 3px 0; \}/);
   assert.match(styles, /\.answer-submit \{[\s\S]*?font-size: \.78rem/);
   assert.match(styles, /@media \(orientation: portrait\) and \(max-height: 600px\)/);

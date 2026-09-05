@@ -8,7 +8,7 @@
   <title>IonicFormula</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260905-formula-position-v1">
+  <link rel="stylesheet" href="styles.css?v=20260905-case-flick-v1">
 </head>
 <body class="app-current" data-build="current">
   <header id="app-header" class="app-header">
@@ -143,7 +143,7 @@
         <button type="button" class="name-clear" data-key-action="clear">クリア</button>
       </div>
 
-      <div id="formula-keyboard" class="formula-keyboard" hidden aria-label="化学式入力キーボード">
+      <div id="formula-keyboard" class="formula-keyboard" hidden aria-label="化学式入力キーボード。大文字表示では下フリックで小文字、小文字表示では上フリックで大文字を入力できます。">
         <div id="number-keys" class="key-row number-keys"></div>
         <div id="letter-keys" class="letter-keys"></div>
         <div class="keyboard-controls">
@@ -219,6 +219,6 @@
   </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
-  <script type="module" src="js/app.js?v=20260905-formula-position-v1"></script>
+  <script type="module" src="js/app.js?v=20260905-case-flick-v1"></script>
 </body>
 </html>

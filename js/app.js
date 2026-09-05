@@ -27,7 +27,8 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20260905-formula-position-v1";
+} from "./core.js?v=20260905-case-flick-v1";
+import { alternateCaseLetter, classifyCaseFlick } from "./formula-keyboard-gesture.js?v=20260905-case-flick-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -78,6 +79,9 @@ let audioPrimed = false;
 let audioNoiseBuffer = null;
 let touchStartX = null;
 let promptFitFrame = null;
+let formulaLetterPointer = null;
+let suppressedFormulaLetterClick = null;
+let suppressedFormulaLetterClickTimer = null;
 
 function readLocal(key, fallback) {
   try {
@@ -395,7 +399,12 @@ function initializeKeyboard() {
   }
   elements.formula_keyboard.addEventListener("pointerdown", (event) => {
     if (event.target.closest("button")) event.preventDefault();
+    beginFormulaLetterPointer(event);
   });
+  elements.formula_keyboard.addEventListener("pointermove", updateFormulaLetterPointer);
+  elements.formula_keyboard.addEventListener("pointerup", finishFormulaLetterPointer);
+  elements.formula_keyboard.addEventListener("pointercancel", cancelFormulaLetterPointer);
+  elements.formula_keyboard.addEventListener("lostpointercapture", cancelFormulaLetterPointer);
   elements.formula_keyboard.addEventListener("click", keyboardClick);
 }
 
@@ -409,6 +418,83 @@ function setKeyboardCase(uppercase) {
     button.dataset.key = uppercase ? letter : letter.toLowerCase();
     button.textContent = button.dataset.key;
   }
+}
+
+function formulaLetterButtonFor(target) {
+  const button = target.closest?.("#letter-keys button[data-key]");
+  return button && elements.letter_keys.contains(button) ? button : null;
+}
+
+function pointerGestureFor(event) {
+  const gesture = formulaLetterPointer;
+  return gesture?.pointerId === event.pointerId ? gesture : null;
+}
+
+function setFormulaLetterFlickReady(gesture, ready) {
+  gesture.button.classList.toggle("is-case-flick-ready", ready);
+}
+
+function clearFormulaLetterPointer() {
+  if (!formulaLetterPointer) return;
+  setFormulaLetterFlickReady(formulaLetterPointer, false);
+  formulaLetterPointer = null;
+}
+
+function beginFormulaLetterPointer(event) {
+  const button = formulaLetterButtonFor(event.target);
+  if (!button || !event.isPrimary || event.button !== 0 || elements.answer_input.disabled) return;
+  clearFormulaLetterPointer();
+  formulaLetterPointer = {
+    button,
+    normalValue: button.dataset.key,
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    uppercase: keyboardUppercase,
+  };
+  button.setPointerCapture?.(event.pointerId);
+}
+
+function classifyFormulaLetterPointer(event, gesture) {
+  return classifyCaseFlick(event.clientX - gesture.startX, event.clientY - gesture.startY, gesture.uppercase);
+}
+
+function updateFormulaLetterPointer(event) {
+  const gesture = pointerGestureFor(event);
+  if (!gesture) return;
+  setFormulaLetterFlickReady(gesture, classifyFormulaLetterPointer(event, gesture) === "alternate");
+}
+
+function suppressFormulaLetterClick(button) {
+  suppressedFormulaLetterClick = button;
+  clearTimeout(suppressedFormulaLetterClickTimer);
+  suppressedFormulaLetterClickTimer = setTimeout(() => {
+    suppressedFormulaLetterClick = null;
+    suppressedFormulaLetterClickTimer = null;
+  }, 0);
+}
+
+function commitFormulaLetter(value) {
+  playInputSound("key");
+  replaceSelection(value);
+  elements.answer_input.focus({ preventScroll: true });
+}
+
+function finishFormulaLetterPointer(event) {
+  const gesture = pointerGestureFor(event);
+  if (!gesture) return;
+  const action = classifyFormulaLetterPointer(event, gesture);
+  clearFormulaLetterPointer();
+  suppressFormulaLetterClick(gesture.button);
+  event.preventDefault();
+  if (elements.answer_input.disabled || !isFormulaEntryMode()) return;
+  if (action === "tap") commitFormulaLetter(gesture.normalValue);
+  else if (action === "alternate") commitFormulaLetter(alternateCaseLetter(gesture.normalValue, gesture.uppercase));
+}
+
+function cancelFormulaLetterPointer(event) {
+  if (!pointerGestureFor(event)) return;
+  clearFormulaLetterPointer();
 }
 
 function replaceSelection(text) {
@@ -505,7 +591,14 @@ function deleteTextBeforeCaret() {
 
 function keyboardClick(event) {
   const button = event.target.closest("button");
-  if (!button || elements.answer_input.disabled) return;
+  if (!button) return;
+  if (button === suppressedFormulaLetterClick) {
+    clearTimeout(suppressedFormulaLetterClickTimer);
+    suppressedFormulaLetterClick = null;
+    suppressedFormulaLetterClickTimer = null;
+    return;
+  }
+  if (elements.answer_input.disabled) return;
   const action = button.dataset.keyAction;
   if (action === "backspace") playInputSound("backspace");
   else if (action === "clear") playInputSound("clear");
