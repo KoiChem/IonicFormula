@@ -14,7 +14,7 @@
 - 酢酸塩の保存式と陽イオン先頭式の両方を明示的に正答登録
 - ローカル編集、検証、JSON Import／Exportができる管理画面
 - 上部の効果音トグル、連続正解VFX、`prefers-reduced-motion`対応
-- Li+、N3−、リチウム塩・窒化物を含む教材データ
+- Li+、N3−、H3O+、リチウム塩・窒化物を含む教材データ
 - ややむず限定イオン・化合物と、実在確認URLを保持できる教材データ
 - ややむずの化合物比率は simple11：simpleRatio：polyatomic：variableOx = 0：1：5：4
 

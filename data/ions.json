@@ -100,6 +100,18 @@
     "enabled": true
   },
   {
+    "id": "hydronium",
+    "formula": "H3O",
+    "charge": 1,
+    "name": "オキソニウムイオン",
+    "type": "cation",
+    "atomicity": "polyatomic",
+    "requiresOxidationNumeral": false,
+    "ionQuestionEnabled": true,
+    "difficulty": "hard",
+    "enabled": true
+  },
+  {
     "id": "iron2",
     "formula": "Fe",
     "charge": 2,

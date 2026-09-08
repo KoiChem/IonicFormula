@@ -18,6 +18,7 @@ import {
   evaluateIonEntry,
   historyKey,
   hintFor,
+  ionAnswer,
   ionAnswerPresetFor,
   ionCategory,
   ionInputHtml,
@@ -114,9 +115,9 @@ function randomFrom(seed = 1) {
 }
 
 test("published data includes the lithium, nitride, and lead expansions", () => {
-  assert.equal(ions.length, 46);
+  assert.equal(ions.length, 47);
   assert.equal(compounds.length, 156);
-  assert.equal(new Set(ions.map((item) => item.id)).size, 46);
+  assert.equal(new Set(ions.map((item) => item.id)).size, 47);
   assert.equal(new Set(compounds.map((item) => item.id)).size, 156);
   assert.deepEqual(ions.find((item) => item.id === "lithium"), {
     id: "lithium", formula: "Li", charge: 1, name: "リチウムイオン", type: "cation",
@@ -125,6 +126,11 @@ test("published data includes the lithium, nitride, and lead expansions", () => 
   assert.equal(ions.find((item) => item.id === "nitride").charge, -3);
   assert.equal(ions.find((item) => item.id === "lead2").charge, 2);
   assert.equal(ions.find((item) => item.id === "lead4").charge, 4);
+  assert.deepEqual(ions.find((item) => item.id === "hydronium"), {
+    id: "hydronium", formula: "H3O", charge: 1, name: "オキソニウムイオン", type: "cation",
+    atomicity: "polyatomic", requiresOxidationNumeral: false, ionQuestionEnabled: true,
+    difficulty: "hard", enabled: true,
+  });
   for (const [id, formula] of [["lithium_nitride", "Li3N"], ["magnesium_nitride", "Mg3N2"], ["calcium_nitride", "Ca3N2"], ["barium_nitride", "Ba3N2"], ["zinc_nitride", "Zn3N2"], ["aluminum_nitride", "AlN"]]) {
     assert.equal(compounds.find((item) => item.id === id).formula, formula);
   }
@@ -256,6 +262,18 @@ test("advanced ions stay out of the ion game and their compounds are hard-only",
     assert.equal(ids(normalCompounds).has(id), false, id);
     assert.equal(hardCompoundIds.has(id), true, id);
   }
+});
+
+test("hydronium is available only in hard ion practice", () => {
+  const hydronium = ions.find((item) => item.id === "hydronium");
+  assert.equal(ionAnswer(hydronium), "H3O+");
+  assert.equal(itemAvailableAtDifficulty(hydronium, "normal"), false);
+  assert.equal(itemAvailableAtDifficulty(hydronium, "hard"), true);
+  const normalRound = buildEndlessRound({ practiceType: "ion", difficulty: "normal", ions, compounds, settings, random: randomFrom(54) });
+  const hardRound = buildEndlessRound({ practiceType: "ion", difficulty: "hard", ions, compounds, settings, random: randomFrom(55) });
+  assert.equal(normalRound.questions.some((question) => question.itemId === hydronium.id), false);
+  assert.equal(hardRound.questions.some((question) => question.itemId === hydronium.id), true);
+  assert.equal(hardRound.questions.find((question) => question.itemId === hydronium.id).category, "ionPolyatomic");
 });
 
 test("zero-weight categories are completely excluded", () => {
@@ -686,7 +704,7 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`formula-keyboard-gesture\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v33"/);
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v34"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));
