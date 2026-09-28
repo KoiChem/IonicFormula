@@ -27,8 +27,8 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20260905-case-flick-v2";
-import { alternateCaseLetter, classifyCaseFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20260905-case-flick-v2";
+} from "./core.js?v=20260928-name-focus-v1";
+import { alternateCaseLetter, classifyCaseFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20260928-name-focus-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -72,6 +72,7 @@ let isComposing = false;
 let compositionEndedAt = 0;
 let keyboardUppercase = true;
 let advanceTimer = null;
+let inputFocusTimer = null;
 let audioContext = null;
 let audioMasterGain = null;
 let audioCompressor = null;
@@ -347,6 +348,10 @@ function renderBetaGameDescription(quiz) {
 }
 
 function showScreen(name) {
+  if (name !== "quiz") {
+    clearTimeout(inputFocusTimer);
+    inputFocusTimer = null;
+  }
   for (const screen of [elements.setup_screen, elements.quiz_screen, elements.result_screen]) {
     screen.hidden = screen.id !== `${name}-screen`;
   }
@@ -681,7 +686,10 @@ function showSupportActions() {
 }
 
 function configureInput(answer, question, field) {
+  clearTimeout(inputFocusTimer);
+  inputFocusTimer = null;
   const formulaMode = answer.type === "formula";
+  const switchingFromFormula = !formulaMode && elements.answer_input.inputMode === "none";
   const answerLabel = formulaMode ? (question.domain === "ion" ? "イオン式" : "組成式") : (question.domain === "ion" ? "イオン名" : "化合物名");
   elements.answer_label.textContent = answerLabel;
   elements.answer_input.value = formulaMode ? formulaEntryValue(field.entry) : field.value;
@@ -708,7 +716,21 @@ function configureInput(answer, question, field) {
   elements.hint_button.setAttribute("aria-hidden", String(hintUsed));
   setKeyboardCase(true);
   setQuizActionState(true);
-  setTimeout(() => elements.answer_input.focus({ preventScroll: true }), 30);
+  if (formulaMode) {
+    inputFocusTimer = setTimeout(() => {
+      if (isFormulaEntryMode() && !elements.answer_input.disabled) {
+        elements.answer_input.focus({ preventScroll: true });
+      }
+      inputFocusTimer = null;
+    }, 30);
+  } else {
+    // Keep this in the user's start/next/field-switch event so mobile browsers
+    // can open the software keyboard for name answers.
+    if (switchingFromFormula && document.activeElement === elements.answer_input) {
+      elements.answer_input.blur();
+    }
+    elements.answer_input.focus({ preventScroll: true });
+  }
 }
 
 function nameShortcutClick(event) {
