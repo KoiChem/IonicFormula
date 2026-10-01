@@ -1,7 +1,7 @@
-import { PRACTICE_TYPE_LABELS, compoundCategory, validateData } from "./core.js?v=20261001-complex-v1";
-import { composePublishedBundle, migrateBundle } from "./data-migrations.js?v=20261001-complex-v1";
-import { searchMatches } from "./admin-search.js?v=20261001-complex-v1";
-import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from "./admin-lock.js?v=20261001-complex-v1";
+import { PRACTICE_TYPE_LABELS, compoundCategory, validateData } from "./core.js?v=20261002-complex-input-v1";
+import { composePublishedBundle, migrateBundle } from "./data-migrations.js?v=20261002-complex-input-v1";
+import { searchMatches } from "./admin-search.js?v=20261002-complex-input-v1";
+import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from "./admin-lock.js?v=20261002-complex-input-v1";
 
 const STORAGE_KEY = "ionicFormula.adminData.v2";
 const BACKUP_KEY = `${STORAGE_KEY}.preComplexBackup`;

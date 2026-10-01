@@ -1,4 +1,4 @@
-import { complexItemAllowed, isComplexItem, validateComplexIon } from "./chemistry/complex-policy.js?v=20261001-complex-v1";
+import { complexItemAllowed, isComplexItem, validateComplexIon } from "./chemistry/complex-policy.js?v=20261002-complex-input-v1";
 // The UI exposes the two learning domains below. The three legacy compound
 // types remain in VARIANTS for imported history/settings compatibility.
 export const PRACTICE_TYPES = ["ion", "compound"];

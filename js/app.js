@@ -27,12 +27,12 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20261001-complex-v1";
-import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261001-complex-v1";
+} from "./core.js?v=20261002-complex-input-v1";
+import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261002-complex-input-v1";
 
-import { composePublishedBundle, migrateBundle } from "./data-migrations.js?v=20261001-complex-v1";
-import { complexItemAllowed } from "./chemistry/complex-policy.js?v=20261001-complex-v1";
-import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261001-complex-v1";
+import { composePublishedBundle, migrateBundle } from "./data-migrations.js?v=20261002-complex-input-v1";
+import { complexItemAllowed } from "./chemistry/complex-policy.js?v=20261002-complex-input-v1";
+import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261002-complex-input-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -64,7 +64,7 @@ const elements = Object.fromEntries([
   "weak-review-empty", "start-weak-from-review", "clear-weak-review",
   "compound-answer-presets", "question-progress", "question-progress-bar", "question-progress-label",
   "feedback-companion-row", "feedback-companion", "feedback-companion-value", "feedback-companion-toggle",
-  "complex-toggle", "complex-name-shortcuts", "complex-composition-note",
+  "complex-toggle", "complex-name-shortcuts",
   "result-game-mode", "result-first-rate", "result-comparison", "result-count-note", "result-review-companion-toggle",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
 
@@ -403,7 +403,7 @@ function initializeKeyboard() {
     if (value === "(" || value === ")") {
       key.dataset.bracketKey = value;
       key.setAttribute("aria-label", `${value}。タップで丸括弧、上下フリックで角括弧`);
-      key.innerHTML = `${value}<small>↕ ${value === "(" ? "[" : "]"}</small>`;
+
     }
     elements.number_keys.append(key);
   }
@@ -435,7 +435,7 @@ function initializeKeyboard() {
     const button = event.target.closest("[data-bracket-key]");
     if (!button || !event.shiftKey || !["Enter", " "].includes(event.key)) return;
     event.preventDefault();
-    if (!event.repeat && !elements.answer_input.disabled && isFormulaEntryMode()) commitFormulaLetter(button.dataset.bracketKey === "(" ? "[" : "]");
+    if (!event.repeat && !elements.answer_input.disabled && isFormulaEntryMode()) commitFormulaLetter(({"(":"[", ")":"]", "[":"(", "]":")"})[button.dataset.key]);
   });
 }
 
@@ -444,6 +444,11 @@ function setKeyboardCase(uppercase) {
   const caseButton = elements.formula_keyboard.querySelector('[data-key-action="case"]');
   caseButton?.setAttribute("aria-pressed", String(uppercase));
   caseButton?.setAttribute("aria-label", uppercase ? "小文字に切り替える" : "大文字に切り替える");
+  for (const button of elements.number_keys.querySelectorAll("[data-bracket-key]")) {
+    button.dataset.key = uppercase ? button.dataset.bracketKey : (button.dataset.bracketKey === "(" ? "[" : "]");
+    button.textContent = button.dataset.key;
+    button.setAttribute("aria-label", `${button.dataset.key}。シフトで括弧を切り替え、上下フリックで別の括弧を入力`);
+  }
   for (const button of elements.letter_keys.querySelectorAll("[data-key]")) {
     const letter = button.dataset.key.toUpperCase();
     button.dataset.key = uppercase ? letter : letter.toLowerCase();
@@ -512,7 +517,7 @@ function finishFormulaLetterPointer(event) {
   event.preventDefault();
   if (elements.answer_input.disabled || !isFormulaEntryMode()) return;
   if (action === "tap") commitFormulaLetter(gesture.normalValue);
-  else if (action === "alternate") commitFormulaLetter(gesture.button.dataset.bracketKey ? (gesture.normalValue === "(" ? "[" : "]") : alternateCaseLetter(gesture.normalValue, gesture.uppercase));
+  else if (action === "alternate") commitFormulaLetter(gesture.button.dataset.bracketKey ? ({"(":"[", ")":"]", "[":"(", "]":")"})[gesture.normalValue] : alternateCaseLetter(gesture.normalValue, gesture.uppercase));
 }
 
 function cancelFormulaLetterPointer(event) {
@@ -735,7 +740,7 @@ function configureInput(answer, question, field) {
   elements.formula_keyboard.classList.toggle("ion-entry", formulaMode && question.domain === "ion");
   elements.charge_keys.hidden = !(formulaMode && question.domain === "ion");
   elements.name_shortcuts.hidden = formulaMode;
-  elements.complex_name_shortcuts.hidden = formulaMode || !session.complexEnabled;
+  elements.complex_name_shortcuts.hidden = formulaMode || !session.complexEnabled || session.difficulty === "hard";
   elements.name_shortcuts.querySelector('[data-key="イオン"]').hidden = question.domain !== "ion";
   elements.name_shortcuts.classList.toggle("compound-name-entry", !formulaMode && question.domain !== "ion");
   elements.name_shortcuts.classList.toggle("ion-name-entry", !formulaMode && question.domain === "ion");
@@ -1338,7 +1343,6 @@ function compoundOptionsValid(options = preferences.compoundOptions) {
 }
 
 function refreshPracticeOptions() {
-  elements.complex_composition_note.hidden = !preferences.complexEnabled;
   elements.complex_toggle.classList.toggle("is-on", preferences.complexEnabled);
   elements.complex_toggle.setAttribute("aria-pressed", String(preferences.complexEnabled));
   elements.complex_toggle.querySelector("span").textContent = preferences.complexEnabled ? "ON" : "OFF";

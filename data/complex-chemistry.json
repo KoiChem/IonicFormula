@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "contentVersion": "complex-ions-2026-10-01",
-  "migrationVersion": 1,
+  "contentVersion": "complex-ions-2026-10-02",
+  "migrationVersion": 2,
   "supportIons": [
     {
       "id": "hydrogen",
@@ -650,58 +650,6 @@
         "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
         "note": "Composition formula for learning; hydration and isolation form not individually established."
       }
-    },
-    {
-      "id": "acid_h_au_cl_4",
-      "formula": "H[AuCl4]",
-      "name": "テトラクロリド金(III)酸",
-      "cation": "hydrogen",
-      "anion": "complex_au_cl_4",
-      "solidColor": null,
-      "solidColorNote": null,
-      "enabled": true,
-      "questionModes": {
-        "nameToFormula": true,
-        "formulaToName": true,
-        "ionsToFormula": true,
-        "ionsToName": true,
-        "ionNamesToFormula": true,
-        "ionNamesToName": true
-      },
-      "chemistryClass": "complex",
-      "curriculumLevel": "standard",
-      "evidence": {
-        "status": "composition_reviewed",
-        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
-        "note": "Composition formula for learning; hydration and isolation form not individually established."
-      },
-      "compoundKind": "acid"
-    },
-    {
-      "id": "acid_h2_pt_cl_6",
-      "formula": "H2[PtCl6]",
-      "name": "ヘキサクロリド白金(IV)酸",
-      "cation": "hydrogen",
-      "anion": "complex_pt_cl_6",
-      "solidColor": null,
-      "solidColorNote": null,
-      "enabled": true,
-      "questionModes": {
-        "nameToFormula": true,
-        "formulaToName": true,
-        "ionsToFormula": true,
-        "ionsToName": true,
-        "ionNamesToFormula": true,
-        "ionNamesToName": true
-      },
-      "chemistryClass": "complex",
-      "curriculumLevel": "standard",
-      "evidence": {
-        "status": "composition_reviewed",
-        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
-        "note": "Composition formula for learning; hydration and isolation form not individually established."
-      },
-      "compoundKind": "acid"
     },
     {
       "id": "salt_ag_nh3_2_no3",
@@ -1503,5 +1451,9 @@
         "note": "Composition formula for learning; hydration and isolation form not individually established."
       }
     }
+  ],
+  "retiredCompoundIds": [
+    "acid_h_au_cl_4",
+    "acid_h2_pt_cl_6"
   ]
 }

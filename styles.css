@@ -388,14 +388,14 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 
 .difficulty-with-complex .complex-toggle { margin-left: auto; white-space: nowrap; }
 .complex-toggle-state { margin-left: 6px; font-size: .72em; }
-.complex-name-shortcuts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; margin-top: 6px; }
-.complex-name-shortcuts button { min-width: 0; min-height: 38px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--primary-dark); font-size: .8rem; }
 .number-keys button[data-bracket-key] { touch-action: pan-x pinch-zoom; position: relative; }
-.number-keys button[data-bracket-key] small { display: block; font-size: .6rem; line-height: 1; color: var(--muted); }
 .app-current #quiz-screen.is-both-complete #complex-name-shortcuts { display: none; }
 
 .difficulty-with-complex { display: flex; align-items: stretch; gap: 8px; }
 .difficulty-with-complex .segment-control { flex: 1; min-width: 0; }
 .formula-keyboard.ion-entry .keyboard-controls { grid-template-columns: repeat(9,minmax(0,1fr)) 1.35fr; }
 
-.complex-name-shortcuts button { min-height: 44px; }
+
+.name-shortcuts.complex-name-shortcuts { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; }
+.name-shortcuts.complex-name-shortcuts button { white-space: nowrap; padding: 0 2px; }
+.name-shortcuts.complex-name-shortcuts button[data-key="ヒドロキシド"] { font-size: clamp(.65rem,2.7vw,.85rem); }

@@ -47,6 +47,12 @@ export function migrateBundle(bundle, pack) {
   if (bundle.migrationVersion != null && (!Number.isInteger(bundle.migrationVersion) || bundle.migrationVersion < 0)) {
     throw new TypeError("migrationVersionが不正です。");
   }
-  if (bundle.migrationVersion >= pack.migrationVersion) return clone(bundle);
-  return appendNew(bundle, pack);
+  const result = (bundle.migrationVersion ?? 0) < 1 ? appendNew(bundle, pack) : clone(bundle);
+  result.compounds = result.compounds.filter((item) => !(pack.retiredCompoundIds ?? []).includes(item.id));
+  if ((result.migrationVersion ?? 0) < pack.migrationVersion) {
+    result.migrationVersion = pack.migrationVersion;
+    result.schemaVersion = pack.schemaVersion;
+    result.contentVersion = pack.contentVersion;
+  }
+  return result;
 }

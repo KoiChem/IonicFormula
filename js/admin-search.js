@@ -1,4 +1,4 @@
-import { ionAnswer, normalizeFormula, normalizeName } from "./core.js?v=20261001-complex-v1";
+import { ionAnswer, normalizeFormula, normalizeName } from "./core.js?v=20261002-complex-input-v1";
 
 export function searchMatches(item, query, field) {
   if (!String(query).trim()) return true;
