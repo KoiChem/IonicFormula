@@ -27,8 +27,12 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20260928-name-focus-v1";
-import { alternateCaseLetter, classifyCaseFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20260928-name-focus-v1";
+} from "./core.js?v=20261001-complex-v1";
+import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261001-complex-v1";
+
+import { composePublishedBundle, migrateBundle } from "./data-migrations.js?v=20261001-complex-v1";
+import { complexItemAllowed } from "./chemistry/complex-policy.js?v=20261001-complex-v1";
+import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261001-complex-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -60,6 +64,7 @@ const elements = Object.fromEntries([
   "weak-review-empty", "start-weak-from-review", "clear-weak-review",
   "compound-answer-presets", "question-progress", "question-progress-bar", "question-progress-label",
   "feedback-companion-row", "feedback-companion", "feedback-companion-value", "feedback-companion-toggle",
+  "complex-toggle", "complex-name-shortcuts", "complex-composition-note",
   "result-game-mode", "result-first-rate", "result-comparison", "result-count-note", "result-review-companion-toggle",
 ].map((id) => [id.replaceAll("-", "_"), document.getElementById(id)]));
 
@@ -115,6 +120,7 @@ function rememberPresentation(question) {
 }
 
 const preferences = {
+  complexEnabled: false,
   sound: true,
   showCompanionAnswer: true,
   ionAnswerPreset: "random",
@@ -130,6 +136,7 @@ preferences.soundLevel = SOUND_LEVELS.includes(preferences.soundLevel)
 preferences.sound = preferences.soundLevel !== "off";
 preferences.ionAnswerPreset = ionAnswerPresetFor(preferences.ionAnswerPreset);
 preferences.compoundOptions = { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false, ...(preferences.compoundOptions ?? {}) };
+preferences.complexEnabled = preferences.complexEnabled === true;
 preferences.showCompanionAnswer = preferences.showCompanionAnswer !== false;
 
 async function fetchJson(path) {
@@ -167,20 +174,29 @@ function normalizeBundle(bundle) {
 }
 
 async function loadData() {
-  const [ions, compounds, difficulty] = await Promise.all([
+  const [ions, compounds, difficulty, pack] = await Promise.all([
     fetchJson("data/ions.json"),
     fetchJson("data/compounds.json"),
     fetchJson("data/difficulty.json"),
+    fetchJson("data/complex-chemistry.json"),
   ]);
-  const published = normalizeBundle({ ions, compounds, difficulty });
+  const published = normalizeBundle(composePublishedBundle({ ions, compounds, difficulty }, pack));
   const localOverride = readLocal(STORAGE.adminData, null);
   const candidate = localOverride?.ions && localOverride?.compounds && localOverride?.difficulty
-    ? normalizeBundle(localOverride)
+    ? normalizeBundle(migrateBundle(localOverride, pack))
     : published;
   const validation = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
   if (!validation.valid) {
-    if (localOverride) return published;
+    if (localOverride) throw new Error(`保存した教材に${validation.errors.length}件のエラーがあります。管理画面で参照イオンなどを確認・修正してください。元の編集データは保持しています。`);
     throw new Error(`教材データに${validation.errors.length}件のエラーがあります。`);
+  }
+  if (localOverride && JSON.stringify(candidate) !== JSON.stringify(localOverride)) {
+    try {
+      if (localStorage.getItem(`${STORAGE.adminData}.preComplexBackup`) === null) localStorage.setItem(`${STORAGE.adminData}.preComplexBackup`, JSON.stringify(localOverride));
+      localStorage.setItem(STORAGE.adminData, JSON.stringify(candidate));
+    } catch {
+      throw new Error("教材の移行データを保存できません。元の編集データは保持しています。");
+    }
   }
   return candidate;
 }
@@ -337,7 +353,7 @@ function renderBetaGameDescription(quiz) {
   if (!description) return;
   const difficulty = document.createElement("span");
   difficulty.className = "active-game-difficulty";
-  difficulty.textContent = description.difficulty;
+  difficulty.textContent = `${description.difficulty}${session.complexEnabled ? "・錯イオンあり" : ""}`;
   elements.active_game_description.append(difficulty);
   if (description.route) {
     const route = document.createElement("span");
@@ -383,7 +399,13 @@ function makeShiftKey() {
 
 function initializeKeyboard() {
   for (const value of ["1", "2", "3", "4", "5", "6", "7", "8", "(", ")"]) {
-    elements.number_keys.append(makeKey(value, value));
+    const key = makeKey(value, value);
+    if (value === "(" || value === ")") {
+      key.dataset.bracketKey = value;
+      key.setAttribute("aria-label", `${value}。タップで丸括弧、上下フリックで角括弧`);
+      key.innerHTML = `${value}<small>↕ ${value === "(" ? "[" : "]"}</small>`;
+    }
+    elements.number_keys.append(key);
   }
   for (const row of ["QWERTYUIOP", "ASDFGHJKL"]) {
     const container = document.createElement("div");
@@ -397,7 +419,7 @@ function initializeKeyboard() {
   for (const letter of "ZXCVBNM") lastRow.append(makeKey(letter, letter));
   lastRow.append(makeKey("⌫", "", "", "backspace"));
   elements.letter_keys.append(lastRow);
-  for (const [label, value] of [["＋", "+"], ["2＋", "2+"], ["3＋", "3+"], ["－", "-"], ["2－", "2-"], ["3－", "3-"]]) {
+  for (const [label, value] of [["＋", "+"], ["2＋", "2+"], ["3＋", "3+"], ["－", "-"], ["2－", "2-"], ["3－", "3-"], ["4－", "4-"]]) {
     elements.charge_keys.append(makeKey(label, value, "charge-key"));
   }
   elements.formula_keyboard.addEventListener("pointerdown", (event) => {
@@ -409,6 +431,12 @@ function initializeKeyboard() {
   elements.formula_keyboard.addEventListener("pointercancel", cancelFormulaLetterPointer);
   elements.formula_keyboard.addEventListener("lostpointercapture", cancelFormulaLetterPointer);
   elements.formula_keyboard.addEventListener("click", keyboardClick);
+  elements.formula_keyboard.addEventListener("keydown", (event) => {
+    const button = event.target.closest("[data-bracket-key]");
+    if (!button || !event.shiftKey || !["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    if (!event.repeat && !elements.answer_input.disabled && isFormulaEntryMode()) commitFormulaLetter(button.dataset.bracketKey === "(" ? "[" : "]");
+  });
 }
 
 function setKeyboardCase(uppercase) {
@@ -424,8 +452,8 @@ function setKeyboardCase(uppercase) {
 }
 
 function formulaLetterButtonFor(target) {
-  const button = target.closest?.("#letter-keys button[data-key]");
-  return button && elements.letter_keys.contains(button) ? button : null;
+  const button = target.closest?.("#letter-keys button[data-key], #number-keys button[data-bracket-key]");
+  return button && elements.formula_keyboard.contains(button) ? button : null;
 }
 
 function pointerGestureFor(event) {
@@ -459,7 +487,9 @@ function beginFormulaLetterPointer(event) {
 }
 
 function classifyFormulaLetterPointer(event, gesture) {
-  return classifyCaseFlick(event.clientX - gesture.startX, event.clientY - gesture.startY, gesture.uppercase);
+  const dx = event.clientX - gesture.startX;
+  const dy = event.clientY - gesture.startY;
+  return gesture.button.dataset.bracketKey ? classifyBracketFlick(dx, dy) : classifyCaseFlick(dx, dy, gesture.uppercase);
 }
 
 function updateFormulaLetterPointer(event) {
@@ -482,7 +512,7 @@ function finishFormulaLetterPointer(event) {
   event.preventDefault();
   if (elements.answer_input.disabled || !isFormulaEntryMode()) return;
   if (action === "tap") commitFormulaLetter(gesture.normalValue);
-  else if (action === "alternate") commitFormulaLetter(alternateCaseLetter(gesture.normalValue, gesture.uppercase));
+  else if (action === "alternate") commitFormulaLetter(gesture.button.dataset.bracketKey ? (gesture.normalValue === "(" ? "[" : "]") : alternateCaseLetter(gesture.normalValue, gesture.uppercase));
 }
 
 function cancelFormulaLetterPointer(event) {
@@ -612,7 +642,7 @@ function keyboardClick(event) {
       elements.answer_input.dispatchEvent(new Event("input", { bubbles: true }));
     }
   } else if (button.classList.contains("charge-key")) {
-    const match = button.dataset.key.match(/^([1-3]?)([+-])$/);
+    const match = button.dataset.key.match(/^([1-4]?)([+-])$/);
     if (isFormulaEntryMode() && match) {
       activeFieldState().entry.charge = { magnitude: Number(match[1] || 1), sign: match[2], source: "chargeButton" };
       syncFormulaEntry();
@@ -705,6 +735,7 @@ function configureInput(answer, question, field) {
   elements.formula_keyboard.classList.toggle("ion-entry", formulaMode && question.domain === "ion");
   elements.charge_keys.hidden = !(formulaMode && question.domain === "ion");
   elements.name_shortcuts.hidden = formulaMode;
+  elements.complex_name_shortcuts.hidden = formulaMode || !session.complexEnabled;
   elements.name_shortcuts.querySelector('[data-key="イオン"]').hidden = question.domain !== "ion";
   elements.name_shortcuts.classList.toggle("compound-name-entry", !formulaMode && question.domain !== "ion");
   elements.name_shortcuts.classList.toggle("ion-name-entry", !formulaMode && question.domain === "ion");
@@ -832,14 +863,7 @@ function renderQuestion() {
 
 function looksComplete(value, question, entry = null) {
   const normalized = normalizeFormula(value);
-  if (!normalized || !/^[A-Za-z1-8()+-]+$/.test(normalized) || /^[1-8)+-]/.test(normalized)) return false;
-  let depth = 0;
-  for (const character of normalized) {
-    if (character === "(") depth += 1;
-    if (character === ")") depth -= 1;
-    if (depth < 0) return false;
-  }
-  if (depth !== 0 || /\(\)|\($|[+-].+/.test(normalized)) return false;
+  if (!formulaSyntaxValid(normalized, { allowCharge: question.domain === "ion" })) return false;
   if (question.domain === "ion" && !entry?.charge) return false;
   if (question.domain === "compound" && /[+-]/.test(normalized)) return false;
   return true;
@@ -887,6 +911,7 @@ function betaSessionSummaryKey() {
   return JSON.stringify({
     practiceType: session.practiceType,
     difficulty: session.difficulty,
+    ...(session.complexEnabled ? { complexEnabled: true } : {}),
     questionCount: session.weakMode ? "weak" : (session.endless ? "endless" : "10"),
     ionAnswerPreset: session.practiceType === "ion" ? ionAnswerPresetFor(session.ionAnswerPreset) : null,
     answerPreset: session.practiceType === "compound" ? compoundAnswerPresetForOptions(options) : null,
@@ -925,7 +950,7 @@ function renderBetaResultGameMode() {
   if (!description) return;
   const difficulty = document.createElement("span");
   difficulty.className = "result-game-difficulty";
-  difficulty.textContent = description.difficulty;
+  difficulty.textContent = `${description.difficulty}${session.complexEnabled ? "・錯イオンあり" : ""}`;
   const route = document.createElement("span");
   route.className = "result-game-route";
   route.textContent = description.route;
@@ -1299,6 +1324,7 @@ function makeRound(endless) {
     selectionState: compoundSelectionState(),
     compoundOptions: session.compoundOptions,
     ionAnswerPreset: session.ionAnswerPreset,
+    complexEnabled: session.complexEnabled,
   });
 }
 
@@ -1312,6 +1338,10 @@ function compoundOptionsValid(options = preferences.compoundOptions) {
 }
 
 function refreshPracticeOptions() {
+  elements.complex_composition_note.hidden = !preferences.complexEnabled;
+  elements.complex_toggle.classList.toggle("is-on", preferences.complexEnabled);
+  elements.complex_toggle.setAttribute("aria-pressed", String(preferences.complexEnabled));
+  elements.complex_toggle.querySelector("span").textContent = preferences.complexEnabled ? "ON" : "OFF";
   const practiceType = selectedPracticeType();
   const compoundMode = practiceType === "compound";
   const ionMode = practiceType === "ion";
@@ -1360,10 +1390,12 @@ function startSession(settings = null) {
     weakMode: questionCount === "weak",
     compoundOptions: { ...preferences.compoundOptions },
     ionAnswerPreset: preferences.ionAnswerPreset,
+    complexEnabled: preferences.complexEnabled,
   };
   primeAudio();
   session = {
     ...chosen,
+    complexEnabled: chosen.complexEnabled === true,
     questions: [],
     plan: null,
     index: 0,
@@ -1420,7 +1452,7 @@ function weakReviewHtml(entry) {
 }
 
 function currentWeakItems() {
-  return weakHistoryItems(readLocal(STORAGE.history, {}), data?.ions ?? [], data?.compounds ?? []);
+  return weakHistoryItems(readLocal(STORAGE.history, {}), data?.ions ?? [], data?.compounds ?? []).filter((entry) => complexItemAllowed(entry.item, preferences.complexEnabled, ionById));
 }
 
 function updateWeakReviewBadge() {
@@ -1455,6 +1487,12 @@ function closeWeakReview() {
 }
 
 function bindEvents() {
+  elements.complex_toggle.addEventListener("click", () => {
+    preferences.complexEnabled = !preferences.complexEnabled;
+    savePreferences();
+    refreshPracticeOptions();
+    updateWeakReviewBadge();
+  });
   elements.setup_form.addEventListener("submit", (event) => {
     event.preventDefault();
     startSession();
@@ -1481,7 +1519,7 @@ function bindEvents() {
       moveCaret(event.key === "ArrowLeft" ? -1 : 1);
       return;
     }
-    if (/^[A-Za-z1-8()]$/.test(event.key)) {
+    if (/^[A-Za-z1-8()[\]]$/.test(event.key)) {
       event.preventDefault();
       playInputSound("key");
       replaceSelection(event.key);
@@ -1527,6 +1565,7 @@ function bindEvents() {
     weakMode: session.weakMode,
     compoundOptions: { ...session.compoundOptions },
     ionAnswerPreset: session.ionAnswerPreset,
+    complexEnabled: session.complexEnabled,
   }));
   elements.back_to_setup.addEventListener("click", () => showScreen("setup"));
   elements.weak_review_button.addEventListener("click", openWeakReview);
@@ -1591,6 +1630,8 @@ async function initialize() {
   setKeyboardCase(true);
   elements.name_shortcuts.addEventListener("pointerdown", (event) => event.preventDefault());
   elements.name_shortcuts.addEventListener("click", nameShortcutClick);
+  elements.complex_name_shortcuts.addEventListener("pointerdown", (event) => event.preventDefault());
+  elements.complex_name_shortcuts.addEventListener("click", nameShortcutClick);
   bindEvents();
   try {
     data = await loadData();
@@ -1602,7 +1643,7 @@ async function initialize() {
     resizeObserver.observe(elements.question_card);
     document.fonts?.ready?.then(scheduleNamePromptFit);
   } catch (error) {
-    elements.setup_form.innerHTML = `<div class="feedback wrong"><strong>教材データを読み込めませんでした。</strong><p>${escapeHtml(String(error.message))}</p><p>このページはWebサーバーまたはGitHub Pagesから開いてください。</p></div>`;
+    elements.setup_form.innerHTML = `<div class="feedback wrong"><strong>教材データを読み込めませんでした。</strong><p>${escapeHtml(String(error.message))}</p><p><a href="admin.html">管理画面で教材を確認</a></p>${location.protocol === "file:" ? "<p>このページはWebサーバーまたはGitHub Pagesから開いてください。</p>" : ""}</div>`;
   }
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("service-worker.js").catch(() => {});
 }

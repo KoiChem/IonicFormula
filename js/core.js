@@ -1,3 +1,4 @@
+import { complexItemAllowed, isComplexItem, validateComplexIon } from "./chemistry/complex-policy.js?v=20261001-complex-v1";
 // The UI exposes the two learning domains below. The three legacy compound
 // types remain in VARIANTS for imported history/settings compatibility.
 export const PRACTICE_TYPES = ["ion", "compound"];
@@ -190,7 +191,7 @@ function gcd(a, b) {
 
 function ionTerm(ion, count) {
   if (count === 1) return ion.formula;
-  return `${ion.atomicity === "polyatomic" ? `(${ion.formula})` : ion.formula}${count}`;
+  return `${ion.atomicity === "polyatomic" && !ion.formula.startsWith("[") ? `(${ion.formula})` : ion.formula}${count}`;
 }
 
 export function neutralFormula(cation, anion) {
@@ -442,6 +443,7 @@ function eligibleItems(practiceType, ions, compounds, categoryWeights, compoundO
   return source
     .filter((item) => item.enabled
       && (domain !== "ion" || item.ionQuestionEnabled !== false)
+      && (domain !== "compound" || (ionById.get(item.cation)?.enabled && ionById.get(item.anion)?.enabled))
       && itemAvailableAtDifficulty(item, difficulty)
       && itemVariants(practiceType, item, compoundOptions, ionAnswerPreset).length)
     .map((item) => ({ item, category: domain === "ion" ? ionCategory(item) : compoundCategory(item, ionById) }))
@@ -619,9 +621,12 @@ function recordPairIons(pair, usedIonCounts) {
 
 function normalizedOptions(options) {
   const practiceType = options.practiceType ?? options.domain ?? "ion";
+  const ionById = new Map(options.ions.map((ion) => [ion.id, ion]));
   return {
     ...options,
     practiceType,
+    ions: options.ions.map((ion) => complexItemAllowed(ion, options.complexEnabled === true, ionById) ? ion : { ...ion, enabled: false }),
+    compounds: options.compounds.filter((item) => complexItemAllowed(item, options.complexEnabled === true, ionById)),
     domain: domainForPracticeType(practiceType),
     compoundOptions: { ...DEFAULT_COMPOUND_OPTIONS, ...(options.compoundOptions ?? {}) },
     ionAnswerPreset: ionAnswerPresetFor(options.ionAnswerPreset),
@@ -758,7 +763,7 @@ function buildFairCompoundQuestionSet({
   const categoryWeights = settings.categoryWeights.compound[difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
   const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty);
-  const capacity = {};
+  const capacity = Object.fromEntries(Object.keys(categoryWeights).map((key) => [key, 0]));
   for (const candidate of eligible) capacity[candidate.category] = (capacity[candidate.category] ?? 0) + 1;
   const questionTotal = Math.min(total, eligible.length);
   const targetCategoryCounts = allocateCounts(categoryWeights, questionTotal, capacity, random);
@@ -849,7 +854,7 @@ export function buildTenQuestionSet(rawOptions) {
   const categoryWeights = settings.categoryWeights[domain][difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions, ionAnswerPreset);
   const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty, ionAnswerPreset);
-  const capacity = {};
+  const capacity = Object.fromEntries(Object.keys(categoryWeights).map((key) => [key, 0]));
   for (const candidate of eligible) capacity[candidate.category] = (capacity[candidate.category] ?? 0) + 1;
   const total = Math.min(10, eligible.length);
   const categoryCounts = allocateCounts(categoryWeights, total, capacity, random);
@@ -1004,6 +1009,14 @@ export function explanationForCompound(compound, ionById) {
 }
 
 export function hintFor(question, item, ionById, wrongAnswer = "") {
+  if (isComplexItem(item, ionById)) {
+    const old = [["シアノ", "シアニド"], ["クロロ", "クロリド"], ["ヒドロキソ", "ヒドロキシド"], ["アミン", "アンミン"]].find(([word]) => String(wrongAnswer).includes(word));
+    if (old) return `このモードでは「${old[1]}」表記を使います。`;
+    if (item.compoundKind === "acid" && question.variant.endsWith("ToName")) return "錯陰イオンに由来する酸の名称です。末尾は「酸」にし、水素の名前は付けません。";
+    if (question.domain === "ion") return question.variant === "ionNameToFormula"
+      ? "配位子のまとまりを角括弧で囲み、中心金属の酸化数と配位子の電荷の合計を右上に付けよう。"
+      : "配位子の種類と数、中心金属の酸化数を確認しよう。錯陰イオンは「酸イオン」と名付けます。";
+  }
   if (question.domain === "ion") {
     return question.variant === "ionNameToFormula"
       ? "元素記号やイオンを表す式と、電荷の符号・大きさを確認しよう。"
@@ -1040,6 +1053,7 @@ export function validateData(ions, compounds, settings) {
   const ionIds = new Set();
   for (const [index, ion] of ions.entries()) {
     const path = `ions[${index}]`;
+    errors.push(...validateComplexIon(ion).map((error) => `${path}: ${error}`));
     if (!ion.id) errors.push(`${path}: idがありません。`);
     else if (ionIds.has(ion.id)) errors.push(`${path}: id「${ion.id}」が重複しています。`);
     ionIds.add(ion.id);
@@ -1073,6 +1087,9 @@ export function validateData(ions, compounds, settings) {
     if (compound.enabled && !Object.values(compound.questionModes ?? {}).some(Boolean)) errors.push(`${path}: enabledですが全questionModesがfalseです。`);
     const formulaModes = ["nameToFormula", "ionsToFormula", "ionNamesToFormula"];
     if (compound.formula == null && formulaModes.some((mode) => compound.questionModes?.[mode])) errors.push(`${path}: formula=nullで組成式を使う問題が有効です。`);
+    for (const formula of [compound.formula, ...(compound.acceptedFormulaVariants ?? []).map((entry) => entry.formula ?? entry)]) {
+      if (/\[[^\]]*(?:H2O|S2O3)/i.test(normalizeFormula(formula ?? ""))) errors.push(`${path}: アクア・チオスルファト錯体は別解にも登録できません。`);
+    }
     const serialized = JSON.stringify({ formula: compound.formula, aliases: compound.acceptedFormulaVariants ?? [] });
     if (serialized.includes("Fe(OH)3") || serialized.includes("Fe(OH)₃")) errors.push(`${path}: Fe(OH)3は禁止されています。`);
     if (cation && anion && compound.formula) {

@@ -699,12 +699,12 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
     readFile(new URL("../styles.css", import.meta.url), "utf8"),
     readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
   ]);
-  const version = "20260928-name-focus-v1";
+  const version = "20261001-complex-v1";
   assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`formula-keyboard-gesture\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v35"/);
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v36"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));

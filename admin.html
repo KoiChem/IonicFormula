@@ -7,20 +7,42 @@
   <meta name="robots" content="noindex, nofollow">
   <title>教材データ管理 | IonicFormula</title>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="styles.css?v=20261001-complex-v1">
+  <link rel="stylesheet" href="admin.css?v=20261001-complex-v1">
 </head>
 <body>
+  <section id="admin-lock-screen" class="lock-screen" aria-labelledby="lock-heading">
+    <form id="unlock-form" class="lock-card">
+      <h1 id="lock-heading">教材データ管理</h1>
+      <p>このブラウザの管理画面を開くにはパスワードを入力してください。</p>
+      <label for="unlock-password">パスワード</label>
+      <input id="unlock-password" type="password" autocomplete="current-password" required>
+      <button type="submit">解錠</button>
+      <p id="unlock-status" class="lock-status" role="alert"></p>
+      <a href="./">学習画面へ戻る</a>
+    </form>
+  </section>
+  <div id="admin-editor" hidden>
   <header class="admin-header">
     <div>
       <a href="./">← 学習画面へ</a>
       <h1>教材データ管理</h1>
       <p>編集内容はこの端末内に保存されます。公開データの更新にはJSONを書き出して、リポジトリのdataファイルを差し替えてください。</p>
     </div>
-    <span class="local-badge">LOCAL EDITOR</span>
+    <div class="admin-header-actions"><span class="local-badge">LOCAL EDITOR</span><button id="lock-button" type="button">ロック</button></div>
   </header>
 
   <main class="admin-shell">
+    <details class="password-settings">
+      <summary>パスワード変更</summary>
+      <form id="change-password-form">
+        <label>現在のパスワード<input id="current-password" type="password" autocomplete="current-password" required></label>
+        <label>新しいパスワード<input id="new-password" type="password" autocomplete="new-password" required></label>
+        <label>新しいパスワード（確認）<input id="confirm-password" type="password" autocomplete="new-password" required></label>
+        <button type="submit">変更してロック</button>
+        <p id="change-password-status" role="alert"></p>
+      </form>
+    </details>
     <section class="admin-toolbar" aria-label="データ操作">
       <div class="toolbar-group">
         <label class="file-button">JSON Import<input id="import-file" type="file" accept="application/json,.json"></label>
@@ -46,7 +68,11 @@
     </nav>
 
     <section id="list-controls" class="list-controls">
-      <label>検索<input id="search-input" type="search" placeholder="ID・式・名称"></label>
+      <div class="search-controls"><label for="search-input">検索</label><div id="search-fields" class="search-fields" role="group" aria-label="検索対象">
+        <button type="button" data-search-field="id" aria-pressed="true">id</button>
+        <button type="button" data-search-field="formula" aria-pressed="false">式</button>
+        <button type="button" data-search-field="name" aria-pressed="false">名称</button>
+      </div><input id="search-input" type="search" placeholder="idで検索"></div>
       <label>表示<select id="enabled-filter"><option value="all">すべて</option><option value="enabled">有効のみ</option><option value="disabled">無効のみ</option></select></label>
       <button id="add-row" type="button">＋ 追加</button>
       <span id="row-count"></span>
@@ -62,7 +88,8 @@
       <div id="difficulty-editor" class="difficulty-editor"></div>
     </section>
   </main>
+  </div>
 
-  <script type="module" src="js/admin.js"></script>
+  <script type="module" src="js/admin.js?v=20261001-complex-v1"></script>
 </body>
 </html>

@@ -1,6 +1,10 @@
-import { PRACTICE_TYPE_LABELS, compoundCategory, validateData } from "./core.js";
+import { PRACTICE_TYPE_LABELS, compoundCategory, validateData } from "./core.js?v=20261001-complex-v1";
+import { composePublishedBundle, migrateBundle } from "./data-migrations.js?v=20261001-complex-v1";
+import { searchMatches } from "./admin-search.js?v=20261001-complex-v1";
+import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from "./admin-lock.js?v=20261001-complex-v1";
 
 const STORAGE_KEY = "ionicFormula.adminData.v2";
+const BACKUP_KEY = `${STORAGE_KEY}.preComplexBackup`;
 const CATEGORY_LABELS = {
   simple11: "simple11",
   simpleRatio: "simpleRatio",
@@ -9,6 +13,14 @@ const CATEGORY_LABELS = {
 };
 
 const elements = {
+  lockScreen: document.getElementById("admin-lock-screen"),
+  editor: document.getElementById("admin-editor"),
+  unlockForm: document.getElementById("unlock-form"),
+  unlockPassword: document.getElementById("unlock-password"),
+  unlockStatus: document.getElementById("unlock-status"),
+  lockButton: document.getElementById("lock-button"),
+  changePasswordForm: document.getElementById("change-password-form"),
+  changePasswordStatus: document.getElementById("change-password-status"),
   importFile: document.getElementById("import-file"),
   exportBundle: document.getElementById("export-bundle"),
   exportCurrent: document.getElementById("export-current"),
@@ -20,6 +32,7 @@ const elements = {
   tabs: document.querySelector(".admin-tabs"),
   listControls: document.getElementById("list-controls"),
   search: document.getElementById("search-input"),
+  searchFields: document.getElementById("search-fields"),
   enabledFilter: document.getElementById("enabled-filter"),
   addRow: document.getElementById("add-row"),
   rowCount: document.getElementById("row-count"),
@@ -32,9 +45,12 @@ const elements = {
 };
 
 let publishedData;
+let pack;
 let state;
 let activeTab = "ions";
+let searchField = "id";
 let validationTimer;
+let eventsBound = false;
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const escapeHtml = (value) => String(value ?? "")
@@ -79,12 +95,13 @@ function normalizeBundle(bundle) {
 }
 
 function readOverride() {
-  try {
-    const value = localStorage.getItem(STORAGE_KEY);
-    return value ? JSON.parse(value) : null;
-  } catch {
-    return null;
-  }
+  const value = localStorage.getItem(STORAGE_KEY);
+  return value ? { raw: value, bundle: JSON.parse(value) } : null;
+}
+
+function persistMigration(original, migrated) {
+  if ((original.bundle.migrationVersion ?? 0) < migrated.migrationVersion && localStorage.getItem(BACKUP_KEY) === null) localStorage.setItem(BACKUP_KEY, original.raw);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
 }
 
 function showStatus(message, error = false) {
@@ -108,15 +125,14 @@ function select({ value, field, index, options }) {
 }
 
 function matchesFilters(item) {
-  const needle = elements.search.value.trim().toLowerCase();
   const enabled = elements.enabledFilter.value;
   if (enabled === "enabled" && !item.enabled) return false;
   if (enabled === "disabled" && item.enabled) return false;
-  return !needle || JSON.stringify(item).toLowerCase().includes(needle);
+  return searchMatches(item, elements.search.value, searchField);
 }
 
 function renderIons() {
-  const headers = ["id", "式", "電荷", "名称", "種類", "原子数", "酸化数", "対象難易度", "イオン問題", "化合物で式＋名", "有効", "操作"];
+  const headers = ["id", "式", "電荷", "名称", "種類", "原子数", "酸化数", "教材区分", "課程", "対象難易度", "イオン問題", "化合物で式＋名", "有効", "操作"];
   elements.ionsTable.tHead.innerHTML = `<tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr>`;
   const visible = state.ions.map((item, index) => ({ item, index })).filter(({ item }) => matchesFilters(item));
   elements.ionsTable.tBodies[0].innerHTML = visible.map(({ item: ion, index }) => `<tr>
@@ -127,6 +143,8 @@ function renderIons() {
     <td>${select({ value: ion.type, field: "type", index, options: [{ value: "cation", label: "陽イオン" }, { value: "anion", label: "陰イオン" }] })}</td>
     <td>${select({ value: ion.atomicity, field: "atomicity", index, options: [{ value: "monatomic", label: "単原子" }, { value: "polyatomic", label: "多原子" }] })}</td>
     <td class="check-cell">${input({ type: "checkbox", field: "requiresOxidationNumeral", index, checked: ion.requiresOxidationNumeral })}</td>
+    <td>${select({ value: ion.chemistryClass ?? "", field: "chemistryClass", index, options: [{ value: "", label: "通常" }, { value: "complex", label: "錯イオン" }] })}</td>
+    <td>${select({ value: ion.curriculumLevel ?? "", field: "curriculumLevel", index, options: [{ value: "", label: "—" }, { value: "standard", label: "標準" }, { value: "advanced", label: "発展" }] })}</td>
     <td>${select({ value: ion.difficulty ?? "", field: "difficulty", index, options: [{ value: "", label: "両方" }, { value: "normal", label: "やさしめ" }, { value: "hard", label: "ややむず" }] })}</td>
     <td class="check-cell">${input({ type: "checkbox", field: "ionQuestionEnabled", index, checked: ion.ionQuestionEnabled !== false })}</td>
     <td>${select({ value: ion.compoundPromptDisplay ?? "", field: "compoundPromptDisplay", index, options: [{ value: "", label: "通常" }, { value: "formulaAndName", label: "式＋名" }] })}</td>
@@ -141,7 +159,7 @@ function aliasesText(compound) {
 }
 
 function renderCompounds() {
-  const headers = ["id", "陽イオン", "陰イオン", "組成式", "名称", "自動カテゴリ", "対象難易度", "実在確認URL", "別表記 formula|注記", "固体色", "色注記", "イオン式→式", "イオン式→名", "イオン名→式", "イオン名→名", "有効", "操作"];
+  const headers = ["id", "陽イオン", "陰イオン", "組成式", "名称", "自動カテゴリ", "教材区分", "課程", "対象難易度", "実在確認URL", "別表記 formula|注記", "固体色", "色注記", "イオン式→式", "イオン式→名", "イオン名→式", "イオン名→名", "有効", "操作"];
   elements.compoundsTable.tHead.innerHTML = `<tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr>`;
   const ionById = new Map(state.ions.map((ion) => [ion.id, ion]));
   const cations = state.ions.filter((ion) => ion.type === "cation").map((ion) => ({ value: ion.id, label: `${ion.id} (${ion.name})` }));
@@ -154,6 +172,8 @@ function renderCompounds() {
     <td>${input({ value: compound.formula ?? "", field: "formula", index })}</td>
     <td>${input({ value: compound.name, field: "name", index })}</td>
     <td class="category-cell">${CATEGORY_LABELS[compoundCategory(compound, ionById)] ?? "—"}</td>
+    <td>${select({ value: compound.chemistryClass ?? "", field: "chemistryClass", index, options: [{ value: "", label: "通常" }, { value: "complex", label: "錯塩" }] })}</td>
+    <td>${select({ value: compound.curriculumLevel ?? "", field: "curriculumLevel", index, options: [{ value: "", label: "—" }, { value: "standard", label: "標準" }, { value: "advanced", label: "発展" }] })}</td>
     <td>${select({ value: compound.difficulty ?? "", field: "difficulty", index, options: [{ value: "", label: "両方" }, { value: "normal", label: "やさしめ" }, { value: "hard", label: "ややむず" }] })}</td>
     <td>${input({ value: compound.referenceUrl ?? "", field: "referenceUrl", index, type: "url" })}</td>
     <td>${input({ value: aliasesText(compound), field: "acceptedFormulaVariants", index })}</td>
@@ -246,7 +266,7 @@ function tableChange(event) {
   let value = control.type === "checkbox" ? control.checked : control.value;
   if (control.type === "number") value = Number(value);
   if (["formula", "solidColor", "solidColorNote"].includes(field) && value === "") value = null;
-  if (["difficulty", "compoundPromptDisplay", "referenceUrl"].includes(field) && value === "") {
+  if (["difficulty", "compoundPromptDisplay", "referenceUrl", "chemistryClass", "curriculumLevel"].includes(field) && value === "") {
     delete item[field];
     showStatus("未保存の変更があります。");
     scheduleValidation();
@@ -326,11 +346,14 @@ function download(filename, value) {
 async function importJson(file) {
   try {
     const value = JSON.parse(await file.text());
-    if (!value.ions || !value.compounds || !value.difficulty) throw new Error("Bundle Export形式（ions・compounds・difficulty）が必要です。");
-    state = normalizeBundle({ ions: value.ions, compounds: value.compounds, difficulty: value.difficulty });
+    if (!Array.isArray(value.ions) || !Array.isArray(value.compounds) || !value.difficulty?.variantWeights || !value.difficulty?.categoryWeights || !value.difficulty?.weakQuestionTarget) throw new Error("Bundle Export形式（ions・compounds・difficulty）が必要です。");
+    const candidate = normalizeBundle(migrateBundle(value, pack));
+    const check = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
+    if (!check.valid) throw new Error(`検証エラー ${check.errors.length}件：${check.errors[0]}`);
+    state = candidate;
     renderActive();
-    const validation = validateAndShow();
-    showStatus(validation.valid ? "JSONを読み込みました。保存前に内容を確認してください。" : "JSONを読み込みましたが、検証エラーがあります。", !validation.valid);
+    validateAndShow();
+    showStatus("JSONを読み込みました。保存前に内容を確認してください。");
   } catch (error) {
     showStatus(`Import失敗：${error.message}`, true);
   } finally {
@@ -339,6 +362,8 @@ async function importJson(file) {
 }
 
 function bindEvents() {
+  if (eventsBound) return;
+  eventsBound = true;
   elements.tabs.addEventListener("click", (event) => {
     const button = event.target.closest("[data-tab]");
     if (!button) return;
@@ -346,6 +371,14 @@ function bindEvents() {
     renderActive();
   });
   elements.search.addEventListener("input", renderActive);
+  elements.searchFields.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-search-field]");
+    if (!button) return;
+    searchField = button.dataset.searchField;
+    for (const option of elements.searchFields.querySelectorAll("button")) option.setAttribute("aria-pressed", String(option === button));
+    elements.search.placeholder = { id: "idで検索", formula: "式で検索", name: "名称で検索" }[searchField];
+    renderActive();
+  });
   elements.enabledFilter.addEventListener("change", renderActive);
   elements.addRow.addEventListener("click", addRow);
   elements.ionsTable.addEventListener("change", tableChange);
@@ -355,13 +388,22 @@ function bindEvents() {
   elements.difficultyEditor.addEventListener("change", difficultyChange);
   elements.validateButton.addEventListener("click", validateAndShow);
   elements.saveLocal.addEventListener("click", () => {
-    const validation = validateAndShow();
+    let candidate;
+    try { candidate = normalizeBundle(migrateBundle(state, pack)); }
+    catch (error) { showStatus(`移行エラー：${error.message}。衝突するIDを変更してから保存してください。`, true); return; }
+    const validation = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
     if (!validation.valid) {
+      validateAndShow();
       showStatus("検証エラーを直してから保存してください。", true);
       return;
     }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const original = readOverride();
+      if (original) persistMigration(original, candidate);
+      else localStorage.setItem(STORAGE_KEY, JSON.stringify(candidate));
+      state = candidate;
+      renderActive();
+      validateAndShow();
       showStatus("この端末内へ保存しました。学習画面にも反映されます。");
     } catch {
       showStatus("ブラウザの保存領域へ書き込めませんでした。", true);
@@ -369,13 +411,13 @@ function bindEvents() {
   });
   elements.resetLocal.addEventListener("click", () => {
     if (!confirm("端末内の編集内容を破棄して、公開中のJSONへ戻しますか？")) return;
-    localStorage.removeItem(STORAGE_KEY);
+    try { localStorage.removeItem(STORAGE_KEY); } catch { showStatus("保存データを削除できませんでした。", true); return; }
     state = clone(publishedData);
     renderActive();
     validateAndShow();
     showStatus("公開中のJSONへ戻しました。端末内の編集内容は削除されました。");
   });
-  elements.exportBundle.addEventListener("click", () => download("ionic-formula-data.json", { version: 2, ...state }));
+  elements.exportBundle.addEventListener("click", () => download("ionic-formula-data.json", { ...state, version: 2 }));
   elements.exportCurrent.addEventListener("click", () => {
     if (activeTab === "ions") download("ions.json", state.ions);
     else if (activeTab === "compounds") download("compounds.json", state.compounds);
@@ -390,19 +432,81 @@ function bindEvents() {
 async function initialize() {
   bindEvents();
   try {
-    const [ions, compounds, difficulty] = await Promise.all([
-      fetchJson("data/ions.json"), fetchJson("data/compounds.json"), fetchJson("data/difficulty.json"),
+    const [ions, compounds, difficulty, chemistryPack] = await Promise.all([
+      fetchJson("data/ions.json"), fetchJson("data/compounds.json"), fetchJson("data/difficulty.json"), fetchJson("data/complex-chemistry.json"),
     ]);
-    publishedData = normalizeBundle({ ions, compounds, difficulty });
+    pack = chemistryPack;
+    publishedData = normalizeBundle(composePublishedBundle({ ions, compounds, difficulty }, pack));
     const override = readOverride();
-    state = override?.ions && override?.compounds && override?.difficulty ? normalizeBundle(override) : clone(publishedData);
+    let candidate;
+    let migrationError = null;
+    if (override) {
+      try { candidate = normalizeBundle(migrateBundle(override.bundle, pack)); }
+      catch (error) {
+        if (!String(error.message).includes("ID衝突")) throw error;
+        migrationError = error;
+        candidate = normalizeBundle(override.bundle);
+      }
+    } else candidate = clone(publishedData);
+    const validation = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
+    let migrationSaveError = false;
+    if (override && validation.valid && !migrationError) {
+      try { persistMigration(override, candidate); } catch { migrationSaveError = true; }
+    }
+    state = candidate;
     renderActive();
     validateAndShow();
-    if (override) showStatus("この端末に保存された編集データを表示しています。");
+    if (override) {
+      if (migrationError) showStatus(`移行エラー：${migrationError.message}。衝突するIDを変更してから保存してください。`, true);
+      else if (migrationSaveError) showStatus("移行データを保存できませんでした。元の保存データは残っています。", true);
+      else showStatus(validation.valid ? "この端末に保存された編集データを表示しています。" : "保存データに検証エラーがあります。修正後に保存してください。", !validation.valid);
+    }
   } catch (error) {
     elements.validation.className = "validation-panel invalid";
     elements.validation.textContent = `読み込み失敗：${error.message}`;
   }
 }
 
-initialize();
+function lockEditor() {
+  elements.editor.hidden = true;
+  elements.lockScreen.hidden = false;
+  elements.unlockForm.reset();
+  elements.changePasswordForm.reset();
+  elements.unlockStatus.textContent = "";
+  elements.changePasswordStatus.textContent = "";
+  elements.unlockPassword.focus();
+}
+
+elements.unlockForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  elements.unlockStatus.textContent = "";
+  try {
+    const record = currentPasswordRecord(localStorage, INITIAL_PASSWORD_RECORD);
+    if (!await verifyPassword(elements.unlockPassword.value, record)) {
+      elements.unlockStatus.textContent = "パスワードが違います。";
+      return;
+    }
+    elements.unlockForm.reset();
+    elements.lockScreen.hidden = true;
+    elements.editor.hidden = false;
+    if (!state) await initialize();
+  } catch {
+    elements.unlockStatus.textContent = "認証設定を読み込めませんでした。";
+  }
+});
+
+elements.lockButton.addEventListener("click", lockEditor);
+elements.changePasswordForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  elements.changePasswordStatus.textContent = "";
+  const current = document.getElementById("current-password").value;
+  const next = document.getElementById("new-password").value;
+  const confirmation = document.getElementById("confirm-password").value;
+  try {
+    await changeAdminPassword(current, next, confirmation, { storage: localStorage, initialRecord: INITIAL_PASSWORD_RECORD });
+    lockEditor();
+    elements.unlockStatus.textContent = "パスワードを変更しました。新しいパスワードで解錠してください。";
+  } catch (error) {
+    elements.changePasswordStatus.textContent = error.message;
+  }
+});

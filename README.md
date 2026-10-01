@@ -12,7 +12,9 @@
 - Unicode正規化、IME変換中のEnter対策
 - Fe(OH)3を生成・表示しない教材データ制約
 - 酢酸塩の保存式と陽イオン先頭式の両方を明示的に正答登録
-- ローカル編集、検証、JSON Import／Exportができる管理画面
+- パスワード簡易ロック、id／式／名称検索、ローカル編集、検証、JSON Import／Exportができる管理画面
+- 初期OFFの錯イオントグル。錯イオン17種・化合物38種を通常問題に混ぜて練習
+- 丸括弧キーの上下フリックで角括弧、錯イオンON時の固定名称語片ボタン
 - 上部の効果音トグル、連続正解VFX、`prefers-reduced-motion`対応
 - Li+、N3−、H3O+、リチウム塩・窒化物を含む教材データ
 - ややむず限定イオン・化合物と、実在確認URLを保持できる教材データ
@@ -32,16 +34,17 @@ SEの聴き比べは`http://localhost:8000/soundtest.html`です。iPhone実機�
 自動テストはNode.js 18以降で実行します。
 
 ```sh
-node --test tests/core.test.mjs
+node --test tests/*.test.mjs
 ```
 
 ## データ運用
 
-公開データは次の3ファイルです。
+公開データは次の4ファイルです。
 
 - `data/ions.json`
 - `data/compounds.json`
 - `data/difficulty.json`
+- `data/complex-chemistry.json`（錯イオンパック）
 
 `admin.html`での編集はブラウザの`localStorage`にだけ保存され、GitHub上のファイルは変更しません。公開データを更新するときはJSON Export後に該当ファイルを置き換え、テストと管理画面のデータ検証を実行してください。
 
@@ -56,3 +59,15 @@ node --test tests/core.test.mjs
 ## ライセンス
 
 MIT License。詳細は[LICENSE](LICENSE)を参照してください。
+
+## 錯イオンと管理画面
+
+標準は登録時ON、発展はOFFです。管理画面で各項目を有効化できます。化合物を有効にする場合は参照イオンも有効にしてください。錯塩の解答は結晶水を含めない組成式です。K/Naのジクロリド金(I)酸塩も採用していますが、個別の実在根拠は未確認として記録しています。
+
+管理画面の解除状態はページ内だけで保持します。パスワード変更はそのブラウザ内のみです。教材のリセットはパスワードをリセットしません。忘れた場合は開発者ツールで `ionicFormula.adminPassword.v1` だけを削除して再読み込みすると初期パスワードに戻ります。教材・学習履歴のキーを削除する必要はありません。
+
+旧ローカル教材は一度だけ移行し、元データを `ionicFormula.adminData.v2.preComplexBackup` に保存します。ID衝突や参照エラー時は保存内容を上書きせず、管理画面で修正を求めます。
+
+- [実装仕様](docs/COMPLEX_IONS_SPEC_SOL_DRAFT.md)
+- [教材の根拠台帳](docs/COMPLEX_IONS_EVIDENCE.md)
+- [Competition移植ガイド](docs/COMPLEX_IONS_PORTING.md)

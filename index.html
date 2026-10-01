@@ -8,7 +8,7 @@
   <title>IonicFormula</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20260928-name-focus-v1">
+  <link rel="stylesheet" href="styles.css?v=20261001-complex-v1">
 </head>
 <body class="app-current" data-build="current">
   <header id="app-header" class="app-header">
@@ -74,15 +74,17 @@
               <button type="button" class="option-toggle" data-compound-preset="both" aria-pressed="false">式 ＆ 名</button>
             </div>
           </div>
+          <p id="complex-composition-note" class="compound-option-message" hidden>錯塩は結晶水を含めない組成式で答えます。</p>
           <p id="compound-option-message" class="compound-option-message" role="status"></p>
         </fieldset>
 
-        <fieldset class="choice-section compact-choice">
+        <fieldset class="choice-section compact-choice difficulty-with-complex">
           <legend class="sr-only">難易度</legend>
           <div class="segment-control two">
             <label><input type="radio" name="difficulty" value="normal" checked><span>やさしめ</span></label>
             <label><input type="radio" name="difficulty" value="hard"><span>ややむず</span></label>
           </div>
+          <button id="complex-toggle" type="button" class="option-toggle complex-toggle" aria-pressed="false">錯イオン<span class="complex-toggle-state">OFF</span></button>
         </fieldset>
 
         <fieldset class="choice-section compact-choice">
@@ -141,6 +143,10 @@
         <button type="button" data-key="イオン">イオン</button>
         <button type="button" class="name-backspace" data-key-action="backspace" aria-label="1文字削除">⌫</button>
         <button type="button" class="name-clear" data-key-action="clear">クリア</button>
+      </div>
+      <div id="complex-name-shortcuts" class="complex-name-shortcuts" hidden aria-label="錯イオン名称の入力補助">
+        <button type="button" data-key="ジ">ジ</button><button type="button" data-key="トリ">トリ</button><button type="button" data-key="テトラ">テトラ</button><button type="button" data-key="ヘキサ">ヘキサ</button>
+        <button type="button" data-key="アンミン">アンミン</button><button type="button" data-key="シアニド">シアニド</button><button type="button" data-key="クロリド">クロリド</button><button type="button" data-key="ヒドロキシド">ヒドロキシド</button><button type="button" data-key="酸">酸</button>
       </div>
 
       <div id="formula-keyboard" class="formula-keyboard" hidden aria-label="化学式入力キーボード。大文字表示では下フリックで小文字、小文字表示では上フリックで大文字を入力できます。">
@@ -219,6 +225,6 @@
   </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
-  <script type="module" src="js/app.js?v=20260928-name-focus-v1"></script>
+  <script type="module" src="js/app.js?v=20261001-complex-v1"></script>
 </body>
 </html>

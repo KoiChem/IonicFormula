@@ -13,6 +13,13 @@ export function alternateCaseLetter(letter, uppercase) {
   return uppercase ? letter.toLowerCase() : letter.toUpperCase();
 }
 
+export function classifyBracketFlick(deltaX, deltaY) {
+  if (Math.hypot(deltaX, deltaY) < CASE_FLICK_MIN_DISTANCE_PX) return "tap";
+  if (Math.abs(deltaY) < CASE_FLICK_MIN_DISTANCE_PX
+    || Math.abs(deltaY) < Math.abs(deltaX) * CASE_FLICK_AXIS_RATIO) return "cancel";
+  return "alternate";
+}
+
 export function isPointerGeneratedClick(detail, pointerType = "") {
   return Number(detail) > 0 || ["mouse", "pen", "touch"].includes(pointerType);
 }

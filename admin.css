@@ -1,4 +1,25 @@
-body { min-width: 760px; background: #f5faf8; }
+body { background: #f5faf8; }
+.lock-screen { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.lock-screen[hidden], #admin-editor[hidden] { display: none; }
+.lock-card { width: min(100%, 420px); padding: 28px; border: 1px solid var(--line); border-radius: 16px; background: white; display: grid; gap: 14px; }
+.lock-card h1 { margin: 0; font-size: 1.6rem; }
+.lock-card p { margin: 0; line-height: 1.6; }
+.lock-card label, .password-settings label { display: grid; gap: 5px; font-weight: 700; }
+.lock-card input, .password-settings input { min-height: 42px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.lock-card button, .password-settings button, .admin-header-actions button { min-height: 40px; padding: 0 14px; border: 1px solid var(--primary); border-radius: 8px; background: var(--primary); color: white; font-weight: 700; cursor: pointer; }
+.lock-card a { color: var(--primary); }
+.lock-status, #change-password-status { min-height: 1.3em; color: var(--wrong); }
+.admin-header-actions { display: flex; align-items: center; gap: 12px; }
+.password-settings { margin-bottom: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: white; }
+.password-settings summary { font-weight: 700; cursor: pointer; }
+.password-settings form { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; padding-top: 12px; }
+.password-settings label { font-size: .8rem; }
+.password-settings input { width: min(100%, 230px); }
+.password-settings p { flex-basis: 100%; margin: 0; }
+.search-controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.search-fields { display: flex; gap: 3px; }
+.search-fields button { min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: white; }
+.search-fields button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary); color: white; }
 .admin-header { max-width: 1500px; margin: 0 auto; padding: 30px 28px 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .admin-header a { color: var(--primary); font-size: .82rem; font-weight: 700; text-underline-offset: 4px; }
 .admin-header h1 { margin-top: 9px; font-size: 2rem; }
@@ -50,3 +71,12 @@ td input[type="checkbox"] { width: 19px; height: 19px; accent-color: var(--prima
 .weight-grid input { width: 100%; min-height: 38px; border: 1px solid var(--line); border-radius: 8px; padding: 0 9px; }
 .ratio-preview { color: var(--primary-dark); font-size: .73rem; font-weight: 700; }
 .hard-warning { margin-top: 14px; padding: 10px 12px; border-radius: 9px; background: #fff6e8; color: #865414; font-size: .77rem; }
+@media (max-width: 700px) {
+  .admin-header { padding: 18px 14px; flex-wrap: wrap; }
+  .admin-header h1 { font-size: 1.5rem; }
+  .admin-shell { padding: 0 14px 30px; }
+  .toolbar-group { flex-wrap: wrap; }
+  .list-controls { align-items: flex-start; }
+  .list-controls input { width: min(100%, 240px); }
+  .table-wrap { max-height: 65vh; }
+}
