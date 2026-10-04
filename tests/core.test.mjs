@@ -48,6 +48,7 @@ const load = async (path) => JSON.parse(await readFile(new URL(path, import.meta
 const ions = await load("../data/ions.json");
 const compounds = await load("../data/compounds.json");
 const settings = await load("../data/difficulty.json");
+const metadata = await load("../data/chemistry-metadata.json");
 const ionById = new Map(ions.map((ion) => [ion.id, ion]));
 const advancedIonIds = [
   "chromium3", "manganese2", "tin2", "tin4", "gold3",
@@ -153,7 +154,7 @@ test("advanced ions and verified compounds are enabled only for hard questions",
     assert.equal(compound.formula, formula, id);
     assert.equal(compound.enabled, true, id);
     assert.equal(compound.difficulty, "hard", id);
-    assert.match(compound.referenceUrl, /^https:\/\/pubchem\.ncbi\.nlm\.nih\.gov\/compound\//, id);
+    assert.match(metadata.compounds[id].referenceUrl, /^https:\/\/pubchem\.ncbi\.nlm\.nih\.gov\/compound\//, id);
   }
 });
 
@@ -699,12 +700,12 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
     readFile(new URL("../styles.css", import.meta.url), "utf8"),
     readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
   ]);
-  const version = "20261002-complex-input-v1";
+  const version = "20261004-question-profile-v1";
   assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`formula-keyboard-gesture\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v37"/);
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v38"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));

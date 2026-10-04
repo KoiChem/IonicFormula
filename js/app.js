@@ -27,12 +27,13 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20261002-complex-input-v1";
-import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261002-complex-input-v1";
+} from "./core.js?v=20261004-question-profile-v1";
+import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261004-question-profile-v1";
 
-import { composePublishedBundle, migrateBundle } from "./data-migrations.js?v=20261002-complex-input-v1";
-import { complexItemAllowed } from "./chemistry/complex-policy.js?v=20261002-complex-input-v1";
-import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261002-complex-input-v1";
+import { composePublishedBundle } from "./data-migrations.js?v=20261004-question-profile-v1";
+import { complexItemAllowed } from "./chemistry/complex-policy.js?v=20261004-question-profile-v1";
+import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261004-question-profile-v1";
+import { loadQuestionProfile } from "./profile-storage.js?v=20261004-question-profile-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -47,7 +48,6 @@ const STORAGE = {
   sessionSummaries: "ionicFormula.sessionSummaries.v1",
   legacyPreferences: "ionicFormula.beta0901.preferences.v1",
   legacySessionSummaries: "ionicFormula.beta0901.sessionSummaries.v1",
-  adminData: "ionicFormula.adminData.v2",
 };
 
 const elements = Object.fromEntries([
@@ -174,31 +174,20 @@ function normalizeBundle(bundle) {
 }
 
 async function loadData() {
-  const [ions, compounds, difficulty, pack] = await Promise.all([
+  const [ions, compounds, difficulty, pack, publishedProfile] = await Promise.all([
     fetchJson("data/ions.json"),
     fetchJson("data/compounds.json"),
     fetchJson("data/difficulty.json"),
     fetchJson("data/complex-chemistry.json"),
+    fetchJson("data/question-profile.json"),
   ]);
   const published = normalizeBundle(composePublishedBundle({ ions, compounds, difficulty }, pack));
-  const localOverride = readLocal(STORAGE.adminData, null);
-  const candidate = localOverride?.ions && localOverride?.compounds && localOverride?.difficulty
-    ? normalizeBundle(migrateBundle(localOverride, pack))
-    : published;
-  const validation = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
+  const validation = validateData(published.ions, published.compounds, published.difficulty);
   if (!validation.valid) {
-    if (localOverride) throw new Error(`保存した教材に${validation.errors.length}件のエラーがあります。管理画面で参照イオンなどを確認・修正してください。元の編集データは保持しています。`);
     throw new Error(`教材データに${validation.errors.length}件のエラーがあります。`);
   }
-  if (localOverride && JSON.stringify(candidate) !== JSON.stringify(localOverride)) {
-    try {
-      if (localStorage.getItem(`${STORAGE.adminData}.preComplexBackup`) === null) localStorage.setItem(`${STORAGE.adminData}.preComplexBackup`, JSON.stringify(localOverride));
-      localStorage.setItem(STORAGE.adminData, JSON.stringify(candidate));
-    } catch {
-      throw new Error("教材の移行データを保存できません。元の編集データは保持しています。");
-    }
-  }
-  return candidate;
+  const { profile } = loadQuestionProfile(localStorage, publishedProfile, published, pack);
+  return { ...published, questionProfile: profile, publishedProfile, chemistryPack: pack };
 }
 
 function soundGain() {
@@ -1324,6 +1313,7 @@ function makeRound(endless) {
     ions: data.ions,
     compounds: data.compounds,
     settings: data.difficulty,
+    questionProfile: session.questionProfile,
     history: readLocal(STORAGE.history, {}),
     recentPresentations: recentPresentations(),
     selectionState: compoundSelectionState(),
@@ -1385,6 +1375,13 @@ function toggleCompoundOption(key) {
 }
 
 function startSession(settings = null) {
+  let questionProfile;
+  try {
+    questionProfile = loadQuestionProfile(localStorage, data.publishedProfile, data, data.chemistryPack).profile;
+  } catch (error) {
+    alert(`${error.message} 管理画面で出題設定を確認してください。`);
+    return;
+  }
   const formData = new FormData(elements.setup_form);
   const questionCount = formData.get("question-count");
   const chosen = settings ?? {
@@ -1399,6 +1396,7 @@ function startSession(settings = null) {
   primeAudio();
   session = {
     ...chosen,
+    questionProfile,
     complexEnabled: chosen.complexEnabled === true,
     questions: [],
     plan: null,
@@ -1408,7 +1406,9 @@ function startSession(settings = null) {
     stats: { first: 0, retry: 0, hint: 0, pass: 0 },
     reviewItems: [],
   };
-  const round = makeRound(chosen.endless);
+  let round;
+  try { round = makeRound(chosen.endless); }
+  catch (error) { session = null; alert(error.message); return; }
   if (!round.questions.length) {
     alert("この設定で出題できる問題がありません。管理画面でデータを確認してください。");
     session = null;

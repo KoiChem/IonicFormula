@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "rules": {
+    "ion": {
+      "normal": { "complexPercent": 10, "categoryWeights": null },
+      "hard": { "complexPercent": 20, "categoryWeights": null }
+    },
+    "compound": {
+      "normal": { "complexPercent": 10, "categoryWeights": null },
+      "hard": { "complexPercent": 20, "categoryWeights": null }
+    }
+  },
+  "ionDifficulties": {},
+  "compoundDifficulties": {}
+}

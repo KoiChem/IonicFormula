@@ -1,472 +1,183 @@
-import { PRACTICE_TYPE_LABELS, compoundCategory, validateData } from "./core.js?v=20261002-complex-input-v1";
-import { composePublishedBundle, migrateBundle } from "./data-migrations.js?v=20261002-complex-input-v1";
-import { searchMatches } from "./admin-search.js?v=20261002-complex-input-v1";
-import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from "./admin-lock.js?v=20261002-complex-input-v1";
+import { escapeHtml, buildTenQuestionSet, validateData } from './core.js?v=20261004-question-profile-v1';
+import { composePublishedBundle } from './data-migrations.js?v=20261004-question-profile-v1';
+import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from './admin-lock.js?v=20261004-question-profile-v1';
+import { ITEM_DIFFICULTY_LABELS, CATEGORY_LABELS, PROFILE_CATEGORIES, questionProfileCatalog, validateQuestionProfile, itemDifficulty, toggleItemDifficulty, profileCandidates } from './question-profile.js?v=20261004-question-profile-v1';
+import { PROFILE_KEY, LEGACY_DATA_KEY, LEGACY_BACKUP_KEY, loadQuestionProfile, saveQuestionProfile, profileFromLegacy } from './profile-storage.js?v=20261004-question-profile-v1';
+import { searchMatches } from './admin-search.js?v=20261004-question-profile-v1';
 
-const STORAGE_KEY = "ionicFormula.adminData.v2";
-const BACKUP_KEY = `${STORAGE_KEY}.preComplexBackup`;
-const CATEGORY_LABELS = {
-  simple11: "simple11",
-  simpleRatio: "simpleRatio",
-  polyatomic: "polyatomic",
-  variableOx: "variableOx",
-};
-
-const elements = {
-  lockScreen: document.getElementById("admin-lock-screen"),
-  editor: document.getElementById("admin-editor"),
-  unlockForm: document.getElementById("unlock-form"),
-  unlockPassword: document.getElementById("unlock-password"),
-  unlockStatus: document.getElementById("unlock-status"),
-  lockButton: document.getElementById("lock-button"),
-  changePasswordForm: document.getElementById("change-password-form"),
-  changePasswordStatus: document.getElementById("change-password-status"),
-  importFile: document.getElementById("import-file"),
-  exportBundle: document.getElementById("export-bundle"),
-  exportCurrent: document.getElementById("export-current"),
-  validateButton: document.getElementById("validate-button"),
-  saveLocal: document.getElementById("save-local"),
-  resetLocal: document.getElementById("reset-local"),
-  saveStatus: document.getElementById("save-status"),
-  validation: document.getElementById("validation-panel"),
-  tabs: document.querySelector(".admin-tabs"),
-  listControls: document.getElementById("list-controls"),
-  search: document.getElementById("search-input"),
-  searchFields: document.getElementById("search-fields"),
-  enabledFilter: document.getElementById("enabled-filter"),
-  addRow: document.getElementById("add-row"),
-  rowCount: document.getElementById("row-count"),
-  ionsPanel: document.getElementById("ions-panel"),
-  compoundsPanel: document.getElementById("compounds-panel"),
-  difficultyPanel: document.getElementById("difficulty-panel"),
-  ionsTable: document.getElementById("ions-table"),
-  compoundsTable: document.getElementById("compounds-table"),
-  difficultyEditor: document.getElementById("difficulty-editor"),
-};
-
-let publishedData;
-let pack;
-let state;
-let activeTab = "ions";
-let searchField = "id";
+const elements = Object.fromEntries([
+ 'admin-lock-screen','admin-editor','unlock-form','unlock-password','unlock-status','lock-button','change-password-form','change-password-status',
+ 'import-file','export-profile','export-backup','save-local','reset-local','save-status','validation-panel','profile-tabs','list-controls','search-input','difficulty-filter','complex-filter','row-count','profile-content',
+].map(id=>[id.replace(/-([a-z])/g,(_,c)=>c.toUpperCase()),document.getElementById(id)]));
+// The lock handlers use these aliases to keep the existing password lifecycle.
+elements.lockScreen=elements.adminLockScreen; elements.editor=elements.adminEditor;
+let bundle, pack, publishedProfile, state, catalog, saved;
+let activeTab='ratio';
+let initialized=false;
 let validationTimer;
-let eventsBound = false;
+const clone=value=>structuredClone(value);
+const labels=ITEM_DIFFICULTY_LABELS;
 
-const clone = (value) => JSON.parse(JSON.stringify(value));
-const escapeHtml = (value) => String(value ?? "")
-  .replaceAll("&", "&amp;")
-  .replaceAll("<", "&lt;")
-  .replaceAll(">", "&gt;")
-  .replaceAll('"', "&quot;")
-  .replaceAll("'", "&#039;");
-
+function showStatus(message,error=false) {
+ elements.saveStatus.textContent=message;
+ elements.saveStatus.classList.toggle('is-error',error);
+}
+function dirty() { return state && JSON.stringify(state)!==saved; }
+function updateSaveButton() { elements.saveLocal.disabled=!state || !dirty(); }
+function edit(update) {
+ const next=clone(state);update(next);state=next;
+ showStatus('未保存の変更があります。');updateSaveButton();
+ clearTimeout(validationTimer);validationTimer=setTimeout(validateAndShow,150);
+}
 async function fetchJson(path) {
-  const response = await fetch(path);
-  if (!response.ok) throw new Error(`${path}を読み込めません。`);
-  return response.json();
+ const response=await fetch(path);if(!response.ok)throw new Error(`${path}を読み込めません。`);return response.json();
 }
+function assignmentKey(domain) { return `${domain}Difficulties`; }
+function eligible(domain,level,complexEnabled=true) { return profileCandidates(bundle,state,domain,level,complexEnabled); }
 
-function normalizeBundle(bundle) {
-  return {
-    ...bundle,
-    difficulty: {
-      ...bundle.difficulty,
-      variantWeights: {
-        ...bundle.difficulty.variantWeights,
-        random: {
-          ...bundle.difficulty.variantWeights.random,
-          mixedIonsToFormula: bundle.difficulty.variantWeights.random?.mixedIonsToFormula ?? 1,
-          mixedIonsToName: bundle.difficulty.variantWeights.random?.mixedIonsToName ?? 1,
-        },
-      },
-    },
-    compounds: bundle.compounds.map((compound) => {
-      const modes = compound.questionModes ?? {};
-      return {
-        ...compound,
-        questionModes: {
-          ...modes,
-          ionNamesToFormula: modes.ionNamesToFormula ?? modes.ionsToFormula ?? false,
-          ionNamesToName: modes.ionNamesToName ?? modes.ionsToName ?? false,
-        },
-      };
-    }),
-  };
+function profileProblems(profile) {
+ try { validateQuestionProfile(profile,catalog); } catch(error) { return [error.message]; }
+ const errors=new Set();
+ for(const domain of ['ion','compound']) for(const difficulty of ['normal','hard']) for(const complexEnabled of [false,true]) {
+  // Check each supported prompt/answer combination so the name-only exception
+  // cannot produce an empty formula-answer quiz after a successful save.
+  const formats=domain==='ion'?[{ionAnswerPreset:'random'}]:[false,true].flatMap(answerBoth=>[
+   {compoundOptions:{promptFormula:true,promptName:false,answerFormula:true,answerName:true,answerBoth}},
+   {compoundOptions:{promptFormula:false,promptName:true,answerFormula:true,answerName:true,answerBoth}},
+  ]).concat([
+   {compoundOptions:{promptFormula:true,promptName:true,answerFormula:true,answerName:false,answerBoth:false}},
+   {compoundOptions:{promptFormula:true,promptName:true,answerFormula:false,answerName:true,answerBoth:false}},
+  ]);
+  for(const format of formats) try {
+   const round=buildTenQuestionSet({practiceType:domain,difficulty,complexEnabled,ions:bundle.ions,compounds:bundle.compounds,settings:bundle.difficulty,questionProfile:profile,random:()=>.5,...format});
+   if(!round.questions.length)throw new Error('出題できる候補がありません。');
+  } catch(error) { errors.add(`${domain==='ion'?'イオン':'化合物'}・${labels[difficulty]}・錯イオン${complexEnabled?'ON':'OFF'}：${error.message}`); }
+ }
+ return [...errors];
 }
-
-function readOverride() {
-  const value = localStorage.getItem(STORAGE_KEY);
-  return value ? { raw: value, bundle: JSON.parse(value) } : null;
-}
-
-function persistMigration(original, migrated) {
-  if ((original.bundle.migrationVersion ?? 0) < migrated.migrationVersion && localStorage.getItem(BACKUP_KEY) === null) localStorage.setItem(BACKUP_KEY, original.raw);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
-}
-
-function showStatus(message, error = false) {
-  elements.saveStatus.textContent = message;
-  elements.saveStatus.style.color = error ? "var(--wrong)" : "var(--primary)";
-}
-
-function input({ value = "", field, index, type = "text", checked = false, extra = "" }) {
-  if (type === "checkbox") {
-    return `<input type="checkbox" data-index="${index}" data-field="${field}" ${checked ? "checked" : ""} ${extra}>`;
-  }
-  const escaped = escapeHtml(value);
-  return `<input type="${type}" value="${escaped}" data-index="${index}" data-field="${field}" ${extra}>`;
-}
-
-function select({ value, field, index, options }) {
-  return `<select data-index="${index}" data-field="${field}">${options.map((option) => {
-    const entry = typeof option === "string" ? { value: option, label: option } : option;
-    return `<option value="${escapeHtml(entry.value)}" ${entry.value === value ? "selected" : ""}>${escapeHtml(entry.label)}</option>`;
-  }).join("")}</select>`;
-}
-
-function matchesFilters(item) {
-  const enabled = elements.enabledFilter.value;
-  if (enabled === "enabled" && !item.enabled) return false;
-  if (enabled === "disabled" && item.enabled) return false;
-  return searchMatches(item, elements.search.value, searchField);
-}
-
-function renderIons() {
-  const headers = ["id", "式", "電荷", "名称", "種類", "原子数", "酸化数", "教材区分", "課程", "対象難易度", "イオン問題", "化合物で式＋名", "有効", "操作"];
-  elements.ionsTable.tHead.innerHTML = `<tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr>`;
-  const visible = state.ions.map((item, index) => ({ item, index })).filter(({ item }) => matchesFilters(item));
-  elements.ionsTable.tBodies[0].innerHTML = visible.map(({ item: ion, index }) => `<tr>
-    <td>${input({ value: ion.id, field: "id", index })}</td>
-    <td>${input({ value: ion.formula, field: "formula", index })}</td>
-    <td>${input({ value: ion.charge, field: "charge", index, type: "number", extra: 'step="1"' })}</td>
-    <td>${input({ value: ion.name, field: "name", index })}</td>
-    <td>${select({ value: ion.type, field: "type", index, options: [{ value: "cation", label: "陽イオン" }, { value: "anion", label: "陰イオン" }] })}</td>
-    <td>${select({ value: ion.atomicity, field: "atomicity", index, options: [{ value: "monatomic", label: "単原子" }, { value: "polyatomic", label: "多原子" }] })}</td>
-    <td class="check-cell">${input({ type: "checkbox", field: "requiresOxidationNumeral", index, checked: ion.requiresOxidationNumeral })}</td>
-    <td>${select({ value: ion.chemistryClass ?? "", field: "chemistryClass", index, options: [{ value: "", label: "通常" }, { value: "complex", label: "錯イオン" }] })}</td>
-    <td>${select({ value: ion.curriculumLevel ?? "", field: "curriculumLevel", index, options: [{ value: "", label: "—" }, { value: "standard", label: "標準" }, { value: "advanced", label: "発展" }] })}</td>
-    <td>${select({ value: ion.difficulty ?? "", field: "difficulty", index, options: [{ value: "", label: "両方" }, { value: "normal", label: "やさしめ" }, { value: "hard", label: "ややむず" }] })}</td>
-    <td class="check-cell">${input({ type: "checkbox", field: "ionQuestionEnabled", index, checked: ion.ionQuestionEnabled !== false })}</td>
-    <td>${select({ value: ion.compoundPromptDisplay ?? "", field: "compoundPromptDisplay", index, options: [{ value: "", label: "通常" }, { value: "formulaAndName", label: "式＋名" }] })}</td>
-    <td class="check-cell">${input({ type: "checkbox", field: "enabled", index, checked: ion.enabled })}</td>
-    <td class="action-cell"><button type="button" data-action="duplicate" data-index="${index}">複製</button><button class="delete-row" type="button" data-action="delete" data-index="${index}">削除</button></td>
-  </tr>`).join("");
-  elements.rowCount.textContent = `${visible.length} / ${state.ions.length}件`;
-}
-
-function aliasesText(compound) {
-  return (compound.acceptedFormulaVariants ?? []).map((entry) => `${entry.formula}|${entry.note ?? ""}`).join(" ; ");
-}
-
-function renderCompounds() {
-  const headers = ["id", "陽イオン", "陰イオン", "組成式", "名称", "自動カテゴリ", "教材区分", "課程", "対象難易度", "実在確認URL", "別表記 formula|注記", "固体色", "色注記", "イオン式→式", "イオン式→名", "イオン名→式", "イオン名→名", "有効", "操作"];
-  elements.compoundsTable.tHead.innerHTML = `<tr>${headers.map((header) => `<th>${header}</th>`).join("")}</tr>`;
-  const ionById = new Map(state.ions.map((ion) => [ion.id, ion]));
-  const cations = state.ions.filter((ion) => ion.type === "cation").map((ion) => ({ value: ion.id, label: `${ion.id} (${ion.name})` }));
-  const anions = state.ions.filter((ion) => ion.type === "anion").map((ion) => ({ value: ion.id, label: `${ion.id} (${ion.name})` }));
-  const visible = state.compounds.map((item, index) => ({ item, index })).filter(({ item }) => matchesFilters(item));
-  elements.compoundsTable.tBodies[0].innerHTML = visible.map(({ item: compound, index }) => `<tr>
-    <td>${input({ value: compound.id, field: "id", index })}</td>
-    <td>${select({ value: compound.cation, field: "cation", index, options: cations })}</td>
-    <td>${select({ value: compound.anion, field: "anion", index, options: anions })}</td>
-    <td>${input({ value: compound.formula ?? "", field: "formula", index })}</td>
-    <td>${input({ value: compound.name, field: "name", index })}</td>
-    <td class="category-cell">${CATEGORY_LABELS[compoundCategory(compound, ionById)] ?? "—"}</td>
-    <td>${select({ value: compound.chemistryClass ?? "", field: "chemistryClass", index, options: [{ value: "", label: "通常" }, { value: "complex", label: "錯塩" }] })}</td>
-    <td>${select({ value: compound.curriculumLevel ?? "", field: "curriculumLevel", index, options: [{ value: "", label: "—" }, { value: "standard", label: "標準" }, { value: "advanced", label: "発展" }] })}</td>
-    <td>${select({ value: compound.difficulty ?? "", field: "difficulty", index, options: [{ value: "", label: "両方" }, { value: "normal", label: "やさしめ" }, { value: "hard", label: "ややむず" }] })}</td>
-    <td>${input({ value: compound.referenceUrl ?? "", field: "referenceUrl", index, type: "url" })}</td>
-    <td>${input({ value: aliasesText(compound), field: "acceptedFormulaVariants", index })}</td>
-    <td>${input({ value: compound.solidColor ?? "", field: "solidColor", index })}</td>
-    <td>${input({ value: compound.solidColorNote ?? "", field: "solidColorNote", index })}</td>
-    ${["ionsToFormula", "ionsToName", "ionNamesToFormula", "ionNamesToName"].map((mode) => `<td class="check-cell">${input({ type: "checkbox", field: `questionModes.${mode}`, index, checked: compound.questionModes?.[mode] })}</td>`).join("")}
-    <td class="check-cell">${input({ type: "checkbox", field: "enabled", index, checked: compound.enabled })}</td>
-    <td class="action-cell"><button type="button" data-action="duplicate" data-index="${index}">複製</button><button class="delete-row" type="button" data-action="delete" data-index="${index}">削除</button></td>
-  </tr>`).join("");
-  elements.rowCount.textContent = `${visible.length} / ${state.compounds.length}件`;
-}
-
-function percentLabel(weights) {
-  const sum = Object.values(weights).reduce((total, value) => total + Number(value || 0), 0);
-  if (!sum) return "合計0：出題できません";
-  return Object.entries(weights).map(([key, value]) => `${key} ${(Number(value) / sum * 100).toFixed(0)}%`).join(" ／ ");
-}
-
-function weightBlock(domain, title) {
-  const labels = domain === "ion"
-    ? { ionSimple: "単原子", ionPolyatomic: "多原子", ionVariableOx: "酸化数区別" }
-    : { simple11: "simple11", simpleRatio: "simpleRatio", polyatomic: "polyatomic", variableOx: "variableOx" };
-  const difficulties = { normal: "やさしめ", hard: "ややむず" };
-  return `<section class="difficulty-block"><h2>${title}</h2><p>0は完全除外です。合計値ではなく相対的な重みとして扱います。</p>
-    <div class="weight-grid" style="grid-template-columns:140px repeat(${Object.keys(labels).length}, minmax(100px, 1fr))">
-      <span class="heading">難易度</span>${Object.values(labels).map((label) => `<span class="heading">${label}</span>`).join("")}
-      ${Object.entries(difficulties).map(([difficulty, label]) => {
-        const weights = state.difficulty.categoryWeights[domain][difficulty];
-        return `<strong>${label}</strong>${Object.keys(labels).map((key) => `<label>${key}<input type="number" min="0" step="1" data-scope="category" data-domain="${domain}" data-difficulty="${difficulty}" data-key="${key}" value="${weights[key]}"></label>`).join("")}<span></span><span class="ratio-preview" style="grid-column: span ${Object.keys(labels).length}">${percentLabel(weights)}</span>`;
-      }).join("")}
-    </div>
-  </section>`;
-}
-
-function renderDifficulty() {
-  const variantBlocks = Object.entries(state.difficulty.variantWeights).map(([practiceType, weights]) => `
-    <div class="weight-grid" style="margin-top:12px;grid-template-columns:140px repeat(${Object.keys(weights).length}, minmax(130px, 1fr))">
-      <strong>${PRACTICE_TYPE_LABELS[practiceType] ?? practiceType}</strong>${Object.entries(weights).map(([key, value]) => `<label>${key}<input type="number" min="0" step="1" data-scope="variant" data-practice-type="${practiceType}" data-key="${key}" value="${value}"></label>`).join("")}
-      <span></span><span class="ratio-preview" style="grid-column:span ${Object.keys(weights).length}">${percentLabel(weights)}</span>
-    </div>`).join("");
-  elements.difficultyEditor.innerHTML = `${weightBlock("ion", "イオン：カテゴリ比率")}${weightBlock("compound", "化合物：カテゴリ比率")}
-    <section class="difficulty-block"><h2>出題タイプ比率</h2><p>0は完全除外です。ランダムで出された問題は、実際の出題形式ごとに苦手履歴を共有します。</p>${variantBlocks}</section>
-    <section class="difficulty-block"><h2>苦手問題</h2><p>履歴は「問題ID＋実際の出題形式」ごとに端末へ保存します。</p>
-      <div class="weight-grid">
-        <strong>10問セット</strong><label>目標数<input type="number" min="0" max="10" step="1" data-scope="weak" data-key="ten" value="${state.difficulty.weakQuestionTarget.ten}"></label>
-        <strong>エンドレス</strong><label>10問あたり<input type="number" min="0" max="10" step="1" data-scope="weak" data-key="endlessPerTen" value="${state.difficulty.weakQuestionTarget.endlessPerTen}"></label>
-      </div>
-    </section>`;
-}
-
-function renderActive() {
-  elements.ionsPanel.hidden = activeTab !== "ions";
-  elements.compoundsPanel.hidden = activeTab !== "compounds";
-  elements.difficultyPanel.hidden = activeTab !== "difficulty";
-  elements.listControls.hidden = activeTab === "difficulty";
-  for (const button of elements.tabs.querySelectorAll("button")) button.classList.toggle("active", button.dataset.tab === activeTab);
-  if (activeTab === "ions") renderIons();
-  else if (activeTab === "compounds") renderCompounds();
-  else renderDifficulty();
-}
-
-function scheduleValidation() {
-  clearTimeout(validationTimer);
-  validationTimer = setTimeout(validateAndShow, 180);
-}
-
 function validateAndShow() {
-  const result = validateData(state.ions, state.compounds, state.difficulty);
-  elements.validation.className = `validation-panel ${result.valid ? "valid" : "invalid"}`;
-  const headline = result.valid ? "✓ データ検証に合格しました。" : `✕ ${result.errors.length}件のエラーがあります。`;
-  const errors = result.errors.length ? `<ul>${result.errors.map((message) => `<li>${escapeHtml(message)}</li>`).join("")}</ul>` : "";
-  const warnings = result.warnings.length ? `<div class="validation-warning"><strong>確認事項 ${result.warnings.length}件</strong><ul>${result.warnings.map((message) => `<li>${escapeHtml(message)}</li>`).join("")}</ul></div>` : "";
-  elements.validation.innerHTML = `<strong>${headline}</strong>${errors}${warnings}`;
-  return result;
+ if(!state)return [];
+ const errors=profileProblems(state);
+ elements.validationPanel.className=`validation-panel ${errors.length?'invalid':'valid'}`;
+ elements.validationPanel.innerHTML=errors.length?`<strong>保存前に出題設定を調整してください。</strong><ul>${errors.map(error=>`<li>${escapeHtml(error)}</li>`).join('')}</ul>`:'<strong>✓ 出題設定を確認しました。</strong><span> 変更は保存後、次の学習開始から反映されます。</span>';
+ return errors;
 }
-
-function parseAliases(value) {
-  return value.split(";").map((entry) => entry.trim()).filter(Boolean).map((entry) => {
-    const [formula, ...note] = entry.split("|");
-    return { formula: formula.trim(), note: note.join("|").trim() || null };
-  });
+function ratioMarkup() {
+ return `<p class="profile-help">錯イオンON時の割合と、通常問題のカテゴリ配分を調整します。10問単位で端数を切り上げます。</p><div class="profile-rule-grid">${['ion','compound'].flatMap(domain=>['normal','hard'].map(level=>{
+  const rule=state.rules[domain][level], candidates=eligible(domain,level), ordinary=candidates.filter(i=>!i.complex), complex=candidates.filter(i=>i.complex);
+  const categories=PROFILE_CATEGORIES[domain];
+  const weights=categories.map(key=>rule.categoryWeights===null?ordinary.filter(i=>i.category===key).length:(rule.categoryWeights[key]??0));
+  const sum=weights.reduce((a,b)=>a+b,0), quota=Math.ceil(10*rule.complexPercent/100);
+  return `<section class="profile-rule"><h2>${domain==='ion'?'イオン':'化合物'}・${labels[level]}</h2><label>錯イオン${domain==='compound'?'を含む問題':''}の割合（%）<input type="number" min="${level==='hard'?20:0}" max="100" step="1" value="${rule.complexPercent}" data-rule="percent" data-domain="${domain}" data-level="${level}"></label>${level==='hard'?'<p class="profile-help">ややむずは20%以上です。</p>':''}<p>10問あたり：通常 ${10-quota}問 ／ 錯イオン ${quota}問</p><p>候補数：通常 ${ordinary.length}件 ／ 錯イオン ${complex.length}件</p><h3>通常問題のカテゴリ配分</h3><p class="profile-help">${rule.categoryWeights===null?'各項目を均等に抽選します。':'重みの比率でカテゴリを抽選します。0のカテゴリは出題しません。'}</p>${categories.map((key,i)=>`<label class="profile-weight">${CATEGORY_LABELS[key]}<input type="number" min="0" max="10000" step="1" value="${weights[i]}" aria-label="${domain==='ion'?'イオン':'化合物'} ${labels[level]} ${CATEGORY_LABELS[key]}の重み" data-rule="weight" data-domain="${domain}" data-level="${level}" data-category="${key}"><span>${sum?(weights[i]/sum*100).toFixed(1):'0.0'}%</span></label>`).join('')}<button type="button" data-action="uniform" data-domain="${domain}" data-level="${level}">各項目を均等に戻す</button>${domain==='compound'&&level==='hard'?'<p class="profile-help">1対1の通常化合物は初期状態で除外します。一覧で難易度を指定すると出題対象にできます。</p>':''}</section>`;
+ })).join('')}</div><p class="profile-help">候補数は項目数です。解答方式の制約により実際の候補数が変わる場合があります。苦手優先と直近の出題回避は引き続き適用されます。</p>`;
 }
-
-function tableChange(event) {
-  const control = event.target.closest("[data-index][data-field]");
-  if (!control) return;
-  const collection = activeTab === "ions" ? state.ions : state.compounds;
-  const item = collection[Number(control.dataset.index)];
-  const field = control.dataset.field;
-  let value = control.type === "checkbox" ? control.checked : control.value;
-  if (control.type === "number") value = Number(value);
-  if (["formula", "solidColor", "solidColorNote"].includes(field) && value === "") value = null;
-  if (["difficulty", "compoundPromptDisplay", "referenceUrl", "chemistryClass", "curriculumLevel"].includes(field) && value === "") {
-    delete item[field];
-    showStatus("未保存の変更があります。");
-    scheduleValidation();
-    return;
-  }
-  if (field === "acceptedFormulaVariants") {
-    const aliases = parseAliases(value ?? "");
-    if (aliases.length) item.acceptedFormulaVariants = aliases;
-    else delete item.acceptedFormulaVariants;
-  } else if (field.startsWith("questionModes.")) {
-    item.questionModes[field.split(".")[1]] = value;
-  } else {
-    item[field] = value;
-  }
-  showStatus("未保存の変更があります。");
-  if (activeTab === "compounds" && ["cation", "anion"].includes(field)) renderCompounds();
-  scheduleValidation();
+function exclusionNote(item,domain) {
+ const assignments=state[assignmentKey(domain)], membership=itemDifficulty(item,assignments);
+ if(item.complex)return '';
+ const blocked=['normal','hard'].filter(level=>(membership===level||membership==='both')&&!eligible(domain,level,false).some(i=>i.id===item.id));
+ if(!blocked.length)return '';
+ return `<small class="profile-exclusion">${blocked.map(level=>`${labels[level]}：${state.rules[domain][level].categoryWeights===null?'初期の1対1除外（ボタンで指定して解除）':'カテゴリの重み0で除外'}`).join(' ／ ')}</small>`;
 }
-
-function tableAction(event) {
-  const button = event.target.closest("[data-action]");
-  if (!button) return;
-  const collection = activeTab === "ions" ? state.ions : state.compounds;
-  const index = Number(button.dataset.index);
-  if (button.dataset.action === "duplicate") {
-    const duplicate = clone(collection[index]);
-    duplicate.id = `${duplicate.id}_copy`;
-    collection.splice(index + 1, 0, duplicate);
-  } else if (button.dataset.action === "delete") {
-    if (!confirm(`「${collection[index].id}」を編集データから削除しますか？`)) return;
-    collection.splice(index, 1);
-  }
-  showStatus("未保存の変更があります。");
-  renderActive();
-  scheduleValidation();
+function listMarkup() {
+ const domain=activeTab, assignments=state[assignmentKey(domain)], items=catalog[domain==='ion'?'ions':'compounds'];
+ const query=elements.searchInput.value, filter=elements.difficultyFilter.value, complex=elements.complexFilter.value;
+ const visible=items.filter(item=>(!query||searchMatches({...item,formula:item.formula},query,'name')||searchMatches(item,query,'formula'))&&(filter==='all'||itemDifficulty(item,assignments)===filter)&&(complex==='all'||item.complex===(complex==='complex')));
+ elements.rowCount.textContent=`${visible.length} / ${items.length}件`;
+ return `<p class="profile-help">両方のボタンをOFFにすると「出題しない」になります。${domain==='ion'?'イオン単独の設定は化合物の出題に影響しません。':'構成イオンは教材マスターから参照します。'}</p>${visible.length?visible.map(item=>{
+  const value=itemDifficulty(item,assignments);
+  return `<div class="profile-item" data-item-id="${escapeHtml(item.id)}"><div class="profile-item-description"><strong>${escapeHtml(item.formula||'名称のみ')}</strong> ${escapeHtml(item.name)}<small>${CATEGORY_LABELS[item.category]}${item.complex?`・${domain==='ion'?'錯イオン':'錯イオンを含む'}`:''}</small>${exclusionNote(item,domain)}</div><div class="question-difficulty-toggle" role="group" aria-label="${escapeHtml(item.name)}の出題難易度"><div class="question-difficulty-buttons">${['normal','hard'].map(level=>{
+   const selected=value===level||value==='both';return `<button type="button" class="question-difficulty-button" aria-pressed="${selected}" aria-label="${labels[level]}" data-action="difficulty" data-id="${escapeHtml(item.id)}" data-level="${level}"><span aria-hidden="true">${selected?'✓':'&nbsp;'}</span>${labels[level]}</button>`;
+  }).join('')}</div><span class="question-difficulty-status ${value==='off'?'is-off':''}" aria-live="polite">${labels[value]}</span></div></div>`;
+ }).join(''):'<p class="profile-empty">条件に一致する項目がありません。</p>'}`;
 }
-
-function addRow() {
-  if (activeTab === "ions") {
-    state.ions.push({ id: "new_ion", formula: "X", charge: 1, name: "新しいイオン", type: "cation", atomicity: "monatomic", requiresOxidationNumeral: false, enabled: false });
-  } else if (activeTab === "compounds") {
-    const cation = state.ions.find((ion) => ion.type === "cation")?.id ?? "";
-    const anion = state.ions.find((ion) => ion.type === "anion")?.id ?? "";
-    state.compounds.push({ id: "new_compound", cation, anion, formula: null, name: "新しい化合物", solidColor: null, solidColorNote: null, enabled: false, questionModes: { ionsToFormula: false, ionsToName: false, ionNamesToFormula: false, ionNamesToName: false } });
-  }
-  renderActive();
-  showStatus("末尾に行を追加しました。IDを変更してください。");
-  scheduleValidation();
+function renderActive() {
+ if(!state)return;
+ elements.listControls.hidden=activeTab==='ratio';
+ for(const button of elements.profileTabs.querySelectorAll('button'))button.setAttribute('aria-pressed',String(button.dataset.tab===activeTab));
+ elements.profileContent.innerHTML=activeTab==='ratio'?ratioMarkup():listMarkup();
+ updateSaveButton();
 }
-
-function difficultyChange(event) {
-  const inputElement = event.target.closest("input[data-scope]");
-  if (!inputElement) return;
-  const value = Number(inputElement.value);
-  if (inputElement.dataset.scope === "category") {
-    state.difficulty.categoryWeights[inputElement.dataset.domain][inputElement.dataset.difficulty][inputElement.dataset.key] = value;
-  } else if (inputElement.dataset.scope === "variant") {
-    state.difficulty.variantWeights[inputElement.dataset.practiceType][inputElement.dataset.key] = value;
-  } else {
-    state.difficulty.weakQuestionTarget[inputElement.dataset.key] = value;
-  }
-  showStatus("未保存の変更があります。");
-  renderDifficulty();
-  scheduleValidation();
+function download(filename,value,raw=false) {
+ const blob=new Blob([raw?value:`${JSON.stringify(value,null,2)}\n`],{type:'application/json'});
+ const url=URL.createObjectURL(blob), a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),500);
 }
-
-function download(filename, value) {
-  const blob = new Blob([`${JSON.stringify(value, null, 2)}\n`], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), 500);
-}
-
-async function importJson(file) {
-  try {
-    const value = JSON.parse(await file.text());
-    if (!Array.isArray(value.ions) || !Array.isArray(value.compounds) || !value.difficulty?.variantWeights || !value.difficulty?.categoryWeights || !value.difficulty?.weakQuestionTarget) throw new Error("Bundle Export形式（ions・compounds・difficulty）が必要です。");
-    const candidate = normalizeBundle(migrateBundle(value, pack));
-    const check = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
-    if (!check.valid) throw new Error(`検証エラー ${check.errors.length}件：${check.errors[0]}`);
-    state = candidate;
-    renderActive();
-    validateAndShow();
-    showStatus("JSONを読み込みました。保存前に内容を確認してください。");
-  } catch (error) {
-    showStatus(`Import失敗：${error.message}`, true);
-  } finally {
-    elements.importFile.value = "";
-  }
-}
-
-function bindEvents() {
-  if (eventsBound) return;
-  eventsBound = true;
-  elements.tabs.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-tab]");
-    if (!button) return;
-    activeTab = button.dataset.tab;
-    renderActive();
-  });
-  elements.search.addEventListener("input", renderActive);
-  elements.searchFields.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-search-field]");
-    if (!button) return;
-    searchField = button.dataset.searchField;
-    for (const option of elements.searchFields.querySelectorAll("button")) option.setAttribute("aria-pressed", String(option === button));
-    elements.search.placeholder = { id: "idで検索", formula: "式で検索", name: "名称で検索" }[searchField];
-    renderActive();
-  });
-  elements.enabledFilter.addEventListener("change", renderActive);
-  elements.addRow.addEventListener("click", addRow);
-  elements.ionsTable.addEventListener("change", tableChange);
-  elements.compoundsTable.addEventListener("change", tableChange);
-  elements.ionsTable.addEventListener("click", tableAction);
-  elements.compoundsTable.addEventListener("click", tableAction);
-  elements.difficultyEditor.addEventListener("change", difficultyChange);
-  elements.validateButton.addEventListener("click", validateAndShow);
-  elements.saveLocal.addEventListener("click", () => {
-    let candidate;
-    try { candidate = normalizeBundle(migrateBundle(state, pack)); }
-    catch (error) { showStatus(`移行エラー：${error.message}。衝突するIDを変更してから保存してください。`, true); return; }
-    const validation = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
-    if (!validation.valid) {
-      validateAndShow();
-      showStatus("検証エラーを直してから保存してください。", true);
-      return;
-    }
-    try {
-      const original = readOverride();
-      if (original) persistMigration(original, candidate);
-      else localStorage.setItem(STORAGE_KEY, JSON.stringify(candidate));
-      state = candidate;
-      renderActive();
-      validateAndShow();
-      showStatus("この端末内へ保存しました。学習画面にも反映されます。");
-    } catch {
-      showStatus("ブラウザの保存領域へ書き込めませんでした。", true);
-    }
-  });
-  elements.resetLocal.addEventListener("click", () => {
-    if (!confirm("端末内の編集内容を破棄して、公開中のJSONへ戻しますか？")) return;
-    try { localStorage.removeItem(STORAGE_KEY); } catch { showStatus("保存データを削除できませんでした。", true); return; }
-    state = clone(publishedData);
-    renderActive();
-    validateAndShow();
-    showStatus("公開中のJSONへ戻しました。端末内の編集内容は削除されました。");
-  });
-  elements.exportBundle.addEventListener("click", () => download("ionic-formula-data.json", { ...state, version: 2 }));
-  elements.exportCurrent.addEventListener("click", () => {
-    if (activeTab === "ions") download("ions.json", state.ions);
-    else if (activeTab === "compounds") download("compounds.json", state.compounds);
-    else download("difficulty.json", state.difficulty);
-  });
-  elements.importFile.addEventListener("change", () => {
-    const [file] = elements.importFile.files;
-    if (file) importJson(file);
-  });
-}
-
 async function initialize() {
-  bindEvents();
-  try {
-    const [ions, compounds, difficulty, chemistryPack] = await Promise.all([
-      fetchJson("data/ions.json"), fetchJson("data/compounds.json"), fetchJson("data/difficulty.json"), fetchJson("data/complex-chemistry.json"),
-    ]);
-    pack = chemistryPack;
-    publishedData = normalizeBundle(composePublishedBundle({ ions, compounds, difficulty }, pack));
-    const override = readOverride();
-    let candidate;
-    let migrationError = null;
-    if (override) {
-      try { candidate = normalizeBundle(migrateBundle(override.bundle, pack)); }
-      catch (error) {
-        if (!String(error.message).includes("ID衝突")) throw error;
-        migrationError = error;
-        candidate = normalizeBundle(override.bundle);
-      }
-    } else candidate = clone(publishedData);
-    const validation = validateData(candidate.ions, candidate.compounds, candidate.difficulty);
-    let migrationSaveError = false;
-    if (override && validation.valid && !migrationError) {
-      try { persistMigration(override, candidate); } catch { migrationSaveError = true; }
-    }
-    state = candidate;
-    renderActive();
-    validateAndShow();
-    if (override) {
-      if (migrationError) showStatus(`移行エラー：${migrationError.message}。衝突するIDを変更してから保存してください。`, true);
-      else if (migrationSaveError) showStatus("移行データを保存できませんでした。元の保存データは残っています。", true);
-      else showStatus(validation.valid ? "この端末に保存された編集データを表示しています。" : "保存データに検証エラーがあります。修正後に保存してください。", !validation.valid);
-    }
-  } catch (error) {
-    elements.validation.className = "validation-panel invalid";
-    elements.validation.textContent = `読み込み失敗：${error.message}`;
-  }
+ try {
+  const [ions,compounds,difficulty,chemistryPack,profile]=await Promise.all(['data/ions.json','data/compounds.json','data/difficulty.json','data/complex-chemistry.json','data/question-profile.json'].map(fetchJson));
+  pack=chemistryPack;bundle=composePublishedBundle({ions,compounds,difficulty},pack);catalog=questionProfileCatalog(bundle);publishedProfile=validateQuestionProfile(profile,catalog);
+  const validation=validateData(bundle.ions,bundle.compounds,bundle.difficulty);
+  if(!validation.valid)throw new Error(`教材マスターに${validation.errors.length}件のエラーがあります。`);
+  const result=loadQuestionProfile(localStorage,publishedProfile,bundle,pack);
+  state=result.profile;saved=JSON.stringify(state);renderActive();validateAndShow();showStatus(result.message);
+ } catch(error) {
+  elements.validationPanel.className='validation-panel invalid';elements.validationPanel.textContent=`読み込み失敗：${error.message}。初期設定に戻すか、元の保存データを書き出して確認してください。`;
+  elements.saveLocal.disabled=true;
+ }
+ elements.resetLocal.disabled=!publishedProfile;
+ initialized=true;
 }
 
+elements.profileTabs.addEventListener('click',event=>{
+ const button=event.target.closest('[data-tab]');if(!button)return;
+ activeTab=button.dataset.tab;elements.searchInput.value='';elements.difficultyFilter.value='all';elements.complexFilter.value='all';renderActive();
+});
+for(const element of [elements.searchInput,elements.difficultyFilter,elements.complexFilter])element.addEventListener(element===elements.searchInput?'input':'change',renderActive);
+elements.profileContent.addEventListener('click',event=>{
+ const button=event.target.closest('button[data-action]');if(!button||!state)return;
+ if(button.dataset.action==='difficulty') {
+  const domain=activeTab, item=catalog[domain==='ion'?'ions':'compounds'].find(i=>i.id===button.dataset.id), key=assignmentKey(domain);
+  edit(next=>{next[key][item.id]=toggleItemDifficulty(itemDifficulty(item,next[key]),button.dataset.level);});
+  renderActive();
+  elements.profileContent.querySelector(`[data-item-id="${CSS.escape(item.id)}"] button[data-level="${button.dataset.level}"]`)?.focus({preventScroll:true});
+ } else if(button.dataset.action==='uniform') {
+  edit(next=>{next.rules[button.dataset.domain][button.dataset.level].categoryWeights=null;});renderActive();
+ }
+});
+elements.profileContent.addEventListener('change',event=>{
+ const input=event.target.closest('input[data-rule]');if(!input||!state)return;
+ const {domain,level,category}=input.dataset;
+ edit(next=>{
+  const rule=next.rules[domain][level];
+  if(input.dataset.rule==='percent')rule.complexPercent=Math.max(level==='hard'?20:0,Math.min(100,Math.round(Number(input.value))));
+  else {
+   rule.categoryWeights ??=Object.fromEntries(PROFILE_CATEGORIES[domain].map(key=>[key,eligible(domain,level,false).filter(item=>item.category===key).length]));
+   rule.categoryWeights[category]=Math.max(0,Math.min(10000,Number(input.value)));
+  }
+ });renderActive();
+});
+elements.saveLocal.addEventListener('click',()=>{
+ if(!state)return;
+ if(validateAndShow().length){showStatus('出題できない組み合わせがあります。設定を確認してください。',true);return;}
+ try {state=saveQuestionProfile(localStorage,state,bundle);saved=JSON.stringify(state);updateSaveButton();showStatus('この端末へ保存しました。次の学習開始から反映されます。');}
+ catch(error){showStatus(`保存できませんでした：${error.message}`,true);}
+});
+elements.resetLocal.addEventListener('click',()=>{
+ if(!publishedProfile||!confirm('出題設定を初期状態に戻しますか？学習履歴と教材バックアップは保持されます。'))return;
+ try {state=saveQuestionProfile(localStorage,publishedProfile,bundle);saved=JSON.stringify(state);renderActive();validateAndShow();showStatus('出題設定を初期状態に戻しました。');}
+ catch(error){showStatus(`保存できませんでした：${error.message}`,true);}
+});
+elements.exportProfile.addEventListener('click',()=>{
+ if(state)download('question-profile.json',state);
+ else {const raw=localStorage.getItem(PROFILE_KEY);if(raw)download('question-profile-backup.json',raw,true);}
+});
+elements.exportBackup.addEventListener('click',()=>{
+ try {const raw=localStorage.getItem(LEGACY_BACKUP_KEY)??localStorage.getItem(LEGACY_DATA_KEY);if(!raw){showStatus('旧教材のバックアップはありません。');return;}download('ionic-formula-legacy-backup.json',raw,true);}
+ catch(error){showStatus(`書き出せませんでした：${error.message}`,true);}
+});
+elements.importFile.addEventListener('change',async()=>{
+ const [file]=elements.importFile.files;if(!file||!bundle)return;
+ try {
+  if(file.size>2_000_000)throw new Error('JSONは2MB以内にしてください。');
+  const raw=await file.text(), value=JSON.parse(raw);
+  const candidate=value.ions&&value.compounds?profileFromLegacy(value,publishedProfile,bundle,pack):validateQuestionProfile(value,catalog);
+  const errors=profileProblems(candidate);if(errors.length)throw new Error(errors[0]);
+  // Preserve imported full chemistry before extracting only its settings.
+  if(value.ions&&value.compounds)download('ionic-formula-import-backup.json',raw,true);
+  state=candidate;renderActive();validateAndShow();showStatus('JSONを読み込みました。内容を確認して保存してください。');
+ } catch(error){showStatus(`Import失敗：${error.message}`,true);}
+ finally{elements.importFile.value='';}
+});
+window.addEventListener('beforeunload',event=>{if(dirty()){event.preventDefault();event.returnValue='';}});
 function lockEditor() {
   elements.editor.hidden = true;
   elements.lockScreen.hidden = false;
@@ -489,7 +200,7 @@ elements.unlockForm.addEventListener("submit", async (event) => {
     elements.unlockForm.reset();
     elements.lockScreen.hidden = true;
     elements.editor.hidden = false;
-    if (!state) await initialize();
+    if (!initialized) await initialize();
   } catch {
     elements.unlockStatus.textContent = "認証設定を読み込めませんでした。";
   }

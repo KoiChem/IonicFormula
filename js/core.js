@@ -1,4 +1,5 @@
-import { complexItemAllowed, isComplexItem, validateComplexIon } from "./chemistry/complex-policy.js?v=20261002-complex-input-v1";
+import { complexItemAllowed, isComplexItem, validateComplexIon } from "./chemistry/complex-policy.js?v=20261004-question-profile-v1";
+import { questionProfileCatalog, validateQuestionProfile, profileCandidates } from "./question-profile.js?v=20261004-question-profile-v1";
 // The UI exposes the two learning domains below. The three legacy compound
 // types remain in VARIANTS for imported history/settings compatibility.
 export const PRACTICE_TYPES = ["ion", "compound"];
@@ -758,7 +759,7 @@ function weakPositionsFor(total, count, random, weakMode) {
 
 function buildFairCompoundQuestionSet({
   practiceType, difficulty, ions, compounds, settings, history, random, compoundOptions,
-  selectionState, total, weakTarget, weakMode = false,
+  selectionState, total, weakTarget, weakMode = false, allowFirstWeak = false, uniformItems = false,
 }) {
   const categoryWeights = settings.categoryWeights.compound[difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions);
@@ -767,7 +768,9 @@ function buildFairCompoundQuestionSet({
   for (const candidate of eligible) capacity[candidate.category] = (capacity[candidate.category] ?? 0) + 1;
   const questionTotal = Math.min(total, eligible.length);
   const targetCategoryCounts = allocateCounts(categoryWeights, questionTotal, capacity, random);
-  const categorySlots = shuffled(Object.entries(targetCategoryCounts).flatMap(([category, count]) => Array(count).fill(category)), random);
+  const categorySlots = uniformItems
+    ? shuffled(eligible, random).slice(0, questionTotal).map(candidate => candidate.category)
+    : shuffled(Object.entries(targetCategoryCounts).flatMap(([category, count]) => Array(count).fill(category)), random);
   const variantCounts = allocateCounts(variantWeights, questionTotal, {}, random);
   const variantRemaining = { ...variantCounts };
   const fairState = normalizeCompoundSelectionState(selectionState);
@@ -803,7 +806,7 @@ function buildFairCompoundQuestionSet({
     if (variantRemaining[chosen.variant] > 0) variantRemaining[chosen.variant] -= 1;
   }
 
-  const positions = weakPositionsFor(questionTotal, reservations.length, random, weakMode);
+  const positions = weakPositionsFor(questionTotal, reservations.length, random, weakMode || allowFirstWeak);
   const reservationAt = new Map();
   for (const reservation of reservations) {
     let position = positions.find((index) => !reservationAt.has(index) && categorySlots[index] === reservation.candidate.category);
@@ -843,7 +846,84 @@ function buildFairCompoundQuestionSet({
   };
 }
 
+// Profile membership only controls single-ion questions; compound references
+// always use the published chemistry master, independently of those memberships.
+function buildProfileRound(rawOptions, kind) {
+  const practiceType = rawOptions.practiceType ?? rawOptions.domain ?? "ion";
+  const domain = domainForPracticeType(practiceType);
+  const bundle = { ions: rawOptions.ions, compounds: rawOptions.compounds };
+  const profile = validateQuestionProfile(rawOptions.questionProfile, questionProfileCatalog(bundle));
+  const ionById = new Map(bundle.ions.map(ion => [ion.id, ion]));
+  const candidates = profileCandidates(bundle, profile, domain, rawOptions.difficulty, rawOptions.complexEnabled);
+  const compoundOptions = { ...DEFAULT_COMPOUND_OPTIONS, ...rawOptions.compoundOptions };
+  const source = domain === "ion" ? bundle.ions : bundle.compounds;
+  const byId = new Map(source.map(item => [item.id, item]));
+  const eligible = candidates.filter(candidate => itemVariants(practiceType, byId.get(candidate.id), compoundOptions, rawOptions.ionAnswerPreset).length);
+  const ordinary = eligible.filter(item => !item.complex);
+  const complex = eligible.filter(item => item.complex);
+  const total = Math.min(10, eligible.length);
+  const rule = profile.rules[domain][rawOptions.difficulty];
+  const complexCount = rawOptions.complexEnabled === true ? Math.ceil(total * rule.complexPercent / 100) : 0;
+  if (complex.length < complexCount) throw new Error(`錯イオンの候補が不足しています（必要 ${complexCount}件／候補 ${complex.length}件）。管理画面で出題対象か割合を調整してください。`);
+  if (ordinary.length < total - complexCount) throw new Error(`通常問題の候補が不足しています（必要 ${total - complexCount}件／候補 ${ordinary.length}件）。管理画面で出題対象か割合を調整してください。`);
+
+  const weakSettings = { ...rawOptions.settings.weakQuestionTarget, ...profile.weakQuestionTarget };
+  const weakTarget = kind === "weak" ? total : weakSettings[kind === "endless" ? "endlessPerTen" : "ten"] ?? 2;
+  const history = rawOptions.history ?? {};
+  const weakCount = pool => pool.filter(candidate => itemVariants(practiceType, byId.get(candidate.id), compoundOptions, rawOptions.ionAnswerPreset)
+    .some(variant => positiveWeaknessForVariant(history, domain, candidate.id, variant))).length;
+  const weakCapacities = { ordinary: Math.min(total - complexCount, weakCount(ordinary)), complex: Math.min(complexCount, weakCount(complex)) };
+  const weakAllocation = allocateCounts(weakCapacities, Math.min(weakTarget, weakCapacities.ordinary + weakCapacities.complex), weakCapacities, rawOptions.random ?? Math.random);
+
+  function buildPart(pool, count, isComplex) {
+    if (!count) return [];
+    const ids = new Set(pool.map(item => item.id));
+    const weights = isComplex || rule.categoryWeights === null
+      ? Object.fromEntries(Object.keys(rawOptions.settings.categoryWeights[domain][rawOptions.difficulty]).map(category => [category, pool.filter(item => item.category === category).length]))
+      : rule.categoryWeights;
+    const settings = structuredClone(rawOptions.settings);
+    settings.categoryWeights[domain][rawOptions.difficulty] = weights;
+    settings.weakQuestionTarget = { ...settings.weakQuestionTarget, ...profile.weakQuestionTarget };
+    const weakTarget = kind === "weak" ? count : weakAllocation[isComplex ? "complex" : "ordinary"];
+    const options = {
+      ...rawOptions, history: rawOptions.history ?? {}, random: rawOptions.random ?? Math.random,
+      questionProfile: null, practiceType, settings, profileLimit: count,
+      ions: bundle.ions.map(item => ({ ...item, enabled: domain === "compound" || ids.has(item.id), difficulty: undefined })),
+      compounds: bundle.compounds.filter(item => ids.has(item.id)).map(item => ({ ...item, enabled: true, difficulty: undefined })),
+    };
+    if (domain === "compound") return buildFairCompoundQuestionSet({
+      ...normalizedOptions(options), total: count, weakTarget, weakMode: kind === "weak", allowFirstWeak: true,
+      uniformItems: isComplex || rule.categoryWeights === null,
+    }).questions;
+    settings.weakQuestionTarget.ten = weakTarget;
+    options.profileUniform = isComplex || rule.categoryWeights === null;
+    return (kind === "weak" ? buildWeakQuestionSet : buildTenQuestionSet)(options).questions;
+  }
+
+  const questions = shuffled([
+    ...buildPart(ordinary, total - complexCount, false),
+    ...buildPart(complex, complexCount, true),
+  ], rawOptions.random ?? Math.random).map(question => ({ ...question, difficulty: rawOptions.difficulty }));
+  if (kind === "weak") {
+    const isWeak = question => Boolean(positiveWeaknessForVariant(history, domain, question.itemId, question.variant));
+    questions.sort((left, right) => Number(isWeak(right)) - Number(isWeak(left)));
+  } else if (questions[0]?.isWeakReview) {
+    const index = questions.findIndex(question => !question.isWeakReview);
+    if (index > 0) [questions[0], questions[index]] = [questions[index], questions[0]];
+  }
+  const categoryCounts = Object.fromEntries(Object.keys(rawOptions.settings.categoryWeights[domain][rawOptions.difficulty]).map(key => [key, 0]));
+  const variantCounts = {};
+  for (const question of questions) {
+    const item = byId.get(question.itemId);
+    const category = domain === "ion" ? ionCategory(item) : compoundCategory(item, ionById);
+    categoryCounts[category] = (categoryCounts[category] ?? 0) + 1;
+    variantCounts[question.variant] = (variantCounts[question.variant] ?? 0) + 1;
+  }
+  return { questions: balanceCompoundPromptOrders(questions, rawOptions.random ?? Math.random), categoryCounts, variantCounts, availableCount: eligible.length };
+}
+
 export function buildTenQuestionSet(rawOptions) {
+  if (rawOptions.questionProfile) return buildProfileRound(rawOptions, "ten");
   const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, ionAnswerPreset, recentPresentations, selectionState } = normalizedOptions(rawOptions);
   if (domain === "compound") {
     return buildFairCompoundQuestionSet({
@@ -856,10 +936,12 @@ export function buildTenQuestionSet(rawOptions) {
   const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty, ionAnswerPreset);
   const capacity = Object.fromEntries(Object.keys(categoryWeights).map((key) => [key, 0]));
   for (const candidate of eligible) capacity[candidate.category] = (capacity[candidate.category] ?? 0) + 1;
-  const total = Math.min(10, eligible.length);
+  const total = Math.min(rawOptions.profileLimit ?? 10, eligible.length);
   const categoryCounts = allocateCounts(categoryWeights, total, capacity, random);
   const variantCounts = allocateCounts(variantWeights, total, {}, random);
-  const categorySlots = shuffled(Object.entries(categoryCounts).flatMap(([category, count]) => Array(count).fill(category)), random);
+  const categorySlots = rawOptions.profileUniform
+    ? shuffled(eligible, random).slice(0, total).map(candidate => candidate.category)
+    : shuffled(Object.entries(categoryCounts).flatMap(([category, count]) => Array(count).fill(category)), random);
   const remainingVariants = { ...variantCounts };
   const used = new Set();
   const usedIonCounts = new Map();
@@ -884,6 +966,7 @@ export function buildTenQuestionSet(rawOptions) {
 }
 
 export function buildWeakQuestionSet(rawOptions) {
+  if (rawOptions.questionProfile) return buildProfileRound(rawOptions, "weak");
   const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, ionAnswerPreset, recentPresentations, selectionState } = normalizedOptions(rawOptions);
   if (domain === "compound") {
     return buildFairCompoundQuestionSet({
@@ -894,7 +977,7 @@ export function buildWeakQuestionSet(rawOptions) {
   const categoryWeights = settings.categoryWeights[domain][difficulty];
   const variantWeights = variantWeightsFor(practiceType, settings, compoundOptions, ionAnswerPreset);
   const eligible = eligibleItems(practiceType, ions, compounds, categoryWeights, compoundOptions, difficulty, ionAnswerPreset);
-  const total = Math.min(10, eligible.length);
+  const total = Math.min(rawOptions.profileLimit ?? 10, eligible.length);
   const variantCounts = allocateCounts(variantWeights, total, {}, random);
   const remainingVariants = { ...variantCounts };
   const categoryCounts = Object.fromEntries(Object.keys(categoryWeights).map((category) => [category, 0]));
@@ -915,6 +998,7 @@ export function buildWeakQuestionSet(rawOptions) {
 }
 
 export function buildEndlessRound(rawOptions) {
+  if (rawOptions.questionProfile) return buildProfileRound(rawOptions, "endless");
   const { practiceType, domain, difficulty, ions, compounds, settings, history = {}, random = Math.random, compoundOptions, ionAnswerPreset, recentPresentations, selectionState } = normalizedOptions(rawOptions);
   if (domain === "compound") {
     return buildFairCompoundQuestionSet({

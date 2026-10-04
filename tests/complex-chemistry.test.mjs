@@ -7,6 +7,7 @@ const policy = await tryModule('../js/chemistry/complex-policy.js');
 const syntax = await tryModule('../js/chemistry/formula-syntax.js');
 const migrations = await tryModule('../js/data-migrations.js');
 const pack = await readFile(new URL('../data/complex-chemistry.json', import.meta.url), 'utf8').then(JSON.parse, () => ({}));
+const metadata = JSON.parse(await readFile(new URL('../data/chemistry-metadata.json', import.meta.url), 'utf8'));
 const baseIons = JSON.parse(await readFile(new URL('../data/ions.json', import.meta.url), 'utf8'));
 const baseCompounds = JSON.parse(await readFile(new URL('../data/compounds.json', import.meta.url), 'utf8'));
 const baseDifficulty = JSON.parse(await readFile(new URL('../data/difficulty.json', import.meta.url), 'utf8'));
@@ -19,15 +20,16 @@ test('catalog keeps the approved 17 ions and 36 compounds with separate charge a
   assert.equal(pack.compounds?.length, 36);
   assert.equal(new Set(pack.ions.map((item) => item.id)).size, 17);
   assert.equal(new Set(pack.compounds.map((item) => item.id)).size, 36);
-  assert.deepEqual(pack.ions.map((item) => item.curriculumLevel).reduce((result, level) => ({ ...result, [level]: (result[level] ?? 0) + 1 }), {}), { standard: 10, advanced: 7 });
-  assert.deepEqual(pack.compounds.map((item) => item.curriculumLevel).reduce((result, level) => ({ ...result, [level]: (result[level] ?? 0) + 1 }), {}), { standard: 4, advanced: 32 });
-  assert.ok([...pack.ions, ...pack.compounds].every((item) => item.enabled === (item.curriculumLevel === 'standard')));
+  assert.deepEqual(pack.ions.map((item) => metadata.ions[item.id].curriculumLevel).reduce((result, level) => ({ ...result, [level]: (result[level] ?? 0) + 1 }), {}), { standard: 10, advanced: 7 });
+  assert.deepEqual(pack.compounds.map((item) => metadata.compounds[item.id].curriculumLevel).reduce((result, level) => ({ ...result, [level]: (result[level] ?? 0) + 1 }), {}), { standard: 4, advanced: 32 });
+  assert.ok(pack.ions.every((item) => item.enabled === (metadata.ions[item.id].curriculumLevel === 'standard')));
+  assert.ok(pack.compounds.every((item) => item.enabled === (metadata.compounds[item.id].curriculumLevel === 'standard')));
   assert.deepEqual(pack.ions.filter((item) => item.id.startsWith('complex_fe_cn_6_')).map((item) => [item.id, item.formula, item.charge]), [
     ['complex_fe_cn_6_ii', '[Fe(CN)6]', -4],
     ['complex_fe_cn_6_iii', '[Fe(CN)6]', -3],
   ]);
-  assert.equal(pack.compounds.find((item) => item.id === 'salt_k_au_cl_2')?.evidence?.status, 'unverified');
-  assert.equal(pack.compounds.find((item) => item.id === 'salt_na_au_cl_2')?.evidence?.status, 'unverified');
+  assert.equal(metadata.compounds.salt_k_au_cl_2.evidence.status, 'unverified');
+  assert.equal(metadata.compounds.salt_na_au_cl_2.evidence.status, 'unverified');
 });
 
 test('all pack compounds have existing, charge-balanced ion references', () => {
@@ -38,7 +40,7 @@ test('all pack compounds have existing, charge-balanced ion references', () => {
     assert.equal(cation?.type, 'cation', item.id);
     assert.equal(anion?.type, 'anion', item.id);
     assert.equal(item.chemistryClass, 'complex', item.id);
-    assert.equal(item.solidColor, null, item.id);
+    assert.equal(metadata.compounds[item.id].solidColor ?? null, null, item.id);
     assert.ok(item.formula.includes('[') && item.formula.includes(']'), item.id);
   }
 });

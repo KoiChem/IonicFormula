@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f5fcf7">
   <meta name="robots" content="noindex, nofollow">
-  <title>教材データ管理 | IonicFormula</title>
+  <title>出題設定 | IonicFormula</title>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20261002-complex-input-v1">
-  <link rel="stylesheet" href="admin.css?v=20261002-complex-input-v1">
+  <link rel="stylesheet" href="styles.css?v=20261004-question-profile-v1">
+  <link rel="stylesheet" href="admin.css?v=20261004-question-profile-v1">
 </head>
 <body>
   <section id="admin-lock-screen" class="lock-screen" aria-labelledby="lock-heading">
     <form id="unlock-form" class="lock-card">
-      <h1 id="lock-heading">教材データ管理</h1>
+      <h1 id="lock-heading">出題設定</h1>
       <p>このブラウザの管理画面を開くにはパスワードを入力してください。</p>
       <label for="unlock-password">パスワード</label>
       <input id="unlock-password" type="password" autocomplete="current-password" required>
@@ -26,10 +26,10 @@
   <header class="admin-header">
     <div>
       <a href="./">← 学習画面へ</a>
-      <h1>教材データ管理</h1>
-      <p>編集内容はこの端末内に保存されます。公開データの更新にはJSONを書き出して、リポジトリのdataファイルを差し替えてください。</p>
+      <h1>出題設定</h1>
+      <p>イオン・化合物の出題難易度と割合を調整します。設定はこの端末に保存され、次の学習開始から反映されます。</p>
     </div>
-    <div class="admin-header-actions"><span class="local-badge">LOCAL EDITOR</span><button id="lock-button" type="button">ロック</button></div>
+    <div class="admin-header-actions"><span class="local-badge">端末内の設定</span><button id="lock-button" type="button">ロック</button></div>
   </header>
 
   <main class="admin-shell">
@@ -43,53 +43,34 @@
         <p id="change-password-status" role="alert"></p>
       </form>
     </details>
-    <section class="admin-toolbar" aria-label="データ操作">
+    <section class="admin-toolbar" aria-label="設定操作">
       <div class="toolbar-group">
-        <label class="file-button">JSON Import<input id="import-file" type="file" accept="application/json,.json"></label>
-        <button id="export-bundle" type="button">Bundle Export</button>
-        <button id="export-current" type="button">表示中JSON Export</button>
+        <label class="file-button">設定JSONを読み込む<input id="import-file" type="file" accept="application/json,.json"></label>
+        <button id="export-profile" type="button">設定JSONを書き出す</button>
       </div>
       <div class="toolbar-group">
-        <button id="validate-button" type="button">データ検証</button>
-        <button id="save-local" class="primary-small" type="button">端末内に保存</button>
-        <button id="reset-local" class="danger-small" type="button">公開データに戻す</button>
+        <button id="reset-local" type="button" disabled>初期設定に戻す</button>
+        <button id="save-local" class="primary-small" type="button" disabled>保存</button>
       </div>
     </section>
-
-    <div id="save-status" class="save-status" aria-live="polite"></div>
-    <section id="validation-panel" class="validation-panel" aria-live="polite">
-      <strong>読み込み後に自動検証します。</strong>
-    </section>
-
-    <nav class="admin-tabs" aria-label="編集対象">
-      <button type="button" data-tab="ions" class="active">イオン</button>
-      <button type="button" data-tab="compounds">化合物</button>
-      <button type="button" data-tab="difficulty">難易度・比率</button>
+    <div id="save-status" class="save-status" role="status" aria-live="polite"></div>
+    <section id="validation-panel" class="validation-panel" aria-live="polite"></section>
+    <nav id="profile-tabs" class="admin-tabs" aria-label="調整項目">
+      <button type="button" data-tab="ratio" aria-pressed="true">割合</button>
+      <button type="button" data-tab="ion" aria-pressed="false">イオン</button>
+      <button type="button" data-tab="compound" aria-pressed="false">化合物</button>
     </nav>
-
-    <section id="list-controls" class="list-controls">
-      <div class="search-controls"><label for="search-input">検索</label><div id="search-fields" class="search-fields" role="group" aria-label="検索対象">
-        <button type="button" data-search-field="id" aria-pressed="true">id</button>
-        <button type="button" data-search-field="formula" aria-pressed="false">式</button>
-        <button type="button" data-search-field="name" aria-pressed="false">名称</button>
-      </div><input id="search-input" type="search" placeholder="idで検索"></div>
-      <label>表示<select id="enabled-filter"><option value="all">すべて</option><option value="enabled">有効のみ</option><option value="disabled">無効のみ</option></select></label>
-      <button id="add-row" type="button">＋ 追加</button>
-      <span id="row-count"></span>
+    <section id="list-controls" class="profile-filters" hidden>
+      <label>名称・化学式で検索<input id="search-input" type="search" placeholder="名称・化学式を入力" autocomplete="off"></label>
+      <label>難易度<select id="difficulty-filter"><option value="all">すべて</option><option value="normal">やさしめ</option><option value="hard">ややむず</option><option value="both">両方</option><option value="off">出題しない</option></select></label>
+      <label>種類<select id="complex-filter"><option value="all">すべて</option><option value="ordinary">通常</option><option value="complex">錯イオンを含む</option></select></label>
+      <span id="row-count" role="status"></span>
     </section>
-
-    <section id="ions-panel" class="tab-panel">
-      <div class="table-wrap"><table id="ions-table"><thead></thead><tbody></tbody></table></div>
-    </section>
-    <section id="compounds-panel" class="tab-panel" hidden>
-      <div class="table-wrap"><table id="compounds-table"><thead></thead><tbody></tbody></table></div>
-    </section>
-    <section id="difficulty-panel" class="tab-panel" hidden>
-      <div id="difficulty-editor" class="difficulty-editor"></div>
-    </section>
+    <section id="profile-content" class="profile-content" aria-label="出題設定の内容"></section>
+    <details class="profile-data-help"><summary>教材データと旧バックアップ</summary><p>教材の追加・名称・式の編集は公開用JSONファイルで行います。この画面では出題設定だけを変更します。旧教材の編集内容はバックアップに保持されています。</p><button id="export-backup" type="button">旧教材バックアップを書き出す</button><p>公開データ：<a href="data/ions.json">イオン</a> ／ <a href="data/compounds.json">化合物</a> ／ <a href="data/complex-chemistry.json">錯イオン</a> ／ <a href="data/chemistry-metadata.json">補足情報</a> ／ <a href="data/question-profile.json">初期出題設定</a></p></details>
   </main>
   </div>
 
-  <script type="module" src="js/admin.js?v=20261002-complex-input-v1"></script>
+  <script type="module" src="js/admin.js?v=20261004-question-profile-v1"></script>
 </body>
 </html>

@@ -1,0 +1,750 @@
+{
+  "version": 1,
+  "ions": {
+    "hydrogen": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Counterion support for the two catalogued acids; disabled as an independent ion question."
+      }
+    },
+    "complex_ag_nh3_2": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_cu_nh3_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_zn_nh3_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_al_oh_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_zn_oh_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_fe_cn_6_ii": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_fe_cn_6_iii": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_cu_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_au_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_pt_cl_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "complex_ag_cn_2": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "complex_ni_nh3_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "complex_co_nh3_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "complex_au_cl_2": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "complex_pt_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "complex_sn_oh_3": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "complex_sn_oh_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Charge and oxidation state reviewed; isolation and hydration not individually established."
+      },
+      "curriculumLevel": "advanced"
+    }
+  },
+  "compounds": {
+    "sodium_chloride": {
+      "solidColor": "白色"
+    },
+    "potassium_chloride": {
+      "solidColor": "白色"
+    },
+    "silver_chloride": {
+      "solidColor": "白色"
+    },
+    "silver_bromide": {
+      "solidColor": "淡黄色"
+    },
+    "silver_iodide": {
+      "solidColor": "黄色"
+    },
+    "magnesium_oxide": {
+      "solidColor": "白色"
+    },
+    "calcium_oxide": {
+      "solidColor": "白色"
+    },
+    "zinc_oxide": {
+      "solidColor": "白色",
+      "solidColorNote": "加熱時は黄色"
+    },
+    "zinc_sulfide": {
+      "solidColor": "白色"
+    },
+    "aluminum_oxide": {
+      "solidColor": "白色"
+    },
+    "silver_oxide": {
+      "solidColor": "褐色〜黒褐色"
+    },
+    "sodium_hydroxide": {
+      "solidColor": "白色"
+    },
+    "potassium_hydroxide": {
+      "solidColor": "白色"
+    },
+    "magnesium_hydroxide": {
+      "solidColor": "白色"
+    },
+    "calcium_hydroxide": {
+      "solidColor": "白色"
+    },
+    "barium_hydroxide": {
+      "solidColor": "白色"
+    },
+    "aluminum_hydroxide": {
+      "solidColor": "白色"
+    },
+    "zinc_hydroxide": {
+      "solidColor": "白色"
+    },
+    "silver_nitrate": {
+      "solidColor": "白色"
+    },
+    "calcium_sulfate": {
+      "solidColor": "白色"
+    },
+    "barium_sulfate": {
+      "solidColor": "白色"
+    },
+    "sodium_carbonate": {
+      "solidColor": "白色"
+    },
+    "magnesium_carbonate": {
+      "solidColor": "白色"
+    },
+    "calcium_carbonate": {
+      "solidColor": "白色"
+    },
+    "barium_carbonate": {
+      "solidColor": "白色"
+    },
+    "zinc_carbonate": {
+      "solidColor": "白色"
+    },
+    "sodium_bicarbonate": {
+      "solidColor": "白色"
+    },
+    "ammonium_chloride": {
+      "solidColor": "白色"
+    },
+    "calcium_phosphate": {
+      "solidColor": "白色"
+    },
+    "aluminum_phosphate": {
+      "solidColor": "白色"
+    },
+    "chromium3_chloride": {
+      "solidColorNote": "無水物と水和物で色が異なる",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24808"
+    },
+    "manganese2_chloride": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24480"
+    },
+    "tin2_chloride": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24479"
+    },
+    "tin4_chloride": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24287"
+    },
+    "gold3_chloride": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/26030"
+    },
+    "sodium_sulfite": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24437"
+    },
+    "sodium_nitrite": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/23668193"
+    },
+    "sodium_hypochlorite": {
+      "solidColorNote": "通常は水溶液として扱われる",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/23665760"
+    },
+    "potassium_chlorate": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/6426889"
+    },
+    "sodium_thiosulfate": {
+      "solidColor": "白色",
+      "solidColorNote": "無水塩。一般的な結晶は五水和物",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24477"
+    },
+    "potassium_thiocyanate": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/516872"
+    },
+    "potassium_cyanide": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/9032"
+    },
+    "potassium_iodate": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/23665710"
+    },
+    "potassium_permanganate": {
+      "solidColor": "暗紫色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/516875"
+    },
+    "potassium_chromate": {
+      "solidColor": "黄色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24597"
+    },
+    "potassium_dichromate": {
+      "solidColor": "橙色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24502"
+    },
+    "iron2_oxide": {
+      "solidColor": "黒色"
+    },
+    "iron3_oxide": {
+      "solidColor": "赤褐色"
+    },
+    "iron2_sulfide": {
+      "solidColor": "黒色"
+    },
+    "iron2_sulfate": {
+      "solidColorNote": "水和状態により異なる"
+    },
+    "iron3_hydroxide": {
+      "solidColor": "赤褐色",
+      "solidColorNote": "沈殿"
+    },
+    "copper1_chloride": {
+      "solidColor": "白色"
+    },
+    "copper2_chloride": {
+      "solidColorNote": "水和状態により異なる"
+    },
+    "copper1_oxide": {
+      "solidColor": "赤色"
+    },
+    "copper2_oxide": {
+      "solidColor": "黒色"
+    },
+    "copper2_sulfide": {
+      "solidColor": "黒色"
+    },
+    "copper2_sulfate": {
+      "solidColorNote": "無水塩と水和物で色が異なる"
+    },
+    "copper2_hydroxide": {
+      "solidColor": "青色",
+      "solidColorNote": "沈殿"
+    },
+    "silver_chromate": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/62666"
+    },
+    "chromium3_oxide": {
+      "solidColor": "緑色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Chromium_III_-oxide-_Cr2O3"
+    },
+    "manganese2_oxide": {
+      "solidColor": "緑色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/1344-43-0"
+    },
+    "tin2_sulfide": {
+      "solidColor": "褐色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Tin_II_-sulfide"
+    },
+    "manganese2_sulfide": {
+      "solidColor": "淡赤色",
+      "solidColorNote": "沈殿",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Manganese-sulfide-_MNS"
+    },
+    "lead2_fluoride": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-fluoride"
+    },
+    "lead4_fluoride": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/lead_IV_-fluoride"
+    },
+    "lead2_oxide": {
+      "solidColor": "黄色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-monoxide"
+    },
+    "lead2_sulfide": {
+      "solidColor": "黒色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-sulfide-_PbS"
+    },
+    "lead2_chloride": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/7758-95-4"
+    },
+    "lead2_bromide": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-bromide-_PbBr2"
+    },
+    "lead2_iodide": {
+      "solidColor": "黄色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-iodide"
+    },
+    "lead2_nitrate": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-nitrate"
+    },
+    "lead2_sulfate": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-sulfate"
+    },
+    "lead2_carbonate": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-carbonate"
+    },
+    "lead2_chromate": {
+      "solidColor": "黄色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/lead_chromate"
+    },
+    "chromium3_sulfide": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/159397"
+    },
+    "chromium3_sulfate": {
+      "solidColorNote": "無水物と水和物で色が異なる",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/24930"
+    },
+    "manganese2_sulfate": {
+      "solidColorNote": "無水物と水和物で色が異なる",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Manganese-sulfate"
+    },
+    "manganese2_carbonate": {
+      "solidColor": "淡赤色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/598-62-9"
+    },
+    "tin2_oxide": {
+      "solidColor": "黒色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Tin%28II%29%20oxide"
+    },
+    "tin4_sulfide": {
+      "solidColor": "黄色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Tin-sulfide-_SnS2"
+    },
+    "tin2_sulfate": {
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Stannous-sulfate"
+    },
+    "sodium_permanganate": {
+      "solidColor": "紫色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Sodium-Permanganate"
+    },
+    "sodium_chromate": {
+      "solidColor": "黄色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Sodium-chromate-solution"
+    },
+    "sodium_dichromate": {
+      "solidColor": "橙色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/25408"
+    },
+    "barium_chromate": {
+      "solidColor": "黄色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/barium%20chromate"
+    },
+    "calcium_hypochlorite": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Calcium-hypochlorite"
+    },
+    "silver_cyanide": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/10475"
+    },
+    "silver_thiocyanate": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Silver-thiocyanate"
+    },
+    "lead4_oxide": {
+      "solidColor": "褐色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/Lead-dioxide"
+    },
+    "tin4_oxide": {
+      "solidColor": "白色",
+      "referenceUrl": "https://pubchem.ncbi.nlm.nih.gov/compound/tin%28IV%29%20oxide"
+    },
+    "salt_na_al_oh_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "salt_na2_zn_oh_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "salt_k4_fe_cn_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "salt_k3_fe_cn_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "standard"
+    },
+    "salt_ag_nh3_2_no3": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_ag_nh3_2_cl": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_cu_nh3_4_so4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_cu_nh3_4_no3": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_zn_nh3_4_cl": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_k2_zn_oh_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_na4_fe_cn_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_nh4_4_fe_cn_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_na3_fe_cn_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_nh4_3_fe_cn_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_k_ag_cn_2": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_na_ag_cn_2": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_ni_nh3_6_cl": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_ni_nh3_6_no3": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_co_nh3_6_cl": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_co_nh3_6_no3": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_co_nh3_6_br": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_k2_cu_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_nh4_2_cu_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_k_au_cl_2": {
+      "evidence": {
+        "status": "unverified",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Included by user request; individual evidence for simple K/Na gold(I) salts was not verified."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_na_au_cl_2": {
+      "evidence": {
+        "status": "unverified",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Included by user request; individual evidence for simple K/Na gold(I) salts was not verified."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_k_au_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_na_au_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_nh4_au_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_k2_pt_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_na2_pt_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_nh4_2_pt_cl_4": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_k2_pt_cl_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_na2_pt_cl_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_nh4_2_pt_cl_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_na2_sn_oh_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    },
+    "salt_k2_sn_oh_6": {
+      "evidence": {
+        "status": "composition_reviewed",
+        "sourceDocument": "docs/COMPLEX_IONS_USER_CATALOG.md",
+        "note": "Composition formula for learning; hydration and isolation form not individually established."
+      },
+      "curriculumLevel": "advanced"
+    }
+  }
+}
