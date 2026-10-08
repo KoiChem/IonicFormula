@@ -1,10 +1,10 @@
-import { readGithubProfile, writeGithubProfile } from './github-profile.js?v=20261009-complex-only-v1';
-import { escapeHtml, buildTenQuestionSet, validateData } from './core.js?v=20261009-complex-only-v1';
-import { composePublishedBundle } from './data-migrations.js?v=20261009-complex-only-v1';
-import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from './admin-lock.js?v=20261009-complex-only-v1';
-import { ITEM_DIFFICULTY_LABELS, CATEGORY_LABELS, PROFILE_CATEGORIES, questionProfileCatalog, validateQuestionProfile, itemDifficulty, toggleItemDifficulty, profileCandidates } from './question-profile.js?v=20261009-complex-only-v1';
-import { PROFILE_KEY, LEGACY_DATA_KEY, LEGACY_BACKUP_KEY, profileFromLegacy } from './profile-storage.js?v=20261009-complex-only-v1';
-import { searchMatches } from './admin-search.js?v=20261009-complex-only-v1';
+import { readGithubProfile, writeGithubProfile } from './github-profile.js?v=20261009-prompt-fit-v1';
+import { escapeHtml, buildTenQuestionSet, validateData } from './core.js?v=20261009-prompt-fit-v1';
+import { composePublishedBundle } from './data-migrations.js?v=20261009-prompt-fit-v1';
+import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from './admin-lock.js?v=20261009-prompt-fit-v1';
+import { ITEM_DIFFICULTY_LABELS, CATEGORY_LABELS, PROFILE_CATEGORIES, questionProfileCatalog, validateQuestionProfile, itemDifficulty, toggleItemDifficulty, profileCandidates } from './question-profile.js?v=20261009-prompt-fit-v1';
+import { PROFILE_KEY, LEGACY_DATA_KEY, LEGACY_BACKUP_KEY, profileFromLegacy } from './profile-storage.js?v=20261009-prompt-fit-v1';
+import { searchMatches } from './admin-search.js?v=20261009-prompt-fit-v1';
 
 const elements = Object.fromEntries([
  'admin-lock-screen','admin-editor','unlock-form','unlock-password','unlock-status','lock-button','change-password-form','change-password-status',

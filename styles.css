@@ -145,7 +145,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .ion-pair { display: flex; align-items: center; justify-content: center; gap: clamp(8px, 3vw, 16px); white-space: nowrap; }
 .ion-pair.names { width: max-content; max-width: 100%; margin-inline: auto; font-family: inherit; font-size: clamp(1.12rem, 5.4vw, 1.55rem); line-height: 1.45; }
 .ion-pair.names.is-two-lines { display: grid; width: 100%; gap: 2px; white-space: normal; }
-.ion-pair.names.is-measuring { visibility: hidden; }
 .ion-pair-first, .ion-pair-second { display: block; }
 .ion-separator { margin-left: .32em; color: var(--muted); font-family: inherit; font-size: .72em; font-weight: 700; }
 .formula-token { font-family: Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif; letter-spacing: .02em; }

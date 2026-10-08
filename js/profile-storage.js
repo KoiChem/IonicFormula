@@ -1,5 +1,5 @@
-import { migrateBundle } from './data-migrations.js?v=20261009-complex-only-v1';
-import { questionProfileCatalog, validateQuestionProfile, itemDifficulty } from './question-profile.js?v=20261009-complex-only-v1';
+import { migrateBundle } from './data-migrations.js?v=20261009-prompt-fit-v1';
+import { questionProfileCatalog, validateQuestionProfile, itemDifficulty } from './question-profile.js?v=20261009-prompt-fit-v1';
 
 export const PROFILE_KEY='ionicFormula.questionProfile.v1';
 export const LEGACY_DATA_KEY='ionicFormula.adminData.v2';

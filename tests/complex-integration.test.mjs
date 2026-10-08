@@ -68,6 +68,6 @@ test('published pack preserves the OFF question sequence and remains valid when 
 
 test('offline shell contains every new dependency with its release query',async()=>{
  const worker=await readFile(new URL('../service-worker.js',import.meta.url),'utf8');
- for(const path of ['js/admin-lock.js','js/admin-search.js','js/data-migrations.js','js/chemistry/complex-policy.js','js/chemistry/formula-syntax.js']) assert.ok(worker.includes(`"./${path}?v=20261009-complex-only-v1"`));
+ for(const path of ['js/admin-lock.js','js/admin-search.js','js/data-migrations.js','js/chemistry/complex-policy.js','js/chemistry/formula-syntax.js']) assert.ok(worker.includes(`"./${path}?v=20261009-prompt-fit-v1"`));
  assert.ok(worker.includes('"./data/complex-chemistry.json"'));
 });

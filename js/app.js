@@ -27,13 +27,13 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20261009-complex-only-v1";
-import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261009-complex-only-v1";
+} from "./core.js?v=20261009-prompt-fit-v1";
+import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261009-prompt-fit-v1";
 
-import { composePublishedBundle } from "./data-migrations.js?v=20261009-complex-only-v1";
-import { complexItemAllowed, isComplexItem } from "./chemistry/complex-policy.js?v=20261009-complex-only-v1";
-import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261009-complex-only-v1";
-import { validateQuestionProfile, questionProfileCatalog } from "./question-profile.js?v=20261009-complex-only-v1";
+import { composePublishedBundle } from "./data-migrations.js?v=20261009-prompt-fit-v1";
+import { complexItemAllowed, isComplexItem } from "./chemistry/complex-policy.js?v=20261009-prompt-fit-v1";
+import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261009-prompt-fit-v1";
+import { validateQuestionProfile, questionProfileCatalog } from "./question-profile.js?v=20261009-prompt-fit-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -687,14 +687,28 @@ function promptFor(question, item) {
 function scheduleNamePromptFit() {
   cancelAnimationFrame(promptFitFrame);
   promptFitFrame = requestAnimationFrame(() => {
+    promptFitFrame = null;
     const pair = elements.question_prompt.querySelector(".ion-pair.names");
-    if (!pair) return;
-    pair.classList.remove("is-two-lines");
-    pair.classList.add("is-measuring");
-    requestAnimationFrame(() => {
-      pair.classList.toggle("is-two-lines", pair.scrollWidth > pair.clientWidth + 1);
-      pair.classList.remove("is-measuring");
+    const availableWidth = elements.question_prompt.clientWidth;
+    if (!pair || !availableWidth) return;
+    // Measure the horizontal layout without changing or hiding the visible pair.
+    const probe = pair.cloneNode(true);
+    probe.classList.remove("is-two-lines", "is-measuring");
+    probe.setAttribute("aria-hidden", "true");
+    Object.assign(probe.style, {
+      position: "fixed", left: "-100000px", top: "0",
+      width: "max-content", maxWidth: "none", visibility: "hidden",
+      pointerEvents: "none",
     });
+    elements.question_prompt.append(probe);
+    try {
+      const needsTwoLines = probe.getBoundingClientRect().width > availableWidth + 1;
+      if (pair.classList.contains("is-two-lines") !== needsTwoLines) {
+        pair.classList.toggle("is-two-lines", needsTwoLines);
+      }
+    } finally {
+      probe.remove();
+    }
   });
 }
 
@@ -1663,7 +1677,15 @@ async function initialize() {
     compoundById = new Map(data.compounds.map((compound) => [compound.id, compound]));
     refreshPracticeOptions();
     updateWeakReviewBadge();
-    const resizeObserver = new ResizeObserver(scheduleNamePromptFit);
+    let promptCardWidth = null;
+    const resizeObserver = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      // Wrapping changes height; only a width change needs another measurement.
+      if (width !== promptCardWidth) {
+        promptCardWidth = width;
+        scheduleNamePromptFit();
+      }
+    });
     resizeObserver.observe(elements.question_card);
     document.fonts?.ready?.then(scheduleNamePromptFit);
   } catch (error) {
