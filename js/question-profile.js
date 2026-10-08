@@ -1,4 +1,4 @@
-import { isComplexItem } from './chemistry/complex-policy.js?v=20261008-github-profile-v1';
+import { isComplexItem } from './chemistry/complex-policy.js?v=20261009-complex-only-v1';
 
 export const ITEM_DIFFICULTY_LABELS = Object.freeze({ normal: 'やさしめ', hard: 'ややむず', both: '両方', off: '出題しない' });
 export const CATEGORY_LABELS = Object.freeze({ ionSimple: '単原子イオン', ionPolyatomic: '多原子イオン', ionVariableOx: '酸化数を表すイオン', simple11: '単原子イオン・1対1', simpleRatio: '単原子イオン・異なる比率', polyatomic: '多原子イオンを含む', variableOx: '酸化数を表す化合物' });
@@ -64,10 +64,11 @@ export function validateQuestionProfile(raw,catalog) {
  return structuredClone(raw);
 }
 
-export function profileCandidates(bundle,profile,domain,level,complexEnabled) {
+export function profileCandidates(bundle,profile,domain,level,complexEnabled,complexOnly=false) {
  const catalog=questionProfileCatalog(bundle), assignments=profile[`${domain}Difficulties`];
  const weights=profile.rules[domain][level].categoryWeights;
  return catalog[domain==='ion'?'ions':'compounds'].filter(item=>{
+  if (complexOnly) return item.complex;
   const membership=itemDifficulty(item,assignments);
   if (membership!==level && membership!=='both') return false;
   if (item.complex) return complexEnabled===true;

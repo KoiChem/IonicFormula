@@ -8,7 +8,7 @@
   <title>IonicFormula</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20261008-github-profile-v1">
+  <link rel="stylesheet" href="styles.css?v=20261009-complex-only-v1">
 </head>
 <body class="app-current" data-build="current">
   <header id="app-header" class="app-header">
@@ -79,9 +79,10 @@
 
         <fieldset class="choice-section compact-choice difficulty-with-complex">
           <legend class="sr-only">難易度</legend>
-          <div class="segment-control two">
+          <div class="segment-control three">
             <label><input type="radio" name="difficulty" value="normal" checked><span>やさしめ</span></label>
             <label><input type="radio" name="difficulty" value="hard"><span>ややむず</span></label>
+            <label class="complex-only-option"><input type="radio" name="difficulty" value="complex-only" aria-describedby="complex-only-tooltip"><span>錯のみ</span><small id="complex-only-tooltip" role="tooltip" class="complex-only-tooltip">難易度・出題ON/OFF設定にかかわらず、すべての錯イオン教材から出題</small></label>
           </div>
           <button id="complex-toggle" type="button" class="option-toggle complex-toggle" aria-pressed="false">錯イオン<span class="complex-toggle-state">OFF</span></button>
         </fieldset>
@@ -224,6 +225,6 @@
   </dialog>
 
   <div id="spark-layer" class="spark-layer" aria-hidden="true"></div>
-  <script type="module" src="js/app.js?v=20261008-github-profile-v1"></script>
+  <script type="module" src="js/app.js?v=20261009-complex-only-v1"></script>
 </body>
 </html>

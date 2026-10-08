@@ -399,3 +399,9 @@ h1 { margin: 0; font-size: 1.65rem; letter-spacing: -.03em; }
 .name-shortcuts.complex-name-shortcuts { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; }
 .name-shortcuts.complex-name-shortcuts button { white-space: nowrap; padding: 0 2px; }
 .name-shortcuts.complex-name-shortcuts button[data-key="ヒドロキシド"] { font-size: clamp(.65rem,2.7vw,.85rem); }
+
+/* The tooltip floats above the existing difficulty row without taking space. */
+.complex-only-option { position: relative; }
+.complex-only-tooltip { position: absolute; bottom: calc(100% + 10px); right: 0; width: min(200px, 60vw); padding: 10px 12px; border-radius: 10px; background: var(--primary-dark, #183b56); color: white; font-size: .8rem; line-height: 1.5; font-weight: 400; pointer-events: none; visibility: hidden; opacity: 0; z-index: 20; }
+.complex-only-option:hover .complex-only-tooltip, .complex-only-option:focus-within .complex-only-tooltip { visibility: visible; opacity: 1; transition: opacity .15s .65s, visibility 0s .65s; }
+.difficulty-with-complex .segment-control > label > span { white-space: nowrap; }

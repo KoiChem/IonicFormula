@@ -1,5 +1,5 @@
-import { complexItemAllowed, isComplexItem, validateComplexIon } from "./chemistry/complex-policy.js?v=20261008-github-profile-v1";
-import { questionProfileCatalog, validateQuestionProfile, profileCandidates } from "./question-profile.js?v=20261008-github-profile-v1";
+import { complexItemAllowed, isComplexItem, validateComplexIon } from "./chemistry/complex-policy.js?v=20261009-complex-only-v1";
+import { questionProfileCatalog, validateQuestionProfile, profileCandidates } from "./question-profile.js?v=20261009-complex-only-v1";
 // The UI exposes the two learning domains below. The three legacy compound
 // types remain in VARIANTS for imported history/settings compatibility.
 export const PRACTICE_TYPES = ["ion", "compound"];
@@ -854,7 +854,7 @@ function buildProfileRound(rawOptions, kind) {
   const bundle = { ions: rawOptions.ions, compounds: rawOptions.compounds };
   const profile = validateQuestionProfile(rawOptions.questionProfile, questionProfileCatalog(bundle));
   const ionById = new Map(bundle.ions.map(ion => [ion.id, ion]));
-  const candidates = profileCandidates(bundle, profile, domain, rawOptions.difficulty, rawOptions.complexEnabled);
+  const candidates = profileCandidates(bundle, profile, domain, rawOptions.difficulty, rawOptions.complexEnabled, rawOptions.complexOnly);
   const compoundOptions = { ...DEFAULT_COMPOUND_OPTIONS, ...rawOptions.compoundOptions };
   const source = domain === "ion" ? bundle.ions : bundle.compounds;
   const byId = new Map(source.map(item => [item.id, item]));
@@ -862,8 +862,8 @@ function buildProfileRound(rawOptions, kind) {
   const ordinary = eligible.filter(item => !item.complex);
   const complex = eligible.filter(item => item.complex);
   const total = Math.min(10, eligible.length);
-  const rule = profile.rules[domain][rawOptions.difficulty];
-  const complexCount = rawOptions.complexEnabled === true ? Math.ceil(total * rule.complexPercent / 100) : 0;
+  const rule = rawOptions.complexOnly ? { complexPercent: 100, categoryWeights: null } : profile.rules[domain][rawOptions.difficulty];
+  const complexCount = rawOptions.complexOnly ? total : rawOptions.complexEnabled === true ? Math.ceil(total * rule.complexPercent / 100) : 0;
   if (complex.length < complexCount) throw new Error(`錯イオンの候補が不足しています（必要 ${complexCount}件／候補 ${complex.length}件）。管理画面で出題対象か割合を調整してください。`);
   if (ordinary.length < total - complexCount) throw new Error(`通常問題の候補が不足しています（必要 ${total - complexCount}件／候補 ${ordinary.length}件）。管理画面で出題対象か割合を調整してください。`);
 
@@ -887,7 +887,7 @@ function buildProfileRound(rawOptions, kind) {
     const weakTarget = kind === "weak" ? count : weakAllocation[isComplex ? "complex" : "ordinary"];
     const options = {
       ...rawOptions, history: rawOptions.history ?? {}, random: rawOptions.random ?? Math.random,
-      questionProfile: null, practiceType, settings, profileLimit: count,
+      questionProfile: null, practiceType, settings, profileLimit: count, complexEnabled: rawOptions.complexOnly || rawOptions.complexEnabled,
       ions: bundle.ions.map(item => ({ ...item, enabled: domain === "compound" || ids.has(item.id), difficulty: undefined })),
       compounds: bundle.compounds.filter(item => ids.has(item.id)).map(item => ({ ...item, enabled: true, difficulty: undefined })),
     };
@@ -903,7 +903,7 @@ function buildProfileRound(rawOptions, kind) {
   const questions = shuffled([
     ...buildPart(ordinary, total - complexCount, false),
     ...buildPart(complex, complexCount, true),
-  ], rawOptions.random ?? Math.random).map(question => ({ ...question, difficulty: rawOptions.difficulty }));
+  ], rawOptions.random ?? Math.random).map(question => ({ ...question, difficulty: rawOptions.difficulty, ...(rawOptions.complexOnly ? { complexOnly: true } : {}) }));
   if (kind === "weak") {
     const isWeak = question => Boolean(positiveWeaknessForVariant(history, domain, question.itemId, question.variant));
     questions.sort((left, right) => Number(isWeak(right)) - Number(isWeak(left)));

@@ -27,13 +27,13 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20261008-github-profile-v1";
-import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261008-github-profile-v1";
+} from "./core.js?v=20261009-complex-only-v1";
+import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261009-complex-only-v1";
 
-import { composePublishedBundle } from "./data-migrations.js?v=20261008-github-profile-v1";
-import { complexItemAllowed } from "./chemistry/complex-policy.js?v=20261008-github-profile-v1";
-import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261008-github-profile-v1";
-import { validateQuestionProfile, questionProfileCatalog } from "./question-profile.js?v=20261008-github-profile-v1";
+import { composePublishedBundle } from "./data-migrations.js?v=20261009-complex-only-v1";
+import { complexItemAllowed, isComplexItem } from "./chemistry/complex-policy.js?v=20261009-complex-only-v1";
+import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261009-complex-only-v1";
+import { validateQuestionProfile, questionProfileCatalog } from "./question-profile.js?v=20261009-complex-only-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -121,6 +121,7 @@ function rememberPresentation(question) {
 
 const preferences = {
   complexEnabled: false,
+  complexOnly: false,
   sound: true,
   showCompanionAnswer: true,
   ionAnswerPreset: "random",
@@ -137,6 +138,8 @@ preferences.sound = preferences.soundLevel !== "off";
 preferences.ionAnswerPreset = ionAnswerPresetFor(preferences.ionAnswerPreset);
 preferences.compoundOptions = { promptFormula: true, promptName: true, answerFormula: true, answerName: true, answerBoth: false, ...(preferences.compoundOptions ?? {}) };
 preferences.complexEnabled = preferences.complexEnabled === true;
+preferences.complexOnly = preferences.complexOnly === true;
+if (preferences.complexOnly) elements.setup_form.querySelector('[name="difficulty"][value="complex-only"]').checked = true;
 preferences.showCompanionAnswer = preferences.showCompanionAnswer !== false;
 
 async function fetchJson(path) {
@@ -313,7 +316,7 @@ function renderBetaQuestionProgress() {
 
 function betaGameDescription() {
   if (!IS_CURRENT || !session) return null;
-  const difficulty = session.difficulty === "hard" ? "ややむず" : "やさしめ";
+  const difficulty = session.complexOnly ? "錯イオンのみ" : session.difficulty === "hard" ? "ややむず" : "やさしめ";
   if (session.practiceType === "ion") {
     const answer = {
       formula: "イオン式",
@@ -342,7 +345,7 @@ function renderBetaGameDescription(quiz) {
   if (!description) return;
   const difficulty = document.createElement("span");
   difficulty.className = "active-game-difficulty";
-  difficulty.textContent = `${description.difficulty}${session.complexEnabled ? "・錯イオンあり" : ""}`;
+  difficulty.textContent = `${description.difficulty}${session.complexEnabled && !session.complexOnly ? "・錯イオンあり" : ""}`;
   elements.active_game_description.append(difficulty);
   if (description.route) {
     const route = document.createElement("span");
@@ -729,7 +732,7 @@ function configureInput(answer, question, field) {
   elements.formula_keyboard.classList.toggle("ion-entry", formulaMode && question.domain === "ion");
   elements.charge_keys.hidden = !(formulaMode && question.domain === "ion");
   elements.name_shortcuts.hidden = formulaMode;
-  elements.complex_name_shortcuts.hidden = formulaMode || !session.complexEnabled || session.difficulty === "hard";
+  elements.complex_name_shortcuts.hidden = formulaMode || !session.complexEnabled || (!session.complexOnly && session.difficulty === "hard");
   elements.name_shortcuts.querySelector('[data-key="イオン"]').hidden = question.domain !== "ion";
   elements.name_shortcuts.classList.toggle("compound-name-entry", !formulaMode && question.domain !== "ion");
   elements.name_shortcuts.classList.toggle("ion-name-entry", !formulaMode && question.domain === "ion");
@@ -906,6 +909,7 @@ function betaSessionSummaryKey() {
     practiceType: session.practiceType,
     difficulty: session.difficulty,
     ...(session.complexEnabled ? { complexEnabled: true } : {}),
+    ...(session.complexOnly ? { complexOnly: true } : {}),
     questionCount: session.weakMode ? "weak" : (session.endless ? "endless" : "10"),
     ionAnswerPreset: session.practiceType === "ion" ? ionAnswerPresetFor(session.ionAnswerPreset) : null,
     answerPreset: session.practiceType === "compound" ? compoundAnswerPresetForOptions(options) : null,
@@ -926,7 +930,7 @@ function renderBetaResultReview() {
 
 function betaResultGameModeDescription() {
   if (!IS_CURRENT || !session) return null;
-  const difficulty = session.difficulty === "hard" ? "ややむず" : "やさしめ";
+  const difficulty = session.complexOnly ? "錯イオンのみ" : session.difficulty === "hard" ? "ややむず" : "やさしめ";
   if (session.practiceType === "compound") return { difficulty, route: betaGameDescription()?.route ?? "" };
   const route = {
     formula: "イオン名 → イオン式",
@@ -944,7 +948,7 @@ function renderBetaResultGameMode() {
   if (!description) return;
   const difficulty = document.createElement("span");
   difficulty.className = "result-game-difficulty";
-  difficulty.textContent = `${description.difficulty}${session.complexEnabled ? "・錯イオンあり" : ""}`;
+  difficulty.textContent = `${description.difficulty}${session.complexEnabled && !session.complexOnly ? "・錯イオンあり" : ""}`;
   const route = document.createElement("span");
   route.className = "result-game-route";
   route.textContent = description.route;
@@ -1320,6 +1324,7 @@ function makeRound(endless) {
     compoundOptions: session.compoundOptions,
     ionAnswerPreset: session.ionAnswerPreset,
     complexEnabled: session.complexEnabled,
+    complexOnly: session.complexOnly,
   });
 }
 
@@ -1333,9 +1338,11 @@ function compoundOptionsValid(options = preferences.compoundOptions) {
 }
 
 function refreshPracticeOptions() {
-  elements.complex_toggle.classList.toggle("is-on", preferences.complexEnabled);
-  elements.complex_toggle.setAttribute("aria-pressed", String(preferences.complexEnabled));
-  elements.complex_toggle.querySelector("span").textContent = preferences.complexEnabled ? "ON" : "OFF";
+  const complexEnabled = preferences.complexOnly || preferences.complexEnabled;
+  elements.complex_toggle.disabled = preferences.complexOnly;
+  elements.complex_toggle.classList.toggle("is-on", complexEnabled);
+  elements.complex_toggle.setAttribute("aria-pressed", String(complexEnabled));
+  elements.complex_toggle.querySelector("span").textContent = complexEnabled ? "ON" : "OFF";
   const practiceType = selectedPracticeType();
   const compoundMode = practiceType === "compound";
   const ionMode = practiceType === "ion";
@@ -1392,17 +1399,18 @@ async function startSession(settings = null) {
   const questionCount = formData.get("question-count");
   const chosen = settings ?? {
     practiceType: formData.get("practice-type"),
-    difficulty: formData.get("difficulty"),
+    difficulty: formData.get("difficulty") === "complex-only" ? "normal" : formData.get("difficulty"),
+    complexOnly: preferences.complexOnly,
     endless: questionCount === "endless",
     weakMode: questionCount === "weak",
     compoundOptions: { ...preferences.compoundOptions },
     ionAnswerPreset: preferences.ionAnswerPreset,
-    complexEnabled: preferences.complexEnabled,
+    complexEnabled: preferences.complexOnly || preferences.complexEnabled,
   };
   session = {
     ...chosen,
     questionProfile,
-    complexEnabled: chosen.complexEnabled === true,
+    complexEnabled: chosen.complexOnly === true || chosen.complexEnabled === true,
     questions: [],
     plan: null,
     index: 0,
@@ -1461,7 +1469,7 @@ function weakReviewHtml(entry) {
 }
 
 function currentWeakItems() {
-  return weakHistoryItems(readLocal(STORAGE.history, {}), data?.ions ?? [], data?.compounds ?? []).filter((entry) => complexItemAllowed(entry.item, preferences.complexEnabled, ionById));
+  return weakHistoryItems(readLocal(STORAGE.history, {}), data?.ions ?? [], data?.compounds ?? []).filter((entry) => preferences.complexOnly ? isComplexItem(entry.item, ionById) : complexItemAllowed(entry.item, preferences.complexEnabled, ionById));
 }
 
 function updateWeakReviewBadge() {
@@ -1575,6 +1583,7 @@ function bindEvents() {
     compoundOptions: { ...session.compoundOptions },
     ionAnswerPreset: session.ionAnswerPreset,
     complexEnabled: session.complexEnabled,
+    complexOnly: session.complexOnly,
   }));
   elements.back_to_setup.addEventListener("click", () => showScreen("setup"));
   elements.weak_review_button.addEventListener("click", openWeakReview);
@@ -1598,6 +1607,12 @@ function bindEvents() {
     startSession();
   });
   elements.setup_form.addEventListener("change", (event) => {
+    if (event.target.name === "difficulty") {
+      preferences.complexOnly = event.target.value === "complex-only";
+      savePreferences();
+      refreshPracticeOptions();
+      updateWeakReviewBadge();
+    }
     if (event.target.name === "practice-type") refreshPracticeOptions();
   });
   elements.compound_options.addEventListener("click", (event) => {
