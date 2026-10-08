@@ -22,7 +22,29 @@
       }
     }
   },
-  "ionDifficulties": {},
+  "ionDifficulties": {
+    "lithium": "normal",
+    "sodium": "normal",
+    "potassium": "normal",
+    "magnesium": "normal",
+    "calcium": "normal",
+    "aluminum": "normal",
+    "nitride": "hard",
+    "fluoride": "normal",
+    "chloride": "normal",
+    "oxide": "normal",
+    "sulfide": "normal",
+    "hydroxide": "normal",
+    "complex_pt_cl_6": "hard",
+    "complex_ag_cn_2": "hard",
+    "complex_ni_nh3_6": "hard",
+    "complex_co_nh3_6": "hard",
+    "complex_au_cl_2": "hard",
+    "complex_pt_cl_4": "hard",
+    "complex_sn_oh_3": "hard",
+    "complex_sn_oh_6": "hard",
+    "hydronium": "both"
+  },
   "compoundDifficulties": {
     "sodium_chloride": "normal",
     "potassium_chloride": "normal",
