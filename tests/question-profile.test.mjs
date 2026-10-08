@@ -14,7 +14,7 @@ const storage = () => { const values = new Map(); return { getItem: key => value
 
 test('catalog excludes support-only ions but retains all compound references', () => {
  const c = catalog();
- assert.equal(c.ions.length, 46); assert.equal(c.compounds.length, 192);
+ assert.equal(c.ions.length, 46); assert.equal(c.compounds.length, 194);
  assert.equal(c.ions.some(i => i.id === 'hydrogen' || i.id === 'chromium3'), false);
  assert.equal(c.ions.find(i => i.id === 'sodium').formula, 'Na+');
  assert.equal(c.ions.find(i => i.id === 'complex_fe_cn_6_ii').formula, '[Fe(CN)6]4-');

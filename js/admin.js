@@ -1,9 +1,10 @@
-import { escapeHtml, buildTenQuestionSet, validateData } from './core.js?v=20261004-question-profile-v1';
-import { composePublishedBundle } from './data-migrations.js?v=20261004-question-profile-v1';
-import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from './admin-lock.js?v=20261004-question-profile-v1';
-import { ITEM_DIFFICULTY_LABELS, CATEGORY_LABELS, PROFILE_CATEGORIES, questionProfileCatalog, validateQuestionProfile, itemDifficulty, toggleItemDifficulty, profileCandidates } from './question-profile.js?v=20261004-question-profile-v1';
-import { PROFILE_KEY, LEGACY_DATA_KEY, LEGACY_BACKUP_KEY, loadQuestionProfile, saveQuestionProfile, profileFromLegacy } from './profile-storage.js?v=20261004-question-profile-v1';
-import { searchMatches } from './admin-search.js?v=20261004-question-profile-v1';
+import { readGithubProfile, writeGithubProfile } from './github-profile.js?v=20261008-github-profile-v1';
+import { escapeHtml, buildTenQuestionSet, validateData } from './core.js?v=20261008-github-profile-v1';
+import { composePublishedBundle } from './data-migrations.js?v=20261008-github-profile-v1';
+import { INITIAL_PASSWORD_RECORD, currentPasswordRecord, verifyPassword, changeAdminPassword } from './admin-lock.js?v=20261008-github-profile-v1';
+import { ITEM_DIFFICULTY_LABELS, CATEGORY_LABELS, PROFILE_CATEGORIES, questionProfileCatalog, validateQuestionProfile, itemDifficulty, toggleItemDifficulty, profileCandidates } from './question-profile.js?v=20261008-github-profile-v1';
+import { PROFILE_KEY, LEGACY_DATA_KEY, LEGACY_BACKUP_KEY, profileFromLegacy } from './profile-storage.js?v=20261008-github-profile-v1';
+import { searchMatches } from './admin-search.js?v=20261008-github-profile-v1';
 
 const elements = Object.fromEntries([
  'admin-lock-screen','admin-editor','unlock-form','unlock-password','unlock-status','lock-button','change-password-form','change-password-status',
@@ -12,6 +13,8 @@ const elements = Object.fromEntries([
 // The lock handlers use these aliases to keep the existing password lifecycle.
 elements.lockScreen=elements.adminLockScreen; elements.editor=elements.adminEditor;
 let bundle, pack, publishedProfile, state, catalog, saved;
+let githubSha;
+let saving=false;
 let activeTab='ratio';
 let initialized=false;
 let validationTimer;
@@ -23,14 +26,14 @@ function showStatus(message,error=false) {
  elements.saveStatus.classList.toggle('is-error',error);
 }
 function dirty() { return state && JSON.stringify(state)!==saved; }
-function updateSaveButton() { elements.saveLocal.disabled=!state || !dirty(); }
+function updateSaveButton() { elements.saveLocal.disabled=saving || !githubSha || !state || !dirty(); }
 function edit(update) {
  const next=clone(state);update(next);state=next;
  showStatus('未保存の変更があります。');updateSaveButton();
  clearTimeout(validationTimer);validationTimer=setTimeout(validateAndShow,150);
 }
 async function fetchJson(path) {
- const response=await fetch(path);if(!response.ok)throw new Error(`${path}を読み込めません。`);return response.json();
+ const response=await fetch(path,{cache:"no-store"});if(!response.ok)throw new Error(`${path}を読み込めません。`);return response.json();
 }
 function assignmentKey(domain) { return `${domain}Difficulties`; }
 function eligible(domain,level,complexEnabled=true) { return profileCandidates(bundle,state,domain,level,complexEnabled); }
@@ -59,7 +62,7 @@ function validateAndShow() {
  if(!state)return [];
  const errors=profileProblems(state);
  elements.validationPanel.className=`validation-panel ${errors.length?'invalid':'valid'}`;
- elements.validationPanel.innerHTML=errors.length?`<strong>保存前に出題設定を調整してください。</strong><ul>${errors.map(error=>`<li>${escapeHtml(error)}</li>`).join('')}</ul>`:'<strong>✓ 出題設定を確認しました。</strong><span> 変更は保存後、次の学習開始から反映されます。</span>';
+ elements.validationPanel.innerHTML=errors.length?`<strong>保存前に出題設定を調整してください。</strong><ul>${errors.map(error=>`<li>${escapeHtml(error)}</li>`).join('')}</ul>`:'<strong>✓ 出題設定を確認しました。</strong><span> 変更はGitHubへの保存と公開完了後、次の学習開始から反映されます。</span>';
  return errors;
 }
 function ratioMarkup() {
@@ -107,8 +110,9 @@ async function initialize() {
   pack=chemistryPack;bundle=composePublishedBundle({ions,compounds,difficulty},pack);catalog=questionProfileCatalog(bundle);publishedProfile=validateQuestionProfile(profile,catalog);
   const validation=validateData(bundle.ions,bundle.compounds,bundle.difficulty);
   if(!validation.valid)throw new Error(`教材マスターに${validation.errors.length}件のエラーがあります。`);
-  const result=loadQuestionProfile(localStorage,publishedProfile,bundle,pack);
-  state=result.profile;saved=JSON.stringify(state);renderActive();validateAndShow();showStatus(result.message);
+  const result=await readGithubProfile();
+  githubSha=result.sha;publishedProfile=validateQuestionProfile(result.profile,catalog);
+  state=clone(publishedProfile);saved=JSON.stringify(state);renderActive();validateAndShow();showStatus("GitHubの共通設定を読み込みました。旧端末内設定は学習に適用しません。");
  } catch(error) {
   elements.validationPanel.className='validation-panel invalid';elements.validationPanel.textContent=`読み込み失敗：${error.message}。初期設定に戻すか、元の保存データを書き出して確認してください。`;
   elements.saveLocal.disabled=true;
@@ -145,16 +149,34 @@ elements.profileContent.addEventListener('change',event=>{
   }
  });renderActive();
 });
+const saveDialog=document.getElementById('github-save-dialog');
+const tokenInput=document.getElementById('github-token');
+const saveForm=document.getElementById('github-save-form');
+const tokenStatus=document.getElementById('github-save-status');
 elements.saveLocal.addEventListener('click',()=>{
- if(!state)return;
+ if(!state||saving)return;
  if(validateAndShow().length){showStatus('出題できない組み合わせがあります。設定を確認してください。',true);return;}
- try {state=saveQuestionProfile(localStorage,state,bundle);saved=JSON.stringify(state);updateSaveButton();showStatus('この端末へ保存しました。次の学習開始から反映されます。');}
- catch(error){showStatus(`保存できませんでした：${error.message}`,true);}
+ tokenStatus.textContent='';saveDialog.showModal();tokenInput.focus();
+});
+saveDialog.addEventListener('close',()=>{tokenInput.value='';});
+document.getElementById('github-save-cancel').addEventListener('click',()=>saveDialog.close());
+saveForm.addEventListener('submit',async(event)=>{
+ event.preventDefault();if(saving)return;
+ const candidate=validateQuestionProfile(state,catalog), token=tokenInput.value;
+ tokenInput.value='';saving=true;updateSaveButton();
+ saveForm.querySelector('button[type="submit"]').disabled=true;
+ tokenStatus.textContent='GitHubへ保存しています…';
+ try {
+  const result=await writeGithubProfile(candidate,githubSha,token);
+  githubSha=result.sha;saved=JSON.stringify(candidate);publishedProfile=clone(candidate);
+  saveDialog.close();showStatus('GitHubへ保存しました。Pagesの公開完了後、次の学習開始から反映されます。');
+  const link=document.createElement('a');link.href=result.commitUrl;link.textContent=' 保存コミットを確認';link.target='_blank';link.rel='noopener';elements.saveStatus.append(link);
+ }catch(error){tokenStatus.textContent=error.message;showStatus('保存できませんでした。変更は画面に残っています。',true);}
+ finally{saving=false;saveForm.querySelector('button[type="submit"]').disabled=false;updateSaveButton();}
 });
 elements.resetLocal.addEventListener('click',()=>{
- if(!publishedProfile||!confirm('出題設定を初期状態に戻しますか？学習履歴と教材バックアップは保持されます。'))return;
- try {state=saveQuestionProfile(localStorage,publishedProfile,bundle);saved=JSON.stringify(state);renderActive();validateAndShow();showStatus('出題設定を初期状態に戻しました。');}
- catch(error){showStatus(`保存できませんでした：${error.message}`,true);}
+ if(!publishedProfile||saving||!confirm('画面の変更を取り消し、読み込み時または保存済みの設定に戻しますか？'))return;
+ state=clone(publishedProfile);renderActive();validateAndShow();showStatus('画面の変更を取り消しました。');
 });
 elements.exportProfile.addEventListener('click',()=>{
  if(state)download('question-profile.json',state);

@@ -1,5 +1,5 @@
-import { migrateBundle } from './data-migrations.js?v=20261004-question-profile-v1';
-import { questionProfileCatalog, validateQuestionProfile, itemDifficulty } from './question-profile.js?v=20261004-question-profile-v1';
+import { migrateBundle } from './data-migrations.js?v=20261008-github-profile-v1';
+import { questionProfileCatalog, validateQuestionProfile, itemDifficulty } from './question-profile.js?v=20261008-github-profile-v1';
 
 export const PROFILE_KEY='ionicFormula.questionProfile.v1';
 export const LEGACY_DATA_KEY='ionicFormula.adminData.v2';

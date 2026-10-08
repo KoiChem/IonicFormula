@@ -117,9 +117,9 @@ function randomFrom(seed = 1) {
 
 test("published data includes the lithium, nitride, and lead expansions", () => {
   assert.equal(ions.length, 47);
-  assert.equal(compounds.length, 156);
+  assert.equal(compounds.length, 158);
   assert.equal(new Set(ions.map((item) => item.id)).size, 47);
-  assert.equal(new Set(compounds.map((item) => item.id)).size, 156);
+  assert.equal(new Set(compounds.map((item) => item.id)).size, 158);
   assert.deepEqual(ions.find((item) => item.id === "lithium"), {
     id: "lithium", formula: "Li", charge: 1, name: "リチウムイオン", type: "cation",
     atomicity: "monatomic", requiresOxidationNumeral: false, enabled: true,
@@ -213,7 +213,7 @@ test("published data passes validation and reports only intentional acetate warn
   const result = validateData(ions, compounds, settings);
   assert.equal(result.valid, true, result.errors.join("\n"));
   assert.equal(result.errors.length, 0);
-  assert.equal(result.warnings.length, 3);
+  assert.equal(result.warnings.length, 5);
   assert.ok(result.warnings.every((warning) => warning.includes("許容別表記登録済み")));
 });
 
@@ -700,12 +700,12 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
     readFile(new URL("../styles.css", import.meta.url), "utf8"),
     readFile(new URL("../service-worker.js", import.meta.url), "utf8"),
   ]);
-  const version = "20261004-question-profile-v1";
+  const version = "20261008-github-profile-v1";
   assert.match(html, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(html, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`core\\.js\\?v=${version}`));
   assert.match(app, new RegExp(`formula-keyboard-gesture\\.js\\?v=${version}`));
-  assert.match(worker, /const CACHE_NAME = "ionic-formula-v38"/);
+  assert.match(worker, /const CACHE_NAME = "ionic-formula-v39"/);
   assert.match(worker, new RegExp(`styles\\.css\\?v=${version}`));
   assert.match(worker, new RegExp(`js/app\\.js\\?v=${version}`));
   assert.match(worker, new RegExp(`js/core\\.js\\?v=${version}`));
@@ -726,3 +726,13 @@ test("current answer display keeps the UI and cache identifiers aligned", async 
   assert.match(styles, /@media \(orientation: portrait\) and \(max-height: 600px\)/);
   assert.match(styles, /\.app-current \.question-card \{ min-height: 98px/);
 });
+
+ test("new divalent acetates are hard-only and accept both formula orders",()=>{
+  for(const [id,metal] of [["lead2_acetate","Pb"],["calcium_acetate","Ca"]]){
+   const item=compounds.find(c=>c.id===id);assert.equal(item.difficulty,"hard");
+   const spec={type:"formula",canonical:item.formula,accepted:item.acceptedFormulaVariants};
+   assert.equal(evaluateAnswer(`(CH3COO)2${metal}`,spec).correct,true);
+   assert.equal(evaluateAnswer(`${metal}(CH3COO)2`,spec).correct,true);
+   assert.equal(evaluateAnswer(`${metal}CH3COO`,spec).correct,false);
+  }
+ });

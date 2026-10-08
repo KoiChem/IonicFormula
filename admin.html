@@ -7,8 +7,8 @@
   <meta name="robots" content="noindex, nofollow">
   <title>出題設定 | IonicFormula</title>
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=20261004-question-profile-v1">
-  <link rel="stylesheet" href="admin.css?v=20261004-question-profile-v1">
+  <link rel="stylesheet" href="styles.css?v=20261008-github-profile-v1">
+  <link rel="stylesheet" href="admin.css?v=20261008-github-profile-v1">
 </head>
 <body>
   <section id="admin-lock-screen" class="lock-screen" aria-labelledby="lock-heading">
@@ -27,9 +27,9 @@
     <div>
       <a href="./">← 学習画面へ</a>
       <h1>出題設定</h1>
-      <p>イオン・化合物の出題難易度と割合を調整します。設定はこの端末に保存され、次の学習開始から反映されます。</p>
+      <p>イオン・化合物の出題難易度と割合を調整します。設定はGitHubへ保存し、公開完了後の学習開始から全端末に反映されます。</p>
     </div>
-    <div class="admin-header-actions"><span class="local-badge">端末内の設定</span><button id="lock-button" type="button">ロック</button></div>
+    <div class="admin-header-actions"><span class="local-badge">GitHub共通設定</span><button id="lock-button" type="button">ロック</button></div>
   </header>
 
   <main class="admin-shell">
@@ -49,10 +49,21 @@
         <button id="export-profile" type="button">設定JSONを書き出す</button>
       </div>
       <div class="toolbar-group">
-        <button id="reset-local" type="button" disabled>初期設定に戻す</button>
-        <button id="save-local" class="primary-small" type="button" disabled>保存</button>
+        <button id="reset-local" type="button" disabled>読み込み時の設定に戻す</button>
+        <button id="save-local" class="primary-small" type="button" disabled>GitHubへ保存</button>
       </div>
     </section>
+    <dialog id="github-save-dialog">
+      <form id="github-save-form">
+        <h2>GitHubへ保存</h2>
+        <p>全端末共通の出題設定を更新します。保存後、Pagesの公開完了をお待ちください。</p>
+        <p>Fine-grained tokenの対象をKoiChem/IonicFormula、ContentsをRead and writeにしてください。トークンは保存せず、送信後または閉じると破棄します。</p>
+        <label>GitHubトークン<input id="github-token" type="password" autocomplete="off" required></label>
+        <button type="submit">保存を実行</button>
+        <button id="github-save-cancel" type="button">キャンセル</button>
+        <p id="github-save-status" role="alert"></p>
+      </form>
+    </dialog>
     <div id="save-status" class="save-status" role="status" aria-live="polite"></div>
     <section id="validation-panel" class="validation-panel" aria-live="polite"></section>
     <nav id="profile-tabs" class="admin-tabs" aria-label="調整項目">
@@ -67,10 +78,10 @@
       <span id="row-count" role="status"></span>
     </section>
     <section id="profile-content" class="profile-content" aria-label="出題設定の内容"></section>
-    <details class="profile-data-help"><summary>教材データと旧バックアップ</summary><p>教材の追加・名称・式の編集は公開用JSONファイルで行います。この画面では出題設定だけを変更します。旧教材の編集内容はバックアップに保持されています。</p><button id="export-backup" type="button">旧教材バックアップを書き出す</button><p>公開データ：<a href="data/ions.json">イオン</a> ／ <a href="data/compounds.json">化合物</a> ／ <a href="data/complex-chemistry.json">錯イオン</a> ／ <a href="data/chemistry-metadata.json">補足情報</a> ／ <a href="data/question-profile.json">初期出題設定</a></p></details>
+    <details class="profile-data-help"><summary>教材データと旧バックアップ</summary><p>教材の追加・名称・式の編集は公開用JSONファイルで行います。この画面では出題設定だけを変更します。旧教材の原本や既存バックアップは端末内に残しています。</p><button id="export-backup" type="button">旧教材バックアップを書き出す</button><p>公開データ：<a href="data/ions.json">イオン</a> ／ <a href="data/compounds.json">化合物</a> ／ <a href="data/complex-chemistry.json">錯イオン</a> ／ <a href="data/chemistry-metadata.json">補足情報</a> ／ <a href="data/question-profile.json">共通出題設定</a></p></details>
   </main>
   </div>
 
-  <script type="module" src="js/admin.js?v=20261004-question-profile-v1"></script>
+  <script type="module" src="js/admin.js?v=20261008-github-profile-v1"></script>
 </body>
 </html>

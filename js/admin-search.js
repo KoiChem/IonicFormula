@@ -1,4 +1,4 @@
-import { ionAnswer, normalizeFormula, normalizeName } from "./core.js?v=20261004-question-profile-v1";
+import { ionAnswer, normalizeFormula, normalizeName } from "./core.js?v=20261008-github-profile-v1";
 
 export function searchMatches(item, query, field) {
   if (!String(query).trim()) return true;

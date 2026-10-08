@@ -2248,5 +2248,47 @@
       "ionNamesToFormula": true,
       "ionNamesToName": true
     }
+  },
+  {
+    "id": "lead2_acetate",
+    "cation": "lead2",
+    "anion": "acetate",
+    "formula": "(CH3COO)2Pb",
+    "name": "酢酸鉛(Ⅱ)",
+    "enabled": true,
+    "difficulty": "hard",
+    "acceptedFormulaVariants": [
+      {
+        "formula": "Pb(CH3COO)2",
+        "note": "陽イオンを先に書いた式も正答とします。"
+      }
+    ],
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
+  },
+  {
+    "id": "calcium_acetate",
+    "cation": "calcium",
+    "anion": "acetate",
+    "formula": "(CH3COO)2Ca",
+    "name": "酢酸カルシウム",
+    "enabled": true,
+    "difficulty": "hard",
+    "acceptedFormulaVariants": [
+      {
+        "formula": "Ca(CH3COO)2",
+        "note": "陽イオンを先に書いた式も正答とします。"
+      }
+    ],
+    "questionModes": {
+      "nameToFormula": true,
+      "formulaToName": true,
+      "ionsToFormula": true,
+      "ionsToName": true
+    }
   }
 ]

@@ -27,13 +27,13 @@ import {
   recordRecentPresentation,
   validateData,
   weakHistoryItems,
-} from "./core.js?v=20261004-question-profile-v1";
-import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261004-question-profile-v1";
+} from "./core.js?v=20261008-github-profile-v1";
+import { alternateCaseLetter, classifyCaseFlick, classifyBracketFlick, isPointerGeneratedClick } from "./formula-keyboard-gesture.js?v=20261008-github-profile-v1";
 
-import { composePublishedBundle } from "./data-migrations.js?v=20261004-question-profile-v1";
-import { complexItemAllowed } from "./chemistry/complex-policy.js?v=20261004-question-profile-v1";
-import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261004-question-profile-v1";
-import { loadQuestionProfile } from "./profile-storage.js?v=20261004-question-profile-v1";
+import { composePublishedBundle } from "./data-migrations.js?v=20261008-github-profile-v1";
+import { complexItemAllowed } from "./chemistry/complex-policy.js?v=20261008-github-profile-v1";
+import { formulaSyntaxValid } from "./chemistry/formula-syntax.js?v=20261008-github-profile-v1";
+import { validateQuestionProfile, questionProfileCatalog } from "./question-profile.js?v=20261008-github-profile-v1";
 
 const IS_CURRENT = document.body.dataset.build === "current";
 const SOUND_LEVELS = ["off", "medium", "high"];
@@ -140,7 +140,7 @@ preferences.complexEnabled = preferences.complexEnabled === true;
 preferences.showCompanionAnswer = preferences.showCompanionAnswer !== false;
 
 async function fetchJson(path) {
-  const response = await fetch(path);
+  const response = await fetch(path, { cache: "no-store" });
   if (!response.ok) throw new Error(`${path}を読み込めませんでした。`);
   return response.json();
 }
@@ -186,7 +186,7 @@ async function loadData() {
   if (!validation.valid) {
     throw new Error(`教材データに${validation.errors.length}件のエラーがあります。`);
   }
-  const { profile } = loadQuestionProfile(localStorage, publishedProfile, published, pack);
+  const profile = validateQuestionProfile(publishedProfile, questionProfileCatalog(published));
   return { ...published, questionProfile: profile, publishedProfile, chemistryPack: pack };
 }
 
@@ -1374,13 +1374,19 @@ function toggleCompoundOption(key) {
   refreshPracticeOptions();
 }
 
-function startSession(settings = null) {
+let startingSession = false;
+async function startSession(settings = null) {
+  if (startingSession) return;
+  startingSession = true;
+  primeAudio();
   let questionProfile;
   try {
-    questionProfile = loadQuestionProfile(localStorage, data.publishedProfile, data, data.chemistryPack).profile;
+    questionProfile = validateQuestionProfile(await fetchJson("data/question-profile.json"), questionProfileCatalog(data));
   } catch (error) {
     alert(`${error.message} 管理画面で出題設定を確認してください。`);
     return;
+  } finally {
+    startingSession = false;
   }
   const formData = new FormData(elements.setup_form);
   const questionCount = formData.get("question-count");
@@ -1393,7 +1399,6 @@ function startSession(settings = null) {
     ionAnswerPreset: preferences.ionAnswerPreset,
     complexEnabled: preferences.complexEnabled,
   };
-  primeAudio();
   session = {
     ...chosen,
     questionProfile,

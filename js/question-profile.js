@@ -1,4 +1,4 @@
-import { isComplexItem } from './chemistry/complex-policy.js?v=20261004-question-profile-v1';
+import { isComplexItem } from './chemistry/complex-policy.js?v=20261008-github-profile-v1';
 
 export const ITEM_DIFFICULTY_LABELS = Object.freeze({ normal: 'やさしめ', hard: 'ややむず', both: '両方', off: '出題しない' });
 export const CATEGORY_LABELS = Object.freeze({ ionSimple: '単原子イオン', ionPolyatomic: '多原子イオン', ionVariableOx: '酸化数を表すイオン', simple11: '単原子イオン・1対1', simpleRatio: '単原子イオン・異なる比率', polyatomic: '多原子イオンを含む', variableOx: '酸化数を表す化合物' });
